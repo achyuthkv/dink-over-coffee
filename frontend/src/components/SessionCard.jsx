@@ -14,11 +14,29 @@ export default function SessionCard({ session, onSelect, selected }) {
   const full = remaining <= 0
   const pct = max > 0 ? Math.min(100, Math.round((taken / max) * 100)) : 0
 
+  const beginnerSlots = Number(session.beginnerSlots || 0)
+  const beginnerTaken = Number(session.beginnerTaken || 0)
+  const otherTaken = Number(session.otherTaken || 0)
+  const hasSplit = beginnerSlots > 0
+
+  const beginnerRemaining = hasSplit ? Math.max(0, beginnerSlots - beginnerTaken) : null
+  const otherSlots = hasSplit ? max - beginnerSlots : null
+  const otherRemaining = hasSplit ? Math.max(0, otherSlots - otherTaken) : null
+
   const waitlistMax = Number(session.waitlistMax || 0)
   const waitlistCount = Number(session.waitlistCount || 0)
-  const waitlistAvailable = full && waitlistMax > 0 && waitlistCount < waitlistMax
-  const waitlistFull = full && waitlistMax > 0 && waitlistCount >= waitlistMax
-  const disabled = full && !waitlistAvailable
+  const beginnerWaitlistMax = Number(session.beginnerWaitlistMax || 0)
+  const beginnerWaitlistCount = Number(session.beginnerWaitlistCount || 0)
+  const otherWaitlistCount = Number(session.otherWaitlistCount || 0)
+
+  const hasAnyWaitlist = waitlistMax > 0 || beginnerWaitlistMax > 0
+  const someWaitlistOpen = (hasSplit
+    ? (beginnerRemaining <= 0 && beginnerWaitlistMax > 0 && beginnerWaitlistCount < beginnerWaitlistMax) ||
+      (otherRemaining <= 0 && waitlistMax > 0 && otherWaitlistCount < waitlistMax)
+    : (full && waitlistMax > 0 && waitlistCount < waitlistMax)
+  )
+
+  const disabled = full && !someWaitlistOpen
 
   return (
     <button
@@ -39,30 +57,71 @@ export default function SessionCard({ session, onSelect, selected }) {
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className="flex items-center justify-between text-xs font-medium">
-          <span className={full ? 'text-red-600' : 'text-court-600'}>
-            {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
-          </span>
-          <span className="text-coffee-600">{taken}/{max}</span>
-        </div>
-        <div className="mt-1.5 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
-          <div
-            className={`h-full ${full ? 'bg-red-500' : 'bg-court-500'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {waitlistAvailable && (
-          <div className="mt-2 text-xs text-amber-700 font-medium">
-            Waitlist open — {waitlistMax - waitlistCount} spot{waitlistMax - waitlistCount === 1 ? '' : 's'} left
+      {hasSplit ? (
+        <div className="mt-4 space-y-2">
+          <div>
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className={beginnerRemaining <= 0 ? 'text-red-600' : 'text-court-600'}>
+                Beginner: {beginnerRemaining <= 0 ? 'Full' : `${beginnerRemaining} left`}
+              </span>
+              <span className="text-coffee-600">{beginnerTaken}/{beginnerSlots}</span>
+            </div>
+            <div className="mt-1 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+              <div
+                className={`h-full ${beginnerRemaining <= 0 ? 'bg-red-500' : 'bg-court-500'}`}
+                style={{ width: `${beginnerSlots > 0 ? Math.min(100, Math.round((beginnerTaken / beginnerSlots) * 100)) : 0}%` }}
+              />
+            </div>
+            {beginnerRemaining <= 0 && beginnerWaitlistMax > 0 && beginnerWaitlistCount < beginnerWaitlistMax && (
+              <div className="mt-1 text-[11px] text-amber-700 font-medium">
+                Waitlist: {beginnerWaitlistMax - beginnerWaitlistCount} spot{beginnerWaitlistMax - beginnerWaitlistCount === 1 ? '' : 's'}
+              </div>
+            )}
           </div>
-        )}
-        {waitlistFull && (
-          <div className="mt-2 text-xs text-red-600 font-medium">
-            Waitlist full
+          <div>
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className={otherRemaining <= 0 ? 'text-red-600' : 'text-court-600'}>
+                Intermediate+: {otherRemaining <= 0 ? 'Full' : `${otherRemaining} left`}
+              </span>
+              <span className="text-coffee-600">{otherTaken}/{otherSlots}</span>
+            </div>
+            <div className="mt-1 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+              <div
+                className={`h-full ${otherRemaining <= 0 ? 'bg-red-500' : 'bg-court-500'}`}
+                style={{ width: `${otherSlots > 0 ? Math.min(100, Math.round((otherTaken / otherSlots) * 100)) : 0}%` }}
+              />
+            </div>
+            {otherRemaining <= 0 && waitlistMax > 0 && otherWaitlistCount < waitlistMax && (
+              <div className="mt-1 text-[11px] text-amber-700 font-medium">
+                Waitlist: {waitlistMax - otherWaitlistCount} spot{waitlistMax - otherWaitlistCount === 1 ? '' : 's'}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs font-medium">
+            <span className={full ? 'text-red-600' : 'text-court-600'}>
+              {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
+            </span>
+            <span className="text-coffee-600">{taken}/{max}</span>
+          </div>
+          <div className="mt-1.5 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+            <div
+              className={`h-full ${full ? 'bg-red-500' : 'bg-court-500'}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {full && waitlistMax > 0 && waitlistCount < waitlistMax && (
+            <div className="mt-2 text-xs text-amber-700 font-medium">
+              Waitlist open — {waitlistMax - waitlistCount} spot{waitlistMax - waitlistCount === 1 ? '' : 's'} left
+            </div>
+          )}
+          {full && waitlistMax > 0 && waitlistCount >= waitlistMax && (
+            <div className="mt-2 text-xs text-red-600 font-medium">Waitlist full</div>
+          )}
+        </div>
+      )}
     </button>
   )
 }
