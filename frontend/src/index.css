@@ -3,7 +3,12 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
-body { -webkit-tap-highlight-color: transparent; }
+body {
+  -webkit-tap-highlight-color: transparent;
+  background-image: url("/bg-pattern.svg");
+  background-size: 360px 360px;
+  background-repeat: repeat;
+}
 
 @layer components {
   .btn-primary {
