@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
 
-const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
+const ALL_SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 function fmtShort(date, time) {
@@ -36,6 +36,17 @@ export default function RegisterTab() {
 
   useEffect(() => { load() }, [])
 
+  const beginnerAllowed = !selected || selected.beginnerSlots === null || selected.beginnerSlots === undefined || selected.beginnerSlots > 0
+  const skillLevels = beginnerAllowed ? ALL_SKILL_LEVELS : ALL_SKILL_LEVELS.filter(s => s !== 'Beginner')
+
+  function handleSelect(session) {
+    setSelected(session)
+    const noBeginner = session.beginnerSlots !== null && session.beginnerSlots !== undefined && session.beginnerSlots === 0
+    if (noBeginner && form.skill === 'Beginner') {
+      setForm(f => ({ ...f, skill: 'Intermediate' }))
+    }
+  }
+
   function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   function validate() {
@@ -45,8 +56,37 @@ export default function RegisterTab() {
     return null
   }
 
-  const isSessionFull = selected && Number(selected.takenSlots || 0) >= Number(selected.maxSlots || 0)
-  const waitlistAvailable = isSessionFull && Number(selected?.waitlistMax || 0) > 0 && Number(selected?.waitlistCount || 0) < Number(selected?.waitlistMax || 0)
+  const hasSplit = selected && selected.beginnerSlots != null && Number(selected.beginnerSlots) > 0
+  const noBeginner = selected && selected.beginnerSlots != null && Number(selected.beginnerSlots) === 0
+  const isBeginner = form.skill === 'Beginner'
+
+  let slotsFull = false
+  let waitlistAvailable = false
+
+  if (selected) {
+    if (hasSplit) {
+      if (isBeginner) {
+        const beginnerRemaining = Math.max(0, Number(selected.beginnerSlots) - Number(selected.beginnerTaken || 0))
+        slotsFull = beginnerRemaining <= 0
+        const bWlMax = Number(selected.beginnerWaitlistMax || 0)
+        const bWlCount = Number(selected.beginnerWaitlistCount || 0)
+        waitlistAvailable = slotsFull && bWlMax > 0 && bWlCount < bWlMax
+      } else {
+        const otherSlots = Number(selected.maxSlots) - Number(selected.beginnerSlots)
+        const otherRemaining = Math.max(0, otherSlots - Number(selected.otherTaken || 0))
+        slotsFull = otherRemaining <= 0
+        const wlMax = Number(selected.waitlistMax || 0)
+        const wlCount = Number(selected.otherWaitlistCount || 0)
+        waitlistAvailable = slotsFull && wlMax > 0 && wlCount < wlMax
+      }
+    } else {
+      // No split (null = all levels) or noBeginner (0 = only intermediate+, all slots shared)
+      slotsFull = Number(selected.takenSlots || 0) >= Number(selected.maxSlots || 0)
+      const wlMax = Number(selected.waitlistMax || 0)
+      const wlCount = Number(selected.waitlistCount || 0)
+      waitlistAvailable = slotsFull && wlMax > 0 && wlCount < wlMax
+    }
+  }
 
   async function handleWaitlist() {
     const v = validate()
@@ -203,7 +243,7 @@ export default function RegisterTab() {
               key={s.id}
               session={s}
               selected={selected?.id === s.id}
-              onSelect={setSelected}
+              onSelect={handleSelect}
             />
           ))}
         </div>
@@ -229,8 +269,8 @@ export default function RegisterTab() {
             </div>
             <div>
               <label className="text-xs font-semibold text-coffee-700">Skill level</label>
-              <div className="grid grid-cols-3 gap-2 mt-1">
-                {SKILL_LEVELS.map(s => (
+              <div className={`grid gap-2 mt-1 ${skillLevels.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                {skillLevels.map(s => (
                   <button
                     key={s}
                     type="button"
@@ -247,12 +287,13 @@ export default function RegisterTab() {
           <button
             className={`w-full mt-4 ${waitlistAvailable ? 'btn-primary !bg-amber-600' : 'btn-primary'}`}
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || !form.name.trim() || form.name.trim().length < 2 || !/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || !/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())}
           >
-            {submitting ? 'Processing…' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
+            {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>
-          {waitlistAvailable && <p className="text-[11px] text-amber-700 mt-2 text-center">Session is full. Join the waitlist — we'll add you if a spot opens.</p>}
-          {!waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-coffee-600 mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {waitlistAvailable && <p className="text-[11px] text-amber-700 mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
+          {slotsFull && !waitlistAvailable && <p className="text-[11px] text-red-600 mt-2 text-center">No slots or waitlist available for your skill level.</p>}
+          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-coffee-600 mt-2 text-center">Slot held for 5 min while you pay.</p>}
         </section>
       )}
 
