@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
 
@@ -21,6 +21,7 @@ export default function RegisterTab() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
   const [waitlistSuccess, setWaitlistSuccess] = useState(null)
+  const formRef = useRef(null)
 
   async function load() {
     setLoading(true); setError(null)
@@ -45,6 +46,7 @@ export default function RegisterTab() {
     if (noBeginner && form.skill === 'Beginner') {
       setForm(f => ({ ...f, skill: 'Intermediate' }))
     }
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
   }
 
   function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -250,7 +252,7 @@ export default function RegisterTab() {
       </section>
 
       {selected && (
-        <section className="card">
+        <section ref={formRef} className="card">
           <h2 className="text-coffee-900 font-bold">Your details</h2>
           <div className="mt-3 space-y-3">
             <div>
