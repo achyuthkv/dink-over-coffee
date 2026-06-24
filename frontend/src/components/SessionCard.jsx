@@ -14,12 +14,18 @@ export default function SessionCard({ session, onSelect, selected }) {
   const full = remaining <= 0
   const pct = max > 0 ? Math.min(100, Math.round((taken / max) * 100)) : 0
 
+  const waitlistMax = Number(session.waitlistMax || 0)
+  const waitlistCount = Number(session.waitlistCount || 0)
+  const waitlistAvailable = full && waitlistMax > 0 && waitlistCount < waitlistMax
+  const waitlistFull = full && waitlistMax > 0 && waitlistCount >= waitlistMax
+  const disabled = full && !waitlistAvailable
+
   return (
     <button
       type="button"
-      onClick={() => !full && onSelect(session)}
-      disabled={full}
-      className={`card text-left w-full transition ${selected ? 'ring-2 ring-coffee-600' : ''} ${full ? 'opacity-60' : 'active:scale-[.99]'}`}
+      onClick={() => !disabled && onSelect(session)}
+      disabled={disabled}
+      className={`card text-left w-full transition ${selected ? 'ring-2 ring-coffee-600' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -46,6 +52,16 @@ export default function SessionCard({ session, onSelect, selected }) {
             style={{ width: `${pct}%` }}
           />
         </div>
+        {waitlistAvailable && (
+          <div className="mt-2 text-xs text-amber-700 font-medium">
+            Waitlist open — {waitlistMax - waitlistCount} spot{waitlistMax - waitlistCount === 1 ? '' : 's'} left
+          </div>
+        )}
+        {waitlistFull && (
+          <div className="mt-2 text-xs text-red-600 font-medium">
+            Waitlist full
+          </div>
+        )}
       </div>
     </button>
   )
