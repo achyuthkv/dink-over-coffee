@@ -216,6 +216,9 @@ export default function RegisterTab() {
   }
 
   if (success) {
+    const upiList = (success.session.upiIds || '').split(',').map(s => s.trim()).filter(Boolean)
+    const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
+
     return (
       <div className="card text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-court-500/10 grid place-items-center text-court-600 text-2xl">✓</div>
@@ -223,7 +226,21 @@ export default function RegisterTab() {
         <p className="mt-1 text-coffee-700 text-sm">
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
-        <button className="btn-primary w-full mt-5" onClick={() => setSuccess(null)}>Book another</button>
+        {upiList.length > 0 && (
+          <div className="mt-5 space-y-2">
+            {upiList.map((upi, i) => (
+              <a
+                key={upi}
+                href={`upi://pay?pa=${encodeURIComponent(upi)}&pn=Dink%20Over%20Coffee&am=${success.session.price}&cu=INR&tn=${tn}`}
+                className="btn-primary w-full no-underline block"
+              >
+                Pay ₹{success.session.price} {upiList.length > 1 ? `(Option ${i + 1})` : 'via UPI'}
+              </a>
+            ))}
+            <p className="text-[11px] text-coffee-600">Opens your UPI app with amount pre-filled. Try another option if payment fails.</p>
+          </div>
+        )}
+        <button className="text-sm text-coffee-600 underline mt-4" onClick={() => setSuccess(null)}>Book another</button>
       </div>
     )
   }
@@ -277,7 +294,7 @@ export default function RegisterTab() {
                     key={s}
                     type="button"
                     onClick={() => update('skill', s)}
-                    className={`rounded-2xl border px-3 py-2 text-sm font-medium transition ${form.skill === s ? 'border-coffee-800 bg-coffee-800 text-coffee-50' : 'border-coffee-200 text-coffee-800 active:bg-coffee-100'}`}
+                    className={`rounded-2xl border px-2 py-2 text-xs sm:text-sm font-medium transition truncate ${form.skill === s ? 'border-coffee-800 bg-coffee-800 text-coffee-50' : 'border-coffee-200 text-coffee-800 active:bg-coffee-100'}`}
                   >{s}</button>
                 ))}
               </div>
