@@ -3,6 +3,14 @@ import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
 
 const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+function fmtShort(date, time) {
+  if (!date) return time || ''
+  const dt = new Date(date + 'T00:00:00')
+  if (isNaN(dt)) return `${date} ${time || ''}`
+  return `${DAYS[dt.getDay()]} ${dt.getDate()} ${time || ''}`.trim()
+}
 
 export default function RegisterTab() {
   const [sessions, setSessions] = useState([])
@@ -120,7 +128,7 @@ export default function RegisterTab() {
         <div className="mx-auto h-14 w-14 rounded-full bg-court-500/10 grid place-items-center text-court-600 text-2xl">✓</div>
         <h2 className="mt-3 text-coffee-900 text-xl font-extrabold">You're in!</h2>
         <p className="mt-1 text-coffee-700 text-sm">
-          {success.session.venue} · {success.session.date} · {success.session.time}
+          {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
         <button className="btn-primary w-full mt-5" onClick={() => setSuccess(null)}>Book another</button>
       </div>
