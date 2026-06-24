@@ -109,7 +109,7 @@ export default function PlayersTab() {
             {!loadingP && players.length === 0 && (
               <div className="text-sm text-coffee-600 py-3">No one's signed up yet — be the first!</div>
             )}
-            {!loadingP && players.map((p, i) => (
+            {!loadingP && players.filter(p => p.status !== 'waitlisted').map((p, i) => (
               <div key={i} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-full bg-coffee-100 grid place-items-center text-coffee-800 font-bold text-sm">
@@ -123,6 +123,25 @@ export default function PlayersTab() {
               </div>
             ))}
           </div>
+
+          {!loadingP && players.filter(p => p.status === 'waitlisted').length > 0 && (
+            <div className="mt-4 pt-3 border-t border-amber-200">
+              <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Waitlist</div>
+              <div className="divide-y divide-coffee-100">
+                {players.filter(p => p.status === 'waitlisted').map((p, i) => (
+                  <div key={i} className="flex items-center justify-between py-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-amber-100 grid place-items-center text-amber-800 font-bold text-xs">
+                        {firstName(p.name).slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="text-coffee-800 font-medium text-sm">{p.name || 'Player'}</div>
+                    </div>
+                    <span className="text-[11px] font-medium text-amber-700">#{i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
