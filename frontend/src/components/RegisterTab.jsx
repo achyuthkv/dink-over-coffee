@@ -20,6 +20,7 @@ export default function RegisterTab() {
   const [form, setForm] = useState({ name: '', phone: '', skill: 'Beginner' })
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
+  const [waitlistSuccess, setWaitlistSuccess] = useState(null)
 
   async function load() {
     setLoading(true); setError(null)
@@ -42,6 +43,37 @@ export default function RegisterTab() {
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) return 'Enter a valid phone number'
     return null
+  }
+
+  const isSessionFull = selected && Number(selected.takenSlots || 0) >= Number(selected.maxSlots || 0)
+  const waitlistAvailable = isSessionFull && Number(selected?.waitlistMax || 0) > 0 && Number(selected?.waitlistCount || 0) < Number(selected?.waitlistMax || 0)
+
+  async function handleWaitlist() {
+    const v = validate()
+    if (v) { setError(v); return }
+    setError(null); setSubmitting(true)
+    try {
+      const player = { name: form.name.trim(), phone: form.phone.trim(), skill: form.skill }
+      const res = await api.joinWaitlist(selected.id, player)
+      if (res.alreadyRegistered) {
+        setError('You are already registered for this session.')
+        setSubmitting(false)
+        return
+      }
+      if (res.alreadyWaitlisted) {
+        setError('You are already on the waitlist for this session.')
+        setSubmitting(false)
+        return
+      }
+      setWaitlistSuccess({ session: selected, player, position: res.position })
+      setForm({ name: '', phone: '', skill: 'Beginner' })
+      setSelected(null)
+      await load()
+    } catch (e) {
+      setError(e.message || 'Could not join waitlist')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function handlePay() {
@@ -127,6 +159,20 @@ export default function RegisterTab() {
     })
   }
 
+  if (waitlistSuccess) {
+    return (
+      <div className="card text-center">
+        <div className="mx-auto h-14 w-14 rounded-full bg-amber-100 grid place-items-center text-amber-700 text-2xl">⏳</div>
+        <h2 className="mt-3 text-coffee-900 text-xl font-extrabold">You're on the waitlist!</h2>
+        <p className="mt-1 text-coffee-700 text-sm">
+          Position #{waitlistSuccess.position} · {waitlistSuccess.session.venue} · {fmtShort(waitlistSuccess.session.date, waitlistSuccess.session.time)}
+        </p>
+        <p className="mt-2 text-coffee-600 text-xs">We'll promote you if a slot opens up.</p>
+        <button className="btn-primary w-full mt-5" onClick={() => setWaitlistSuccess(null)}>Back</button>
+      </div>
+    )
+  }
+
   if (success) {
     return (
       <div className="card text-center">
@@ -199,13 +245,14 @@ export default function RegisterTab() {
           {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
 
           <button
-            className="btn-primary w-full mt-4"
-            onClick={handlePay}
+            className={`w-full mt-4 ${waitlistAvailable ? 'btn-primary !bg-amber-600' : 'btn-primary'}`}
+            onClick={waitlistAvailable ? handleWaitlist : handlePay}
             disabled={submitting || !form.name.trim() || form.name.trim().length < 2 || !/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())}
           >
-            {submitting ? 'Processing…' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
+            {submitting ? 'Processing…' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>
-          {PAYMENTS_ENABLED && <p className="text-[11px] text-coffee-600 mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {waitlistAvailable && <p className="text-[11px] text-amber-700 mt-2 text-center">Session is full. Join the waitlist — we'll add you if a spot opens.</p>}
+          {!waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-coffee-600 mt-2 text-center">Slot held for 5 min while you pay.</p>}
         </section>
       )}
 
