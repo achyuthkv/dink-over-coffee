@@ -115,7 +115,7 @@ export default function PlayersTab() {
                   <div className="h-9 w-9 rounded-full bg-coffee-100 grid place-items-center text-coffee-800 font-bold text-sm">
                     {firstName(p.name).slice(0, 1).toUpperCase()}
                   </div>
-                  <div className="text-coffee-900 font-medium">{firstName(p.name)}</div>
+                  <div className="text-coffee-900 font-medium">{p.name || 'Player'}</div>
                 </div>
                 <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${SKILL_COLOR[p.skill] || 'bg-coffee-100 text-coffee-800'}`}>
                   {p.skill || 'Player'}
