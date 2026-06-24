@@ -54,7 +54,7 @@ export default function RegisterTab() {
   function validate() {
     if (!selected) return 'Pick a session first'
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
-    if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) return 'Enter a valid phone number'
+    if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
     return null
   }
 
@@ -264,8 +264,8 @@ export default function RegisterTab() {
             </div>
             <div>
               <label className="text-xs font-semibold text-coffee-700">Phone <span className="text-red-500">*</span></label>
-              <input className="input mt-1" autoComplete="tel" inputMode="tel" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9+\-\s]/g, ''))} placeholder="98xxxxxxxx" maxLength={15} required />
-              {form.phone.length > 0 && !/^[0-9+\-\s]{10,15}$/.test(form.phone.trim()) && (
+              <input className="input mt-1" autoComplete="tel" inputMode="numeric" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
+              {form.phone.length > 0 && form.phone.length < 10 && (
                 <p className="text-[11px] text-red-500 mt-1">Enter a valid 10-digit phone number</p>
               )}
             </div>
@@ -289,7 +289,7 @@ export default function RegisterTab() {
           <button
             className={`w-full mt-4 ${waitlistAvailable ? 'btn-primary !bg-amber-600' : 'btn-primary'}`}
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || !/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>
