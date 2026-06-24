@@ -56,7 +56,12 @@ export default function RegisterTab() {
       }
 
       if (!PAYMENTS_ENABLED) {
-        await api.registerFree(selected.id, player)
+        const res = await api.registerFree(selected.id, player)
+        if (res.alreadyRegistered) {
+          setError('You are already registered for this session.')
+          setSubmitting(false)
+          return
+        }
         setSuccess({ session: selected, player })
         setForm({ name: '', phone: '', skill: 'Beginner' })
         setSelected(null)
