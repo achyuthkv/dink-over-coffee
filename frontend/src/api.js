@@ -20,6 +20,7 @@ export const api = {
   listSessions: () => call('listSessions'),
   listPlayers: (sessionId) => call('listPlayers', { sessionId }),
   registerFree: (sessionId, player) => call('registerFree', { sessionId, player }),
+  joinWaitlist: (sessionId, player) => call('joinWaitlist', { sessionId, player }),
   createOrder: (sessionId, player) => call('createOrder', { sessionId, player }),
   confirmPayment: (payload) => call('confirmPayment', payload)
 }
