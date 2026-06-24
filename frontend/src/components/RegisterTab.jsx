@@ -120,9 +120,8 @@ export default function RegisterTab() {
         <div className="mx-auto h-14 w-14 rounded-full bg-court-500/10 grid place-items-center text-court-600 text-2xl">✓</div>
         <h2 className="mt-3 text-coffee-900 text-xl font-extrabold">You're in!</h2>
         <p className="mt-1 text-coffee-700 text-sm">
-          {success.session.venue} · {success.session.time}
+          {success.session.venue} · {success.session.date} · {success.session.time}
         </p>
-        <p className="text-coffee-600 text-xs mt-2">A confirmation will go to {success.player.phone}.</p>
         <button className="btn-primary w-full mt-5" onClick={() => setSuccess(null)}>Book another</button>
       </div>
     )
