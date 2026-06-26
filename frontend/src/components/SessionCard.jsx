@@ -45,6 +45,7 @@ export default function SessionCard({ session, onSelect, selected }) {
       disabled={disabled}
       className={`card text-left w-full transition ${selected ? 'ring-2 ring-coffee-600' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
     >
+      {session.title && <div className="text-coffee-900 font-bold text-base mb-2">{session.title}</div>}
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-coffee-600 text-xs font-semibold uppercase tracking-wide">{fmtDate(session.date)}</div>
@@ -56,6 +57,7 @@ export default function SessionCard({ session, onSelect, selected }) {
           <div className="text-coffee-600 text-xs">per player</div>
         </div>
       </div>
+      {session.description && <p className="text-coffee-700 text-xs mt-2">{session.description}</p>}
 
       {hasSplit ? (
         <div className="mt-4 space-y-2">
