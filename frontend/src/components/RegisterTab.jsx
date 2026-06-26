@@ -218,6 +218,15 @@ export default function RegisterTab() {
   if (success) {
     const upiList = (success.session.upiIds || '').split(',').map(s => s.trim()).filter(Boolean)
     const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
+    const amt = success.session.price
+    const upiParams = (pa) => `pa=${encodeURIComponent(pa)}&pn=Dink%20Over%20Coffee&am=${amt}&cu=INR&tn=${tn}`
+
+    const upiApps = [
+      { name: 'Google Pay', scheme: (pa) => `tez://upi/pay?${upiParams(pa)}` },
+      { name: 'PhonePe', scheme: (pa) => `phonepe://pay?${upiParams(pa)}` },
+      { name: 'Paytm', scheme: (pa) => `paytm://upi/pay?${upiParams(pa)}` },
+      { name: 'Other UPI', scheme: (pa) => `upi://pay?${upiParams(pa)}` },
+    ]
 
     return (
       <div className="card text-center">
@@ -227,17 +236,36 @@ export default function RegisterTab() {
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
         {upiList.length > 0 && (
-          <div className="mt-5 space-y-2">
-            {upiList.map((upi, i) => (
-              <a
-                key={upi}
-                href={`upi://pay?pa=${encodeURIComponent(upi)}&pn=Dink%20Over%20Coffee&am=${success.session.price}&cu=INR&tn=${tn}`}
-                className="btn-primary w-full no-underline block"
-              >
-                Pay ₹{success.session.price} {upiList.length > 1 ? `(Option ${i + 1})` : 'via UPI'}
-              </a>
-            ))}
-            <p className="text-[11px] text-coffee-600">Opens your UPI app with amount pre-filled. Try another option if payment fails.</p>
+          <div className="mt-5">
+            <p className="text-xs font-semibold text-coffee-800 mb-2">Pay ₹{amt}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {upiApps.map(app => (
+                <a
+                  key={app.name}
+                  href={app.scheme(upiList[0])}
+                  className="rounded-2xl border border-coffee-200 px-3 py-2.5 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block"
+                >
+                  {app.name}
+                </a>
+              ))}
+            </div>
+            {upiList.length > 1 && (
+              <details className="mt-3 text-left">
+                <summary className="text-[11px] text-coffee-600 cursor-pointer">Payment failed? Try alternate UPI ID</summary>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {upiApps.map(app => (
+                    <a
+                      key={app.name + '-alt'}
+                      href={app.scheme(upiList[1])}
+                      className="rounded-2xl border border-coffee-200 px-3 py-2 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block"
+                    >
+                      {app.name}
+                    </a>
+                  ))}
+                </div>
+              </details>
+            )}
+            <p className="text-[11px] text-coffee-600 mt-3">Opens your UPI app with amount pre-filled</p>
           </div>
         )}
         <button className="text-sm text-coffee-600 underline mt-4" onClick={() => setSuccess(null)}>Book another</button>
