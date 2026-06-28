@@ -83,7 +83,26 @@ export default function PlayerList({ session, onBack }) {
       waitlisted.forEach((p, i) => {
         text += `${i + 1}. ${p.name} (${p.skill})\n`
       })
+      text += '\n'
     }
+
+    const hasSplit = session.beginner_slots != null && Number(session.beginner_slots) > 0
+    if (hasSplit) {
+      const bSlots = Number(session.beginner_slots)
+      const oSlots = Number(session.max_slots) - bSlots
+      const bTaken = confirmed.filter(p => p.skill === 'Beginner').length
+      const oTaken = confirmed.filter(p => p.skill !== 'Beginner').length
+      const bLeft = Math.max(0, bSlots - bTaken)
+      const oLeft = Math.max(0, oSlots - oTaken)
+      const parts = []
+      if (bLeft > 0) parts.push(`${bLeft} Beginner`)
+      if (oLeft > 0) parts.push(`${oLeft} Intermediate+`)
+      if (parts.length > 0) text += `_${parts.join(' | ')} slot${(bLeft + oLeft) > 1 ? 's' : ''} left - grab them soon!_`
+    } else {
+      const totalLeft = Math.max(0, Number(session.max_slots) - confirmed.length)
+      if (totalLeft > 0) text += `_${totalLeft} slot${totalLeft > 1 ? 's' : ''} left - grab them soon!_`
+    }
+
     return text
   }
 
