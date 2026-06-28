@@ -17,25 +17,42 @@ export default function RegisterTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selected, setSelected] = useState(null)
-  const [form, setForm] = useState({ name: '', phone: '', skill: 'Beginner' })
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('doc_player') || '{}')
+      return { name: saved.name || '', phone: saved.phone || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '' }
+    } catch { return { name: '', phone: '', skill: 'Beginner', duprId: '' } }
+  })
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
   const [waitlistSuccess, setWaitlistSuccess] = useState(null)
+  const [players, setPlayers] = useState([])
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
   const formRef = useRef(null)
 
-  async function load() {
-    setLoading(true); setError(null)
+  async function load(silent) {
+    if (!silent) setLoading(true)
+    setError(null)
     try {
       const { sessions } = await api.listSessions()
       setSessions(sessions)
+      setSelected(prev => prev ? sessions.find(s => s.id === prev.id) || prev : prev)
     } catch (e) {
-      setError(e.message || 'Could not load sessions')
+      if (!silent) setError(e.message || 'Could not load sessions')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      load(true)
+      if (selected) loadPlayers(selected.id, true)
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [selected])
 
   const beginnerAllowed = !selected || selected.beginnerSlots === null || selected.beginnerSlots === undefined || selected.beginnerSlots > 0
   const skillLevels = beginnerAllowed ? ALL_SKILL_LEVELS : ALL_SKILL_LEVELS.filter(s => s !== 'Beginner')
@@ -46,7 +63,17 @@ export default function RegisterTab() {
     if (noBeginner && form.skill === 'Beginner') {
       setForm(f => ({ ...f, skill: 'Intermediate' }))
     }
+    loadPlayers(session.id)
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+  }
+
+  async function loadPlayers(sessionId, silent) {
+    if (!silent) setLoadingPlayers(true)
+    try {
+      const { players } = await api.listPlayers(sessionId)
+      setPlayers(players)
+    } catch { setPlayers([]) }
+    finally { if (!silent) setLoadingPlayers(false) }
   }
 
   function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -95,7 +122,7 @@ export default function RegisterTab() {
     if (v) { setError(v); return }
     setError(null); setSubmitting(true)
     try {
-      const player = { name: form.name.trim(), phone: form.phone.trim(), skill: form.skill }
+      const player = { name: form.name.trim(), phone: form.phone.trim(), skill: form.skill, ...(form.duprId.trim() && { duprId: form.duprId.trim() }) }
       const res = await api.joinWaitlist(selected.id, player)
       if (res.alreadyRegistered) {
         setError('You are already registered for this session.')
@@ -108,7 +135,8 @@ export default function RegisterTab() {
         return
       }
       setWaitlistSuccess({ session: selected, player, position: res.position })
-      setForm({ name: '', phone: '', skill: 'Beginner' })
+      localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
+      setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
       setSelected(null)
       await load()
     } catch (e) {
@@ -126,7 +154,8 @@ export default function RegisterTab() {
       const player = {
         name: form.name.trim(),
         phone: form.phone.trim(),
-        skill: form.skill
+        skill: form.skill,
+        ...(form.duprId.trim() && { duprId: form.duprId.trim() })
       }
 
       if (!PAYMENTS_ENABLED) {
@@ -137,7 +166,8 @@ export default function RegisterTab() {
           return
         }
         setSuccess({ session: selected, player })
-        setForm({ name: '', phone: '', skill: 'Beginner' })
+        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
+        setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
         setSelected(null)
         await load()
         setSubmitting(false)
@@ -181,7 +211,8 @@ export default function RegisterTab() {
               razorpay_signature: resp.razorpay_signature
             })
             setSuccess({ session: selected, player })
-            setForm({ name: '', phone: '', skill: 'Beginner' })
+            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
+            setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
             setSelected(null)
             await load()
           } catch (e) {
@@ -215,8 +246,10 @@ export default function RegisterTab() {
     )
   }
 
+  const [qrIndex, setQrIndex] = useState(0)
+
   if (success) {
-    const upiList = (success.session.upiIds || '').split(',').map(s => s.trim()).filter(Boolean)
+    const accounts = success.session.upiAccounts || []
     const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
     const amt = success.session.price
     const upiParams = (pa) => `pa=${encodeURIComponent(pa)}&pn=Dink%20Over%20Coffee&am=${amt}&cu=INR&tn=${tn}`
@@ -228,6 +261,8 @@ export default function RegisterTab() {
       { name: 'Other UPI', scheme: (pa) => `upi://pay?${upiParams(pa)}` },
     ]
 
+    const currentAccount = accounts[qrIndex] || accounts[0]
+
     return (
       <div className="card text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-court-500/10 grid place-items-center text-court-600 text-2xl">✓</div>
@@ -235,40 +270,54 @@ export default function RegisterTab() {
         <p className="mt-1 text-coffee-700 text-sm">
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
-        {upiList.length > 0 && (
+        {accounts.length > 0 && (
           <div className="mt-5">
             <p className="text-xs font-semibold text-coffee-800 mb-2">Pay ₹{amt}</p>
+
+            {currentAccount?.qr_image_url && (
+              <div className="mb-4">
+                <div className="relative">
+                  <img src={currentAccount.qr_image_url} alt="UPI QR Code" className="mx-auto w-48 h-48 rounded-xl object-contain" />
+                  {accounts.length > 1 && (
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-1">
+                      <button onClick={() => setQrIndex(i => (i - 1 + accounts.length) % accounts.length)} className="w-7 h-7 rounded-full bg-white/80 shadow flex items-center justify-center text-coffee-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <button onClick={() => setQrIndex(i => (i + 1) % accounts.length)} className="w-7 h-7 rounded-full bg-white/80 shadow flex items-center justify-center text-coffee-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-coffee-600 mt-1.5">
+                  {currentAccount.label} · {currentAccount.upi_id}
+                  {accounts.length > 1 && <span className="ml-1 text-coffee-400">({qrIndex + 1}/{accounts.length})</span>}
+                </p>
+                {accounts.length > 1 && (
+                  <div className="flex justify-center gap-1 mt-2">
+                    {accounts.map((_, i) => (
+                      <button key={i} onClick={() => setQrIndex(i)} className={`w-2 h-2 rounded-full transition ${i === qrIndex ? 'bg-coffee-800' : 'bg-coffee-200'}`} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               {upiApps.map(app => (
                 <a
                   key={app.name}
-                  href={app.scheme(upiList[0])}
+                  href={app.scheme(currentAccount?.upi_id || '')}
                   className="rounded-2xl border border-coffee-200 px-3 py-2.5 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block"
                 >
                   {app.name}
                 </a>
               ))}
             </div>
-            {upiList.length > 1 && (
-              <details className="mt-3 text-left">
-                <summary className="text-[11px] text-coffee-600 cursor-pointer">Payment failed? Try alternate UPI ID</summary>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {upiApps.map(app => (
-                    <a
-                      key={app.name + '-alt'}
-                      href={app.scheme(upiList[1])}
-                      className="rounded-2xl border border-coffee-200 px-3 py-2 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block"
-                    >
-                      {app.name}
-                    </a>
-                  ))}
-                </div>
-              </details>
-            )}
             <p className="text-[11px] text-coffee-600 mt-3">Opens your UPI app with amount pre-filled</p>
           </div>
         )}
-        <button className="text-sm text-coffee-600 underline mt-4" onClick={() => setSuccess(null)}>Book another</button>
+        <button className="text-sm text-coffee-600 underline mt-4" onClick={() => { setSuccess(null); setQrIndex(0) }}>Book another</button>
       </div>
     )
   }
@@ -278,7 +327,9 @@ export default function RegisterTab() {
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-coffee-900 font-bold">Upcoming sessions</h2>
-          <button onClick={load} className="text-xs text-coffee-600 underline">Refresh</button>
+          <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-coffee-600 active:bg-coffee-100 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
         </div>
         <div className="mt-3 space-y-3">
           {loading && <div className="card text-center text-coffee-600 text-sm">Loading sessions…</div>}
@@ -295,6 +346,51 @@ export default function RegisterTab() {
           ))}
         </div>
       </section>
+
+      {selected && players.length > 0 && (
+        <section className="card">
+          <h2 className="text-coffee-900 font-bold text-sm">Who's playing</h2>
+          {loadingPlayers ? (
+            <p className="text-xs text-coffee-600 mt-2">Loading…</p>
+          ) : (
+            <div className="mt-3 space-y-2.5">
+              {['Beginner', 'Intermediate', 'Advanced'].map(skill => {
+                const group = players.filter(p => p.status !== 'waitlisted' && p.skill === skill)
+                if (group.length === 0) return null
+                const dotColor = skill === 'Beginner' ? 'bg-[#4F6B4F]' : skill === 'Advanced' ? 'bg-[#2B1F17]' : 'bg-[#C75A2B]'
+                return (
+                  <div key={skill}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                      <span className="text-[10px] font-semibold text-coffee-600 uppercase tracking-wide">{skill} ({group.length})</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.map((p, i) => (
+                        <span key={i} className="inline-flex items-center rounded-full bg-coffee-100 px-2.5 py-1 text-xs font-medium text-coffee-800">
+                          {(p.name || 'Player').split(/\s+/)[0]}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {players.filter(p => p.status === 'waitlisted').length > 0 && (
+            <div className="mt-3 pt-2.5 border-t border-coffee-100">
+              <span className="text-[11px] font-semibold text-amber-700 uppercase">Waitlist</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {players.filter(p => p.status === 'waitlisted').map((p, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                    {(p.name || 'Player').split(/\s+/)[0]}
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.skill === 'Beginner' ? 'bg-[#4F6B4F]' : p.skill === 'Advanced' ? 'bg-[#2B1F17]' : 'bg-[#C75A2B]'}`} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {selected && (
         <section ref={formRef} className="card">
@@ -317,24 +413,42 @@ export default function RegisterTab() {
             <div>
               <label className="text-xs font-semibold text-coffee-700">Skill level</label>
               <div className={`grid gap-2 mt-1 ${skillLevels.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                {skillLevels.map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => update('skill', s)}
-                    className={`rounded-2xl border px-2 py-2 text-xs sm:text-sm font-medium transition truncate ${form.skill === s ? 'border-coffee-800 bg-coffee-800 text-coffee-50' : 'border-coffee-200 text-coffee-800 active:bg-coffee-100'}`}
-                  >{s}</button>
-                ))}
+                {skillLevels.map(s => {
+                  const active = form.skill === s
+                  const colors = s === 'Beginner'
+                    ? active ? 'border-[#4F6B4F] bg-[#4F6B4F] text-white' : 'border-[#C8C2B8] text-[#4F6B4F]'
+                    : s === 'Intermediate'
+                    ? active ? 'border-[#C75A2B] bg-[#C75A2B] text-white' : 'border-[#C8C2B8] text-[#C75A2B]'
+                    : active ? 'border-[#2B1F17] bg-[#2B1F17] text-white' : 'border-[#C8C2B8] text-[#2B1F17]'
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => update('skill', s)}
+                      className={`rounded-2xl border px-2 py-2 text-xs sm:text-sm font-medium transition truncate ${colors}`}
+                    >{s}</button>
+                  )
+                })}
               </div>
             </div>
           </div>
+
+          {selected?.event_type === 'dupr' && (
+            <div className="mt-3">
+              <label className="text-xs font-semibold text-coffee-700">DUPR ID <span className="text-red-500">*</span></label>
+              <input className="input mt-1" value={form.duprId} onChange={e => update('duprId', e.target.value)} placeholder="e.g. 123456789" required />
+              {(form.duprId || '').length > 0 && form.duprId.trim().length < 3 && (
+                <p className="text-[11px] text-red-500 mt-1">Enter a valid DUPR ID</p>
+              )}
+            </div>
+          )}
 
           {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
 
           <button
             className={`w-full mt-4 ${waitlistAvailable ? 'btn-primary !bg-amber-600' : 'btn-primary'}`}
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || (selected?.event_type === 'dupr' && form.duprId.trim().length < 3)}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>
