@@ -1,28 +1,24 @@
-const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL
+const API_BASE = '/api'
 
-if (!API_URL) {
-  console.warn('VITE_APPS_SCRIPT_URL is not set — API calls will fail.')
-}
-
-async function call(action, payload = {}) {
-  const res = await fetch(API_URL, {
+async function call(endpoint, payload = {}) {
+  const res = await fetch(`${API_BASE}/${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...payload })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   })
-  if (!res.ok) throw new Error(`API ${action} failed: ${res.status}`)
+  if (!res.ok) throw new Error(`API ${endpoint} failed: ${res.status}`)
   const data = await res.json()
-  if (!data.ok) throw new Error(data.error || `API ${action} returned not ok`)
+  if (!data.ok) throw new Error(data.error || `API ${endpoint} returned not ok`)
   return data
 }
 
 export const api = {
-  listSessions: () => call('listSessions'),
-  listPlayers: (sessionId) => call('listPlayers', { sessionId }),
-  registerFree: (sessionId, player) => call('registerFree', { sessionId, player }),
-  joinWaitlist: (sessionId, player) => call('joinWaitlist', { sessionId, player }),
-  createOrder: (sessionId, player) => call('createOrder', { sessionId, player }),
-  confirmPayment: (payload) => call('confirmPayment', payload)
+  listSessions: () => call('sessions'),
+  listPlayers: (sessionId) => call('players', { sessionId }),
+  registerFree: (sessionId, player) => call('register', { sessionId, player }),
+  joinWaitlist: (sessionId, player) => call('waitlist', { sessionId, player }),
+  createOrder: (sessionId, player) => call('create-order', { sessionId, player }),
+  confirmPayment: (payload) => call('confirm-payment', payload)
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
