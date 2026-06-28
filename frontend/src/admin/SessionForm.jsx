@@ -114,7 +114,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-3">
+        <form onSubmit={handleSubmit} className="card space-y-3 overflow-hidden">
           <div>
             <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Title</label>
             <input className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none" value={form.title} onChange={e => update('title', e.target.value)} placeholder="Session title" />
@@ -133,13 +133,13 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div>
+            <div className="min-w-0">
               <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">From</label>
-              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={startTime} onChange={e => { setStartTime(e.target.value); update('time', formatTime(e.target.value, endTime)) }} required />
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-2 py-2 text-xs focus:border-coffee-600 focus:outline-none" value={startTime} onChange={e => { setStartTime(e.target.value); update('time', formatTime(e.target.value, endTime)) }} required />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">To</label>
-              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={endTime} onChange={e => { setEndTime(e.target.value); update('time', formatTime(startTime, e.target.value)) }} required />
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-2 py-2 text-xs focus:border-coffee-600 focus:outline-none" value={endTime} onChange={e => { setEndTime(e.target.value); update('time', formatTime(startTime, e.target.value)) }} required />
             </div>
           </div>
 
