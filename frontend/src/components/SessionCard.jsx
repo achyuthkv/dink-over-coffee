@@ -45,19 +45,16 @@ export default function SessionCard({ session, onSelect, selected }) {
       disabled={disabled}
       className={`card text-left w-full transition ${selected ? 'ring-2 ring-coffee-600' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
     >
-      {session.title && <div className="text-coffee-900 font-bold text-base mb-2">{session.title}</div>}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-coffee-600 text-xs font-semibold uppercase tracking-wide">{fmtDate(session.date)}</div>
-          <div className="text-coffee-900 text-lg font-bold leading-tight">{session.time}</div>
-          <div className="text-coffee-800 text-sm mt-0.5">{session.venue}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-coffee-900 text-xl font-extrabold">₹{session.price}</div>
-          <div className="text-coffee-600 text-xs">per player</div>
-        </div>
+      <div className="flex items-center gap-2">
+        <span className="text-court-600 text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
+        {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-[#C75A2B] bg-[#C75A2B]/10 px-1.5 py-0.5 rounded">DUPR</span>}
       </div>
-      {session.description && <p className="text-coffee-700 text-xs mt-2">{session.description}</p>}
+      {session.title && <div className="text-coffee-900 font-bold text-base mt-1">{session.title}</div>}
+      <div className="flex items-baseline justify-between gap-3 mt-1">
+        <div className="text-coffee-700 text-sm">{session.venue}</div>
+        <div className="text-coffee-900 text-sm font-bold whitespace-nowrap">₹{session.price}</div>
+      </div>
+      {session.description && <p className="text-coffee-600 text-xs mt-2 leading-relaxed">{session.description}</p>}
 
       {hasSplit ? (
         <div className="mt-4 space-y-2">
