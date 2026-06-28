@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+input[type="time"], input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
 body {
   -webkit-tap-highlight-color: transparent;
   background-image: url("/bg-pattern.svg");
