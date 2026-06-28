@@ -133,13 +133,13 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="min-w-0">
+            <div>
               <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">From</label>
-              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-2 py-2 text-xs focus:border-coffee-600 focus:outline-none" value={startTime} onChange={e => { setStartTime(e.target.value); update('time', formatTime(e.target.value, endTime)) }} required />
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={startTime} onChange={e => { setStartTime(e.target.value); update('time', formatTime(e.target.value, endTime)) }} required />
             </div>
-            <div className="min-w-0">
+            <div>
               <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">To</label>
-              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-2 py-2 text-xs focus:border-coffee-600 focus:outline-none" value={endTime} onChange={e => { setEndTime(e.target.value); update('time', formatTime(startTime, e.target.value)) }} required />
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={endTime} onChange={e => { setEndTime(e.target.value); update('time', formatTime(startTime, e.target.value)) }} required />
             </div>
           </div>
 
