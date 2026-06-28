@@ -5,17 +5,26 @@ export default {
     extend: {
       colors: {
         coffee: {
-          50: '#faf6f1',
-          100: '#f1e8db',
-          200: '#e2cfb3',
-          400: '#b88c5a',
-          600: '#8b5a2b',
-          800: '#4a2e16',
-          900: '#2d1c0d'
+          50: '#F6F1E7',
+          100: '#E6DCC6',
+          200: '#C8C2B8',
+          400: '#8C8A7D',
+          600: '#4F6B4F',
+          700: '#2B1F17',
+          800: '#2B1F17',
+          900: '#1C1C1C'
         },
+        cream: '#F6F1E7',
+        espresso: '#2B1F17',
+        latte: '#E6DCC6',
+        sage: '#4F6B4F',
+        clay: '#C75A2B',
+        stone: '#C8C2B8',
+        charcoal: '#1C1C1C',
+        warmgrey: '#8C8A7D',
         court: {
-          500: '#3aa56a',
-          600: '#2c8553'
+          500: '#4F6B4F',
+          600: '#3d5440'
         }
       },
       fontFamily: {
