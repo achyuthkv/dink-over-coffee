@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "node api/dev-server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2",
+    "ws": "^8.21.0"
+  }
+}
