@@ -2,10 +2,40 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 
 export default function SessionForm({ session, onSave, onCancel }) {
+  function parseTime(timeStr) {
+    if (!timeStr) return { start: '09:00', end: '11:00' }
+    const parts = timeStr.split(/\s*[-–to]+\s*/i)
+    const to24 = (t) => {
+      const m = t.trim().match(/^(\d{1,2}):?(\d{2})?\s*(AM|PM)?$/i)
+      if (!m) return t.trim()
+      let h = parseInt(m[1])
+      const min = m[2] || '00'
+      const ampm = (m[3] || '').toUpperCase()
+      if (ampm === 'PM' && h < 12) h += 12
+      if (ampm === 'AM' && h === 12) h = 0
+      return `${String(h).padStart(2, '0')}:${min}`
+    }
+    return { start: to24(parts[0] || ''), end: to24(parts[1] || '') }
+  }
+
+  function formatTime(start, end) {
+    const fmt = (t) => {
+      const [h, m] = t.split(':').map(Number)
+      const ampm = h >= 12 ? 'PM' : 'AM'
+      const h12 = h % 12 || 12
+      return m === 0 ? `${h12} ${ampm}` : `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+    }
+    return `${fmt(start)} - ${fmt(end)}`
+  }
+
+  const parsed = parseTime(session?.time)
+  const [startTime, setStartTime] = useState(parsed.start)
+  const [endTime, setEndTime] = useState(parsed.end)
+
   const [form, setForm] = useState({
     title: session?.title || '',
     date: session?.date || '',
-    time: session?.time || '',
+    time: session?.time || formatTime(parsed.start, parsed.end),
     venue: session?.venue || '',
     price: session?.price || 350,
     max_slots: session?.max_slots || 10,
@@ -84,57 +114,69 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4">
+        <form onSubmit={handleSubmit} className="card space-y-3">
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Title</label>
-            <input className="input mt-1" value={form.title} onChange={e => update('title', e.target.value)} placeholder="Session title" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-coffee-700">Date</label>
-              <input type="date" className="input mt-1" value={form.date} onChange={e => update('date', e.target.value)} required />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-coffee-700">Time</label>
-              <input className="input mt-1" value={form.time} onChange={e => update('time', e.target.value)} placeholder="9 AM - 11 AM" required />
-            </div>
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Title</label>
+            <input className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none" value={form.title} onChange={e => update('title', e.target.value)} placeholder="Session title" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Venue</label>
-            <input className="input mt-1" value={form.venue} onChange={e => update('venue', e.target.value)} placeholder="Venue" required />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-coffee-700">Price</label>
-              <input type="number" className="input mt-1" value={form.price} onChange={e => update('price', e.target.value)} required />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-coffee-700">Slots</label>
-              <input type="number" className="input mt-1" value={form.max_slots} onChange={e => update('max_slots', e.target.value)} min="1" required />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-coffee-700">Waitlist</label>
-              <input type="number" className="input mt-1" value={form.waitlist_max} onChange={e => update('waitlist_max', e.target.value)} min="0" />
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Date</label>
+            <div className="flex items-center gap-2 mt-1">
+              <input type="date" className="flex-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={form.date} onChange={e => update('date', e.target.value)} required />
+              {form.date && (() => {
+                const dt = new Date(form.date + 'T00:00:00')
+                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+                return <span className="text-xs font-medium text-[#4F6B4F] shrink-0">{days[dt.getDay()]}</span>
+              })()}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs font-semibold text-coffee-700">Beginner slots</label>
-              <input type="number" className="input mt-1" value={form.beginner_slots} onChange={e => update('beginner_slots', e.target.value)} min="0" placeholder="blank = all" />
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">From</label>
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={startTime} onChange={e => { setStartTime(e.target.value); update('time', formatTime(e.target.value, endTime)) }} required />
             </div>
             <div>
-              <label className="text-xs font-semibold text-coffee-700">Beginner waitlist</label>
-              <input type="number" className="input mt-1" value={form.beginner_waitlist_max} onChange={e => update('beginner_waitlist_max', e.target.value)} min="0" />
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">To</label>
+              <input type="time" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={endTime} onChange={e => { setEndTime(e.target.value); update('time', formatTime(startTime, e.target.value)) }} required />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Event type</label>
-            <div className="flex gap-2 mt-1.5">
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Venue</label>
+            <input className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none" value={form.venue} onChange={e => update('venue', e.target.value)} placeholder="Venue" required />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Price</label>
+              <input type="number" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={form.price} onChange={e => update('price', e.target.value)} required />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Slots</label>
+              <input type="number" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={form.max_slots} onChange={e => update('max_slots', e.target.value)} min="1" required />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Waitlist</label>
+              <input type="number" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={form.waitlist_max} onChange={e => update('waitlist_max', e.target.value)} min="0" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Beginner slots</label>
+              <input type="number" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none" value={form.beginner_slots} onChange={e => update('beginner_slots', e.target.value)} min="0" placeholder="blank = all" />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Beginner WL</label>
+              <input type="number" className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm focus:border-coffee-600 focus:outline-none" value={form.beginner_waitlist_max} onChange={e => update('beginner_waitlist_max', e.target.value)} min="0" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Event type</label>
+            <div className="flex gap-2 mt-1">
               {['regular', 'dupr'].map(t => {
                 const active = form.event_type === t
                 return (
@@ -142,7 +184,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
                     key={t}
                     type="button"
                     onClick={() => update('event_type', t)}
-                    className={`rounded-2xl border px-4 py-2 text-sm font-medium transition ${active ? 'border-coffee-800 bg-coffee-800 text-white' : 'border-coffee-200 text-coffee-800'}`}
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${active ? 'border-coffee-800 bg-coffee-800 text-white' : 'border-coffee-200 text-coffee-800'}`}
                   >{t === 'dupr' ? 'DUPR' : 'Regular'}</button>
                 )
               })}
@@ -150,7 +192,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Payment methods</label>
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Payment methods</label>
             {upiAccounts.length === 0 ? (
               <p className="text-xs text-[#8C8A7D] mt-1">No UPI accounts. Add them from Payment Methods.</p>
             ) : (
@@ -179,24 +221,24 @@ export default function SessionForm({ session, onSave, onCancel }) {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Description</label>
-            <textarea className="input mt-1 resize-none" rows={2} value={form.description} onChange={e => update('description', e.target.value)} placeholder="Optional" />
+            <label className="text-[11px] font-semibold text-coffee-600 uppercase tracking-wide">Description</label>
+            <textarea className="w-full mt-1 rounded-xl border border-coffee-200 bg-white px-3 py-2 text-sm placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none resize-none" rows={2} value={form.description} onChange={e => update('description', e.target.value)} placeholder="Optional" />
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => update('active', !form.active)}
-              className={`relative w-10 h-6 rounded-full transition-colors ${form.active ? 'bg-court-600' : 'bg-coffee-200'}`}
+              className={`relative w-9 h-5 rounded-full transition-colors ${form.active ? 'bg-[#4F6B4F]' : 'bg-coffee-200'}`}
             >
-              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${form.active ? 'translate-x-4' : ''}`} />
+              <span className={`absolute top-[2px] left-[2px] w-[16px] h-[16px] rounded-full bg-white transition-transform ${form.active ? 'translate-x-[16px]' : ''}`} />
             </button>
-            <span className="text-sm font-medium text-coffee-800">{form.active ? 'Active' : 'Inactive'}</span>
+            <span className="text-xs font-medium text-coffee-800">{form.active ? 'Active' : 'Inactive'}</span>
           </div>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
 
-          <button type="submit" disabled={saving} className="btn-primary w-full">
+          <button type="submit" disabled={saving} className="w-full rounded-xl bg-coffee-800 px-4 py-2.5 text-sm font-semibold text-white active:scale-[.98] transition disabled:opacity-50">
             {saving ? 'Saving…' : session?.id ? 'Save' : 'Create'}
           </button>
         </form>
