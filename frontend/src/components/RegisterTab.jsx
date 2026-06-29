@@ -29,6 +29,7 @@ export default function RegisterTab() {
   const [players, setPlayers] = useState([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const formRef = useRef(null)
+  const [qrIndex, setQrIndex] = useState(0)
 
   async function load(silent) {
     if (!silent) setLoading(true)
@@ -246,8 +247,6 @@ export default function RegisterTab() {
     )
   }
 
-  const [qrIndex, setQrIndex] = useState(0)
-
   if (success) {
     const accounts = success.session.upiAccounts || []
     const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
@@ -367,7 +366,7 @@ export default function RegisterTab() {
                     <div className="flex flex-wrap gap-1.5">
                       {group.map((p, i) => (
                         <span key={i} className="inline-flex items-center rounded-full bg-coffee-100 px-2.5 py-1 text-xs font-medium text-coffee-800">
-                          {(p.name || 'Player').split(/\s+/)[0]}
+                          {p.name || 'Player'}
                         </span>
                       ))}
                     </div>
@@ -381,9 +380,8 @@ export default function RegisterTab() {
               <span className="text-[11px] font-semibold text-amber-700 uppercase">Waitlist</span>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {players.filter(p => p.status === 'waitlisted').map((p, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                    {(p.name || 'Player').split(/\s+/)[0]}
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${p.skill === 'Beginner' ? 'bg-[#4F6B4F]' : p.skill === 'Advanced' ? 'bg-[#2B1F17]' : 'bg-[#C75A2B]'}`} />
+                  <span key={i} className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                    {p.name || 'Player'}
                   </span>
                 ))}
               </div>
