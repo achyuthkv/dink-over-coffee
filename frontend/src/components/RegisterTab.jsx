@@ -271,43 +271,41 @@ export default function RegisterTab() {
         </p>
         {accounts.length > 0 && (
           <div className="mt-5">
-            <p className="text-xs font-semibold text-coffee-800 mb-2">Pay ₹{amt}</p>
+            <p className="text-xs font-semibold text-coffee-800 mb-3">Pay ₹{amt}</p>
+
+            {accounts.length > 1 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {accounts.map((acc, i) => (
+                  <button
+                    key={acc.id}
+                    onClick={() => setQrIndex(i)}
+                    className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${i === qrIndex ? 'border-coffee-800 bg-coffee-50' : 'border-coffee-200'}`}
+                  >
+                    <p className="text-xs font-semibold text-coffee-800">{acc.label}</p>
+                    <p className="text-[11px] text-coffee-500 mt-0.5">{acc.upi_id}</p>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {currentAccount?.qr_image_url && (
               <div className="mb-4">
-                <div className="relative">
-                  <img src={currentAccount.qr_image_url} alt="UPI QR Code" className="mx-auto w-48 h-48 rounded-xl object-contain" />
-                  {accounts.length > 1 && (
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-1">
-                      <button onClick={() => setQrIndex(i => (i - 1 + accounts.length) % accounts.length)} className="w-7 h-7 rounded-full bg-white/80 shadow flex items-center justify-center text-coffee-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                      </button>
-                      <button onClick={() => setQrIndex(i => (i + 1) % accounts.length)} className="w-7 h-7 rounded-full bg-white/80 shadow flex items-center justify-center text-coffee-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <p className="text-[11px] text-coffee-600 mt-1.5">
-                  {currentAccount.label} · {currentAccount.upi_id}
-                  {accounts.length > 1 && <span className="ml-1 text-coffee-400">({qrIndex + 1}/{accounts.length})</span>}
-                </p>
-                {accounts.length > 1 && (
-                  <div className="flex justify-center gap-1 mt-2">
-                    {accounts.map((_, i) => (
-                      <button key={i} onClick={() => setQrIndex(i)} className={`w-2 h-2 rounded-full transition ${i === qrIndex ? 'bg-coffee-800' : 'bg-coffee-200'}`} />
-                    ))}
-                  </div>
-                )}
+                <img src={currentAccount.qr_image_url} alt="UPI QR Code" className="mx-auto w-48 h-48 rounded-xl object-contain" />
               </div>
             )}
+
+            <div className="rounded-xl border border-coffee-200 px-4 py-3 mb-3">
+              <p className="text-xs text-coffee-500">Pay to</p>
+              <p className="text-sm font-semibold text-coffee-800 mt-0.5">{currentAccount?.label}</p>
+              <p className="text-xs text-coffee-600 mt-0.5">{currentAccount?.upi_id}</p>
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               {upiApps.map(app => (
                 <a
                   key={app.name}
                   href={app.scheme(currentAccount?.upi_id || '')}
-                  className="rounded-2xl border border-coffee-200 px-3 py-2.5 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block"
+                  className="rounded-2xl border border-coffee-200 px-3 py-2.5 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block text-center"
                 >
                   {app.name}
                 </a>
