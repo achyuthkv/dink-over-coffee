@@ -18,7 +18,7 @@ export default function AdminLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) return <div className="min-h-screen bg-[#F6F1E7] bg-[url('/bg-pattern.svg')] bg-[length:360px_360px] bg-repeat flex items-center justify-center text-[#2B1F17]">Loading…</div>
+  if (loading) return <div className="min-h-screen bg-pattern flex items-center justify-center text-primary">Loading…</div>
   if (!session) return <Login />
   return <Dashboard />
 }
