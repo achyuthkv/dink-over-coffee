@@ -42,7 +42,7 @@ export default function Landing() {
             The people make you stay.
           </h1>
 
-          <p className="mt-5 text-muted text-sm md:text-base max-w-[42ch] leading-relaxed">
+          <p className="mt-5 text-muted text-sm md:text-base leading-relaxed">
             Pickleball sessions every week in Bangalore. All levels. No partner needed. Just show up.
           </p>
 
@@ -76,15 +76,15 @@ export default function Landing() {
 
           <div className="bg-surface rounded-2xl p-5 border border-border">
             <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-4">How it works</p>
-            <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3 text-center">
               {[
-                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>, step: '1', label: 'Pick a session & sign up' },
-                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, step: '2', label: 'Show up & play' },
-                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>, step: '3', label: 'Stay for coffee' },
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>, label: 'Sign up' },
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, label: 'Show up' },
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>, label: 'Stay for coffee' },
               ].map(item => (
-                <div key={item.step} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-interactive/10 grid place-items-center shrink-0">{item.icon}</div>
-                  <p className="text-primary text-sm font-medium">{item.label}</p>
+                <div key={item.label}>
+                  <div className="w-9 h-9 rounded-xl bg-interactive/10 grid place-items-center mx-auto mb-1.5">{item.icon}</div>
+                  <p className="text-primary text-xs font-semibold">{item.label}</p>
                 </div>
               ))}
             </div>
