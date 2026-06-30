@@ -73,40 +73,40 @@ export default function UpiAccounts({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F1E7] bg-[url('/bg-pattern.svg')] bg-[length:360px_360px] bg-repeat">
+    <div className="min-h-screen bg-pattern">
       <div className="max-w-xl mx-auto px-5 py-8">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={onBack} title="Back" className="w-10 h-10 flex items-center justify-center rounded-full border border-[#E6DCC6] text-[#8C8A7D] active:bg-[#F6F1E7] transition">
+          <button onClick={onBack} title="Back" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <h1 className="text-[#2B1F17] font-bold text-lg">Payment Methods</h1>
+          <h1 className="text-primary font-bold text-lg">Payment Methods</h1>
           <div className="w-10" />
         </div>
 
         <form onSubmit={handleSave} className="card space-y-3 mb-5">
-          <h2 className="text-coffee-900 font-bold text-sm">{editing ? 'Edit UPI' : 'Add UPI account'}</h2>
+          <h2 className="text-text font-bold text-sm">{editing ? 'Edit UPI' : 'Add UPI account'}</h2>
           <div>
-            <label className="text-xs font-semibold text-coffee-700">Label</label>
+            <label className="text-xs font-semibold text-primary">Label</label>
             <input className="input mt-1" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="e.g. Primary, Harshitha" required />
           </div>
           <div>
-            <label className="text-xs font-semibold text-coffee-700">UPI ID</label>
+            <label className="text-xs font-semibold text-primary">UPI ID</label>
             <input className="input mt-1" value={form.upi_id} onChange={e => setForm(f => ({ ...f, upi_id: e.target.value }))} placeholder="name@upi" required />
           </div>
           <div>
-            <label className="text-xs font-semibold text-coffee-700">QR code image</label>
+            <label className="text-xs font-semibold text-primary">QR code image</label>
             {form.qr_image_url ? (
               <div className="mt-2 flex items-start gap-3">
-                <img src={form.qr_image_url} alt="QR preview" className="w-20 h-20 rounded-lg object-contain border border-coffee-100 shrink-0" />
+                <img src={form.qr_image_url} alt="QR preview" className="w-20 h-20 rounded-lg object-contain border border-border shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#4F6B4F] font-medium truncate">Uploaded</p>
-                  <p className="text-[10px] text-[#8C8A7D] truncate mt-0.5">{form.qr_image_url.split('/').pop()}</p>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, qr_image_url: '' }))} className="mt-2 text-[11px] text-[#C75A2B] font-medium">Remove</button>
+                  <p className="text-[11px] text-secondary font-medium truncate">Uploaded</p>
+                  <p className="text-[10px] text-muted truncate mt-0.5">{form.qr_image_url.split('/').pop()}</p>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, qr_image_url: '' }))} className="mt-2 text-[11px] text-tertiary font-medium">Remove</button>
                 </div>
               </div>
             ) : (
               <div className="mt-1">
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="w-full rounded-xl border-2 border-dashed border-coffee-200 px-3 py-4 text-xs font-medium text-coffee-600 active:bg-coffee-100 transition text-center">
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="w-full rounded-xl border-2 border-dashed border-border-muted px-3 py-4 text-xs font-medium text-secondary active:bg-bg transition text-center">
                   {uploading ? 'Uploading…' : 'Tap to upload QR image'}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
@@ -115,34 +115,34 @@ export default function UpiAccounts({ onBack }) {
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={saving} className="btn-primary flex-1 text-sm">{editing ? 'Update' : 'Add'}</button>
-            {editing && <button type="button" onClick={cancelEdit} className="flex-1 py-2.5 rounded-full border border-[#E6DCC6] text-sm font-medium text-[#8C8A7D]">Cancel</button>}
+            {editing && <button type="button" onClick={cancelEdit} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted">Cancel</button>}
           </div>
         </form>
 
-        {loading && <p className="text-[#8C8A7D] text-sm text-center py-4">Loading…</p>}
+        {loading && <p className="text-muted text-sm text-center py-4">Loading…</p>}
 
         {!loading && accounts.length > 0 && (
-          <div className="rounded-xl overflow-hidden border border-[#E6DCC6]">
+          <div className="rounded-xl overflow-hidden border border-border">
             {accounts.map((acc, i) => (
-              <div key={acc.id} className={`bg-white px-4 py-3 flex items-center justify-between ${i > 0 ? 'border-t border-[#F6F1E7]' : ''}`}>
+              <div key={acc.id} className={`bg-surface px-4 py-3 flex items-center justify-between ${i > 0 ? 'border-t border-bg' : ''}`}>
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
                     onClick={() => toggleActive(acc)}
-                    className={`relative shrink-0 w-8 h-[18px] rounded-full transition-colors ${acc.active ? 'bg-[#4F6B4F]' : 'bg-[#E6DCC6]'}`}
+                    className={`relative shrink-0 w-8 h-[18px] rounded-full transition-colors ${acc.active ? 'bg-secondary' : 'bg-border'}`}
                   >
                     <span className={`absolute top-[2px] left-[2px] w-[14px] h-[14px] rounded-full bg-white transition-transform ${acc.active ? 'translate-x-[14px]' : ''}`} />
                   </button>
                   <div className="min-w-0">
-                    <span className="text-sm text-[#2B1F17] font-medium block truncate">{acc.label}</span>
-                    <span className="text-xs text-[#8C8A7D] block truncate">{acc.upi_id}</span>
+                    <span className="text-sm text-primary font-medium block truncate">{acc.label}</span>
+                    <span className="text-xs text-muted block truncate">{acc.upi_id}</span>
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0 ml-2">
-                  <button onClick={() => startEdit(acc)} title="Edit" className="w-9 h-9 flex items-center justify-center rounded-full text-[#2B1F17] active:bg-[#F6F1E7] transition">
+                  <button onClick={() => startEdit(acc)} title="Edit" className="w-9 h-9 flex items-center justify-center rounded-full text-primary active:bg-bg transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
-                  <button onClick={() => setDeleteConfirm(acc)} title="Delete" className="w-9 h-9 flex items-center justify-center rounded-full text-[#C75A2B] active:bg-red-50 transition">
+                  <button onClick={() => setDeleteConfirm(acc)} title="Delete" className="w-9 h-9 flex items-center justify-center rounded-full text-tertiary active:bg-error-subtle transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -152,16 +152,16 @@ export default function UpiAccounts({ onBack }) {
         )}
 
         {!loading && accounts.length === 0 && (
-          <p className="text-[#8C8A7D] text-sm text-center py-4">No UPI accounts added yet.</p>
+          <p className="text-muted text-sm text-center py-4">No UPI accounts added yet.</p>
         )}
 
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
-            <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
-              <p className="text-sm text-[#2B1F17] font-medium text-center">Delete <strong>{deleteConfirm.label}</strong>?</p>
+            <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
+              <p className="text-sm text-primary font-medium text-center">Delete <strong>{deleteConfirm.label}</strong>?</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-full border border-[#E6DCC6] text-sm font-medium text-[#8C8A7D] active:bg-[#F6F1E7] transition">Cancel</button>
-                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-[#C75A2B] text-white text-sm font-medium active:scale-[.98] transition">Delete</button>
+                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Cancel</button>
+                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-tertiary text-white text-sm font-medium active:scale-[.98] transition">Delete</button>
               </div>
             </div>
           </div>
