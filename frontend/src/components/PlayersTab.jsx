@@ -15,9 +15,9 @@ function firstName(full) {
 }
 
 const SKILL_COLOR = {
-  Beginner: 'bg-amber-100 text-amber-800',
-  Intermediate: 'bg-court-500/15 text-court-600',
-  Advanced: 'bg-coffee-800 text-coffee-50'
+  Beginner: 'bg-warning/10 text-warning-muted',
+  Intermediate: 'bg-secondary/15 text-secondary-dark',
+  Advanced: 'bg-interactive-pressed text-inverse'
 }
 
 export default function PlayersTab() {
@@ -64,7 +64,7 @@ export default function PlayersTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-coffee-900 font-bold">Who's playing</h2>
+        <h2 className="text-text font-bold">Who's playing</h2>
         <button
           onClick={() => { loadSessions(); if (activeId) loadPlayers(activeId) }}
           className="btn-ghost"
@@ -75,7 +75,7 @@ export default function PlayersTab() {
         </button>
       </div>
 
-      {loadingS && <div className="card text-center text-coffee-600 text-sm">Loading…</div>}
+      {loadingS && <div className="card text-center text-secondary text-sm">Loading…</div>}
 
       {!loadingS && sessions.length > 0 && (
         <div className="-mx-5 px-5 overflow-x-auto">
@@ -84,7 +84,7 @@ export default function PlayersTab() {
               <button
                 key={s.id}
                 onClick={() => setActiveId(s.id)}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${activeId === s.id ? 'bg-coffee-800 text-coffee-50' : 'bg-white border border-coffee-200 text-coffee-800'}`}
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${activeId === s.id ? 'bg-interactive text-inverse' : 'bg-surface border border-border-muted text-primary'}`}
               >
                 {fmtDate(s.date)} · {s.time}
               </button>
@@ -97,27 +97,27 @@ export default function PlayersTab() {
         <div className="card">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-coffee-600 text-xs font-semibold uppercase tracking-wide">{fmtDate(active.date)}</div>
-              <div className="text-coffee-900 text-lg font-bold">{active.time}</div>
-              <div className="text-coffee-800 text-sm">{active.venue}</div>
+              <div className="text-secondary text-xs font-semibold uppercase tracking-wide">{fmtDate(active.date)}</div>
+              <div className="text-text text-lg font-bold">{active.time}</div>
+              <div className="text-primary text-sm">{active.venue}</div>
             </div>
             <span className="pill">{active.takenSlots || 0}/{active.maxSlots} booked</span>
           </div>
 
-          <div className="mt-4 divide-y divide-coffee-100">
-            {loadingP && <div className="text-sm text-coffee-600 py-3">Loading players…</div>}
+          <div className="mt-4 divide-y divide-border">
+            {loadingP && <div className="text-sm text-secondary py-3">Loading players…</div>}
             {!loadingP && players.length === 0 && (
-              <div className="text-sm text-coffee-600 py-3">No one's signed up yet — be the first!</div>
+              <div className="text-sm text-secondary py-3">No one's signed up yet — be the first!</div>
             )}
             {!loadingP && players.filter(p => p.status !== 'waitlisted').map((p, i) => (
               <div key={i} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-coffee-100 grid place-items-center text-coffee-800 font-bold text-sm">
+                  <div className="h-9 w-9 rounded-full bg-border grid place-items-center text-primary font-bold text-sm">
                     {firstName(p.name).slice(0, 1).toUpperCase()}
                   </div>
-                  <div className="text-coffee-900 font-medium">{p.name || 'Player'}</div>
+                  <div className="text-text font-medium">{p.name || 'Player'}</div>
                 </div>
-                <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${SKILL_COLOR[p.skill] || 'bg-coffee-100 text-coffee-800'}`}>
+                <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${SKILL_COLOR[p.skill] || 'bg-border text-primary'}`}>
                   {p.skill || 'Player'}
                 </span>
               </div>
@@ -125,18 +125,18 @@ export default function PlayersTab() {
           </div>
 
           {!loadingP && players.filter(p => p.status === 'waitlisted').length > 0 && (
-            <div className="mt-4 pt-3 border-t border-amber-200">
-              <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Waitlist</div>
-              <div className="divide-y divide-coffee-100">
+            <div className="mt-4 pt-3 border-t border-warning/30">
+              <div className="text-xs font-semibold text-warning-muted uppercase tracking-wide mb-2">Waitlist</div>
+              <div className="divide-y divide-border">
                 {players.filter(p => p.status === 'waitlisted').map((p, i) => (
                   <div key={i} className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-amber-100 grid place-items-center text-amber-800 font-bold text-xs">
+                      <div className="h-8 w-8 rounded-full bg-warning/10 grid place-items-center text-warning-muted font-bold text-xs">
                         {firstName(p.name).slice(0, 1).toUpperCase()}
                       </div>
-                      <div className="text-coffee-800 font-medium text-sm">{p.name || 'Player'}</div>
+                      <div className="text-primary font-medium text-sm">{p.name || 'Player'}</div>
                     </div>
-                    <span className="text-[11px] font-medium text-amber-700">#{i + 1}</span>
+                    <span className="text-[11px] font-medium text-warning-muted">#{i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -145,7 +145,7 @@ export default function PlayersTab() {
         </div>
       )}
 
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {error && <div className="text-sm text-error">{error}</div>}
     </div>
   )
 }
