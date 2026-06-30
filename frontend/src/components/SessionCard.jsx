@@ -43,55 +43,55 @@ export default function SessionCard({ session, onSelect, selected }) {
       type="button"
       onClick={() => !disabled && onSelect(session)}
       disabled={disabled}
-      className={`card text-left w-full transition ${selected ? 'ring-2 ring-coffee-600' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
+      className={`card text-left w-full transition ${selected ? 'ring-2 ring-secondary' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
     >
       <div className="flex items-center gap-2">
-        <span className="text-court-600 text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
-        {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-[#C75A2B] bg-[#C75A2B]/10 px-1.5 py-0.5 rounded">DUPR</span>}
+        <span className="text-secondary-dark text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
+        {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
       </div>
-      {session.title && <div className="text-coffee-900 font-bold text-base mt-1">{session.title}</div>}
+      {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
-        <div className="text-coffee-700 text-sm">{session.venue}</div>
-        <div className="text-coffee-900 text-sm font-bold whitespace-nowrap">₹{session.price}</div>
+        <div className="text-primary text-sm">{session.venue}</div>
+        <div className="text-text text-sm font-bold whitespace-nowrap">₹{session.price}</div>
       </div>
-      {session.description && <p className="text-coffee-600 text-xs mt-2 leading-relaxed">{session.description}</p>}
+      {session.description && <p className="text-secondary text-xs mt-2 leading-relaxed">{session.description}</p>}
 
       {hasSplit ? (
         <div className="mt-4 space-y-2">
           <div>
             <div className="flex items-center justify-between text-xs font-medium">
-              <span className={beginnerRemaining <= 0 ? 'text-red-600' : 'text-court-600'}>
+              <span className={beginnerRemaining <= 0 ? 'text-error' : 'text-secondary'}>
                 Beginner: {beginnerRemaining <= 0 ? 'Full' : `${beginnerRemaining} left`}
               </span>
-              <span className="text-coffee-600">{beginnerTaken}/{beginnerSlots}</span>
+              <span className="text-secondary">{beginnerTaken}/{beginnerSlots}</span>
             </div>
-            <div className="mt-1 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+            <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
-                className={`h-full ${beginnerRemaining <= 0 ? 'bg-red-500' : 'bg-court-500'}`}
+                className={`h-full ${beginnerRemaining <= 0 ? 'bg-error' : 'bg-secondary'}`}
                 style={{ width: `${beginnerSlots > 0 ? Math.min(100, Math.round((beginnerTaken / beginnerSlots) * 100)) : 0}%` }}
               />
             </div>
             {beginnerRemaining <= 0 && beginnerWaitlistMax > 0 && beginnerWaitlistCount < beginnerWaitlistMax && (
-              <div className="mt-1 text-[11px] text-amber-700 font-medium">
+              <div className="mt-1 text-[11px] text-warning-muted font-medium">
                 Waitlist: {beginnerWaitlistMax - beginnerWaitlistCount} spot{beginnerWaitlistMax - beginnerWaitlistCount === 1 ? '' : 's'}
               </div>
             )}
           </div>
           <div>
             <div className="flex items-center justify-between text-xs font-medium">
-              <span className={otherRemaining <= 0 ? 'text-red-600' : 'text-court-600'}>
+              <span className={otherRemaining <= 0 ? 'text-error' : 'text-secondary'}>
                 Intermediate+: {otherRemaining <= 0 ? 'Full' : `${otherRemaining} left`}
               </span>
-              <span className="text-coffee-600">{otherTaken}/{otherSlots}</span>
+              <span className="text-secondary">{otherTaken}/{otherSlots}</span>
             </div>
-            <div className="mt-1 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+            <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
-                className={`h-full ${otherRemaining <= 0 ? 'bg-red-500' : 'bg-court-500'}`}
+                className={`h-full ${otherRemaining <= 0 ? 'bg-error' : 'bg-secondary'}`}
                 style={{ width: `${otherSlots > 0 ? Math.min(100, Math.round((otherTaken / otherSlots) * 100)) : 0}%` }}
               />
             </div>
             {otherRemaining <= 0 && waitlistMax > 0 && otherWaitlistCount < waitlistMax && (
-              <div className="mt-1 text-[11px] text-amber-700 font-medium">
+              <div className="mt-1 text-[11px] text-warning-muted font-medium">
                 Waitlist: {waitlistMax - otherWaitlistCount} spot{waitlistMax - otherWaitlistCount === 1 ? '' : 's'}
               </div>
             )}
@@ -100,24 +100,24 @@ export default function SessionCard({ session, onSelect, selected }) {
       ) : (
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs font-medium">
-            <span className={full ? 'text-red-600' : 'text-court-600'}>
+            <span className={full ? 'text-error' : 'text-secondary'}>
               {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
             </span>
-            <span className="text-coffee-600">{taken}/{max}</span>
+            <span className="text-secondary">{taken}/{max}</span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full rounded-full bg-coffee-100 overflow-hidden">
+          <div className="mt-1.5 h-1.5 w-full rounded-full bg-border overflow-hidden">
             <div
-              className={`h-full ${full ? 'bg-red-500' : 'bg-court-500'}`}
+              className={`h-full ${full ? 'bg-error' : 'bg-secondary'}`}
               style={{ width: `${pct}%` }}
             />
           </div>
           {full && waitlistMax > 0 && waitlistCount < waitlistMax && (
-            <div className="mt-2 text-xs text-amber-700 font-medium">
+            <div className="mt-2 text-xs text-warning-muted font-medium">
               Waitlist open — {waitlistMax - waitlistCount} spot{waitlistMax - waitlistCount === 1 ? '' : 's'} left
             </div>
           )}
           {full && waitlistMax > 0 && waitlistCount >= waitlistMax && (
-            <div className="mt-2 text-xs text-red-600 font-medium">Waitlist full</div>
+            <div className="mt-2 text-xs text-error font-medium">Waitlist full</div>
           )}
         </div>
       )}
