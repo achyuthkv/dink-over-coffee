@@ -110,7 +110,6 @@ export default function RegisterTab() {
         waitlistAvailable = slotsFull && wlMax > 0 && wlCount < wlMax
       }
     } else {
-      // No split (null = all levels) or noBeginner (0 = only intermediate+, all slots shared)
       slotsFull = Number(selected.takenSlots || 0) >= Number(selected.maxSlots || 0)
       const wlMax = Number(selected.waitlistMax || 0)
       const wlCount = Number(selected.waitlistCount || 0)
@@ -198,7 +197,7 @@ export default function RegisterTab() {
         name: 'Dink Over Coffee',
         description: `${selected.venue} · ${selected.time}`,
         prefill: { name: player.name, contact: player.phone },
-        theme: { color: '#4a2e16' },
+        theme: { color: '#05AD86' },
         modal: {
           ondismiss: () => { setSubmitting(false); resolve() }
         },
@@ -236,12 +235,12 @@ export default function RegisterTab() {
   if (waitlistSuccess) {
     return (
       <div className="card text-center">
-        <div className="mx-auto h-14 w-14 rounded-full bg-amber-100 grid place-items-center text-amber-700 text-2xl">⏳</div>
-        <h2 className="mt-3 text-coffee-900 text-xl font-extrabold">You're on the waitlist!</h2>
-        <p className="mt-1 text-coffee-700 text-sm">
+        <div className="mx-auto h-14 w-14 rounded-full bg-warning-subtle grid place-items-center text-warning-muted text-2xl">⏳</div>
+        <h2 className="mt-3 text-text text-xl font-extrabold">You're on the waitlist!</h2>
+        <p className="mt-1 text-primary text-sm">
           Position #{waitlistSuccess.position} · {waitlistSuccess.session.venue} · {fmtShort(waitlistSuccess.session.date, waitlistSuccess.session.time)}
         </p>
-        <p className="mt-2 text-coffee-600 text-xs">We'll promote you if a slot opens up.</p>
+        <p className="mt-2 text-secondary text-xs">We'll promote you if a slot opens up.</p>
         <button className="btn-primary w-full mt-5" onClick={() => setWaitlistSuccess(null)}>Back</button>
       </div>
     )
@@ -264,14 +263,14 @@ export default function RegisterTab() {
 
     return (
       <div className="card text-center">
-        <div className="mx-auto h-14 w-14 rounded-full bg-court-500/10 grid place-items-center text-court-600 text-2xl">✓</div>
-        <h2 className="mt-3 text-coffee-900 text-xl font-extrabold">You're in!</h2>
-        <p className="mt-1 text-coffee-700 text-sm">
+        <div className="mx-auto h-14 w-14 rounded-full bg-secondary/10 grid place-items-center text-secondary-dark text-2xl">✓</div>
+        <h2 className="mt-3 text-text text-xl font-extrabold">You're in!</h2>
+        <p className="mt-1 text-primary text-sm">
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
         {accounts.length > 0 && (
           <div className="mt-5">
-            <p className="text-xs font-semibold text-coffee-800 mb-3">Pay ₹{amt}</p>
+            <p className="text-xs font-semibold text-primary mb-3">Pay ₹{amt}</p>
 
             {accounts.length > 1 && (
               <div className="flex flex-wrap gap-2 mb-4">
@@ -279,10 +278,10 @@ export default function RegisterTab() {
                   <button
                     key={acc.id}
                     onClick={() => setQrIndex(i)}
-                    className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${i === qrIndex ? 'border-coffee-800 bg-coffee-50' : 'border-coffee-200'}`}
+                    className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${i === qrIndex ? 'border-primary bg-bg' : 'border-border-muted'}`}
                   >
-                    <p className="text-xs font-semibold text-coffee-800">{acc.label}</p>
-                    <p className="text-[11px] text-coffee-500 mt-0.5">{acc.upi_id}</p>
+                    <p className="text-xs font-semibold text-primary">{acc.label}</p>
+                    <p className="text-[11px] text-muted mt-0.5">{acc.upi_id}</p>
                   </button>
                 ))}
               </div>
@@ -294,10 +293,10 @@ export default function RegisterTab() {
               </div>
             )}
 
-            <div className="rounded-xl border border-coffee-200 px-4 py-3 mb-3">
-              <p className="text-xs text-coffee-500">Pay to</p>
-              <p className="text-sm font-semibold text-coffee-800 mt-0.5">{currentAccount?.label}</p>
-              <p className="text-xs text-coffee-600 mt-0.5">{currentAccount?.upi_id}</p>
+            <div className="rounded-xl border border-border-muted px-4 py-3 mb-3">
+              <p className="text-xs text-muted">Pay to</p>
+              <p className="text-sm font-semibold text-primary mt-0.5">{currentAccount?.label}</p>
+              <p className="text-xs text-secondary mt-0.5">{currentAccount?.upi_id}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -305,16 +304,16 @@ export default function RegisterTab() {
                 <a
                   key={app.name}
                   href={app.scheme(currentAccount?.upi_id || '')}
-                  className="rounded-2xl border border-coffee-200 px-3 py-2.5 text-xs font-medium text-coffee-800 active:bg-coffee-100 transition no-underline block text-center"
+                  className="rounded-2xl border border-border-muted px-3 py-2.5 text-xs font-medium text-primary active:bg-bg transition no-underline block text-center"
                 >
                   {app.name}
                 </a>
               ))}
             </div>
-            <p className="text-[11px] text-coffee-600 mt-3">Opens your UPI app with amount pre-filled</p>
+            <p className="text-[11px] text-secondary mt-3">Opens your UPI app with amount pre-filled</p>
           </div>
         )}
-        <button className="text-sm text-coffee-600 underline mt-4" onClick={() => { setSuccess(null); setQrIndex(0) }}>Book another</button>
+        <button className="text-sm text-secondary underline mt-4" onClick={() => { setSuccess(null); setQrIndex(0) }}>Book another</button>
       </div>
     )
   }
@@ -323,15 +322,15 @@ export default function RegisterTab() {
     <div className="space-y-5">
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="text-coffee-900 font-bold">Upcoming sessions</h2>
-          <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-coffee-600 active:bg-coffee-100 transition">
+          <h2 className="text-text font-bold">Upcoming sessions</h2>
+          <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-secondary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
         </div>
         <div className="mt-3 space-y-3">
-          {loading && <div className="card text-center text-coffee-600 text-sm">Loading sessions…</div>}
+          {loading && <div className="card text-center text-secondary text-sm">Loading sessions…</div>}
           {!loading && sessions.length === 0 && (
-            <div className="card text-center text-coffee-600 text-sm">No sessions scheduled yet. Check back soon.</div>
+            <div className="card text-center text-secondary text-sm">No sessions scheduled yet. Check back soon.</div>
           )}
           {!loading && sessions.map(s => (
             <SessionCard
@@ -346,24 +345,24 @@ export default function RegisterTab() {
 
       {selected && players.length > 0 && (
         <section className="card">
-          <h2 className="text-coffee-900 font-bold text-sm">Who's playing</h2>
+          <h2 className="text-text font-bold text-sm">Who's playing</h2>
           {loadingPlayers ? (
-            <p className="text-xs text-coffee-600 mt-2">Loading…</p>
+            <p className="text-xs text-secondary mt-2">Loading…</p>
           ) : (
             <div className="mt-3 space-y-2.5">
               {['Beginner', 'Intermediate', 'Advanced'].map(skill => {
                 const group = players.filter(p => p.status !== 'waitlisted' && p.skill === skill)
                 if (group.length === 0) return null
-                const dotColor = skill === 'Beginner' ? 'bg-[#4F6B4F]' : skill === 'Advanced' ? 'bg-[#2B1F17]' : 'bg-[#C75A2B]'
+                const dotColor = skill === 'Beginner' ? 'bg-skill-beginner' : skill === 'Advanced' ? 'bg-skill-advanced' : 'bg-skill-intermediate'
                 return (
                   <div key={skill}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                      <span className="text-[10px] font-semibold text-coffee-600 uppercase tracking-wide">{skill} ({group.length})</span>
+                      <span className="text-[10px] font-semibold text-secondary uppercase tracking-wide">{skill} ({group.length})</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {group.map((p, i) => (
-                        <span key={i} className="inline-flex items-center rounded-full bg-coffee-100 px-2.5 py-1 text-xs font-medium text-coffee-800">
+                        <span key={i} className="inline-flex items-center rounded-full bg-interactive/10 px-2.5 py-1 text-xs font-medium text-secondary">
                           {p.name || 'Player'}
                         </span>
                       ))}
@@ -374,11 +373,11 @@ export default function RegisterTab() {
             </div>
           )}
           {players.filter(p => p.status === 'waitlisted').length > 0 && (
-            <div className="mt-3 pt-2.5 border-t border-coffee-100">
-              <span className="text-[11px] font-semibold text-amber-700 uppercase">Waitlist</span>
+            <div className="mt-3 pt-2.5 border-t border-border">
+              <span className="text-[11px] font-semibold text-warning-muted uppercase">Waitlist</span>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {players.filter(p => p.status === 'waitlisted').map((p, i) => (
-                  <span key={i} className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                  <span key={i} className="inline-flex items-center rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-muted">
                     {p.name || 'Player'}
                   </span>
                 ))}
@@ -390,32 +389,32 @@ export default function RegisterTab() {
 
       {selected && (
         <section ref={formRef} className="card">
-          <h2 className="text-coffee-900 font-bold">Your details</h2>
+          <h2 className="text-text font-bold">Your details</h2>
           <div className="mt-3 space-y-3">
             <div>
-              <label className="text-xs font-semibold text-coffee-700">Name <span className="text-red-500">*</span></label>
+              <label className="text-xs font-semibold text-primary">Name <span className="text-error">*</span></label>
               <input className="input mt-1" autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Akhil K" required />
               {form.name.length > 0 && form.name.trim().length < 2 && (
-                <p className="text-[11px] text-red-500 mt-1">Name must be at least 2 characters</p>
+                <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
               )}
             </div>
             <div>
-              <label className="text-xs font-semibold text-coffee-700">Phone <span className="text-red-500">*</span></label>
+              <label className="text-xs font-semibold text-primary">Phone <span className="text-error">*</span></label>
               <input className="input mt-1" autoComplete="tel" inputMode="numeric" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
               {form.phone.length > 0 && form.phone.length < 10 && (
-                <p className="text-[11px] text-red-500 mt-1">Enter a valid 10-digit phone number</p>
+                <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
               )}
             </div>
             <div>
-              <label className="text-xs font-semibold text-coffee-700">Skill level</label>
+              <label className="text-xs font-semibold text-primary">Skill level</label>
               <div className={`grid gap-2 mt-1 ${skillLevels.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {skillLevels.map(s => {
                   const active = form.skill === s
                   const colors = s === 'Beginner'
-                    ? active ? 'border-[#4F6B4F] bg-[#4F6B4F] text-white' : 'border-[#C8C2B8] text-[#4F6B4F]'
+                    ? active ? 'border-skill-beginner bg-skill-beginner text-inverse' : 'border-border-muted text-skill-beginner'
                     : s === 'Intermediate'
-                    ? active ? 'border-[#C75A2B] bg-[#C75A2B] text-white' : 'border-[#C8C2B8] text-[#C75A2B]'
-                    : active ? 'border-[#2B1F17] bg-[#2B1F17] text-white' : 'border-[#C8C2B8] text-[#2B1F17]'
+                    ? active ? 'border-skill-intermediate bg-skill-intermediate text-inverse' : 'border-border-muted text-skill-intermediate'
+                    : active ? 'border-skill-advanced bg-skill-advanced text-inverse' : 'border-border-muted text-skill-advanced'
                   return (
                     <button
                       key={s}
@@ -431,30 +430,30 @@ export default function RegisterTab() {
 
           {selected?.event_type === 'dupr' && (
             <div className="mt-3">
-              <label className="text-xs font-semibold text-coffee-700">DUPR ID <span className="text-red-500">*</span></label>
+              <label className="text-xs font-semibold text-primary">DUPR ID <span className="text-error">*</span></label>
               <input className="input mt-1" value={form.duprId} onChange={e => update('duprId', e.target.value)} placeholder="e.g. 123456789" required />
               {(form.duprId || '').length > 0 && form.duprId.trim().length < 3 && (
-                <p className="text-[11px] text-red-500 mt-1">Enter a valid DUPR ID</p>
+                <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
               )}
             </div>
           )}
 
-          {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
+          {error && <div className="mt-3 text-sm text-error">{error}</div>}
 
           <button
-            className={`w-full mt-4 ${waitlistAvailable ? 'btn-primary !bg-amber-600' : 'btn-primary'}`}
+            className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
             disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || (selected?.event_type === 'dupr' && form.duprId.trim().length < 3)}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>
-          {waitlistAvailable && <p className="text-[11px] text-amber-700 mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
-          {slotsFull && !waitlistAvailable && <p className="text-[11px] text-red-600 mt-2 text-center">No slots or waitlist available for your skill level.</p>}
-          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-coffee-600 mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {waitlistAvailable && <p className="text-[11px] text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
+          {slotsFull && !waitlistAvailable && <p className="text-[11px] text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
+          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
         </section>
       )}
 
-      {!selected && error && <div className="text-sm text-red-600">{error}</div>}
+      {!selected && error && <div className="text-sm text-error">{error}</div>}
     </div>
   )
 }
