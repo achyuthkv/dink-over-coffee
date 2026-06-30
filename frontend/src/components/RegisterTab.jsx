@@ -327,7 +327,7 @@ export default function RegisterTab() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-5">
+    <div className="space-y-5">
       {/* Sessions */}
       <section>
         <div className="flex items-center justify-between">
