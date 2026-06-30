@@ -60,14 +60,14 @@ export default function SessionCard({ session, onSelect, selected }) {
         <div className="mt-4 space-y-2">
           <div>
             <div className="flex items-center justify-between text-xs font-medium">
-              <span className={beginnerRemaining <= 0 ? 'text-error' : 'text-secondary'}>
+              <span className={beginnerRemaining <= 0 ? 'text-interactive-pressed' : 'text-secondary'}>
                 Beginner: {beginnerRemaining <= 0 ? 'Full' : `${beginnerRemaining} left`}
               </span>
               <span className="text-secondary">{beginnerTaken}/{beginnerSlots}</span>
             </div>
             <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
-                className={`h-full ${beginnerRemaining <= 0 ? 'bg-error' : 'bg-secondary'}`}
+                className={`h-full ${beginnerRemaining <= 0 ? 'bg-interactive-pressed' : 'bg-secondary'}`}
                 style={{ width: `${beginnerSlots > 0 ? Math.min(100, Math.round((beginnerTaken / beginnerSlots) * 100)) : 0}%` }}
               />
             </div>
@@ -79,14 +79,14 @@ export default function SessionCard({ session, onSelect, selected }) {
           </div>
           <div>
             <div className="flex items-center justify-between text-xs font-medium">
-              <span className={otherRemaining <= 0 ? 'text-error' : 'text-secondary'}>
+              <span className={otherRemaining <= 0 ? 'text-interactive-pressed' : 'text-secondary'}>
                 Intermediate+: {otherRemaining <= 0 ? 'Full' : `${otherRemaining} left`}
               </span>
               <span className="text-secondary">{otherTaken}/{otherSlots}</span>
             </div>
             <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
-                className={`h-full ${otherRemaining <= 0 ? 'bg-error' : 'bg-secondary'}`}
+                className={`h-full ${otherRemaining <= 0 ? 'bg-interactive-pressed' : 'bg-secondary'}`}
                 style={{ width: `${otherSlots > 0 ? Math.min(100, Math.round((otherTaken / otherSlots) * 100)) : 0}%` }}
               />
             </div>
@@ -100,14 +100,14 @@ export default function SessionCard({ session, onSelect, selected }) {
       ) : (
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs font-medium">
-            <span className={full ? 'text-error' : 'text-secondary'}>
+            <span className={full ? 'text-interactive-pressed' : 'text-secondary'}>
               {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
             </span>
             <span className="text-secondary">{taken}/{max}</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full rounded-full bg-border overflow-hidden">
             <div
-              className={`h-full ${full ? 'bg-error' : 'bg-secondary'}`}
+              className={`h-full ${full ? 'bg-interactive-pressed' : 'bg-secondary'}`}
               style={{ width: `${pct}%` }}
             />
           </div>
