@@ -58,8 +58,8 @@
   --color-info: 26 115 232;
 
   /* Skill levels */
-  --color-skill-beginner: 5 173 134;
-  --color-skill-intermediate: 244 180 0;
+  --color-skill-beginner: 158 248 212;
+  --color-skill-intermediate: 9 138 104;
   --color-skill-advanced: 0 63 46;
 }
 
@@ -107,8 +107,8 @@
   --color-error-subtle: 45 20 18;
   --color-info: 100 165 255;
 
-  --color-skill-beginner: 47 215 159;
-  --color-skill-intermediate: 255 200 40;
+  --color-skill-beginner: 97 200 160;
+  --color-skill-intermediate: 47 170 130;
   --color-skill-advanced: 158 248 212;
 }
 
