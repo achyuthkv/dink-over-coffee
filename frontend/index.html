@@ -14,10 +14,9 @@
   <body class="bg-bg font-display antialiased">
     <script>
       (function() {
-        var stored = localStorage.getItem('theme');
-        if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
-        }
+        var mode = localStorage.getItem('themeMode') || 'system';
+        var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
       })();
     </script>
     <div id="root"></div>
