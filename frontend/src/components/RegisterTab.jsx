@@ -319,10 +319,11 @@ export default function RegisterTab() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="max-w-lg mx-auto space-y-5">
+      {/* Sessions */}
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="text-text font-bold">Upcoming sessions</h2>
+          <h2 className="text-text font-bold md:text-lg">Upcoming sessions</h2>
           <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-secondary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
@@ -343,6 +344,7 @@ export default function RegisterTab() {
         </div>
       </section>
 
+      {/* Who's playing */}
       {selected && players.length > 0 && (
         <section className="card">
           <h2 className="text-text font-bold text-sm">Who's playing</h2>
@@ -387,23 +389,26 @@ export default function RegisterTab() {
         </section>
       )}
 
+      {/* Registration form */}
       {selected && (
         <section ref={formRef} className="card">
           <h2 className="text-text font-bold">Your details</h2>
           <div className="mt-3 space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-primary">Name <span className="text-error">*</span></label>
-              <input className="input mt-1" autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Akhil K" required />
-              {form.name.length > 0 && form.name.trim().length < 2 && (
-                <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-primary">Phone <span className="text-error">*</span></label>
-              <input className="input mt-1" autoComplete="tel" inputMode="numeric" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
-              {form.phone.length > 0 && form.phone.length < 10 && (
-                <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
-              )}
+            <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
+              <div>
+                <label className="text-xs font-semibold text-primary">Name <span className="text-error">*</span></label>
+                <input className="input mt-1" autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Akhil K" required />
+                {form.name.length > 0 && form.name.trim().length < 2 && (
+                  <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-primary">Phone <span className="text-error">*</span></label>
+                <input className="input mt-1" autoComplete="tel" inputMode="numeric" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
+                {form.phone.length > 0 && form.phone.length < 10 && (
+                  <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs font-semibold text-primary">Skill level</label>
