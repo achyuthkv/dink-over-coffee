@@ -2,6 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* ─── Semantic Design Tokens ───────────────────────────────────────────
+     Swap these values to change the entire color scheme.
+     Format: R G B (space-separated for Tailwind opacity support)
+  ──────────────────────────────────────────────────────────────────────── */
+
+  /* Brand scale */
+  --color-brand-50: 234 254 246;
+  --color-brand-100: 200 251 232;
+  --color-brand-200: 158 248 212;
+  --color-brand-300: 97 254 180;
+  --color-brand-400: 47 215 159;
+  --color-brand-500: 5 173 134;
+  --color-brand-600: 9 138 104;
+  --color-brand-700: 9 115 67;
+  --color-brand-800: 0 83 64;
+  --color-brand-900: 0 63 46;
+
+  /* Text */
+  --color-text-primary: 0 63 46;
+  --color-text-secondary: 9 115 67;
+  --color-text-muted: 93 122 113;
+  --color-text-inverse: 255 255 255;
+  --color-text-on-brand: 0 63 46;
+
+  /* Backgrounds */
+  --color-bg-primary: 255 255 255;
+  --color-bg-secondary: 247 255 251;
+  --color-bg-surface: 255 255 255;
+  --color-bg-surface-alt: 242 252 248;
+  --color-bg-brand: 97 254 180;
+
+  /* Interactive */
+  --color-interactive: 5 173 134;
+  --color-interactive-hover: 9 115 67;
+  --color-interactive-pressed: 0 63 46;
+  --color-interactive-secondary: 97 254 180;
+  --color-interactive-accent: 175 252 87;
+  --color-interactive-disabled: 199 216 210;
+
+  /* Border */
+  --color-border: 203 239 226;
+  --color-border-strong: 9 115 67;
+  --color-border-subtle: 230 248 241;
+  --color-border-focus: 5 173 134;
+
+  /* Status */
+  --color-success: 5 173 134;
+  --color-warning: 175 252 87;
+  --color-warning-subtle: 240 255 225;
+  --color-warning-muted: 85 140 30;
+  --color-error: 255 85 75;
+  --color-error-subtle: 255 240 238;
+  --color-info: 26 115 232;
+
+  /* Skill levels */
+  --color-skill-beginner: 5 173 134;
+  --color-skill-intermediate: 244 180 0;
+  --color-skill-advanced: 0 63 46;
+}
+
+.dark {
+  --color-brand-50: 0 33 24;
+  --color-brand-100: 0 48 36;
+  --color-brand-200: 0 63 46;
+  --color-brand-300: 9 115 67;
+  --color-brand-400: 5 173 134;
+  --color-brand-500: 47 215 159;
+  --color-brand-600: 97 254 180;
+  --color-brand-700: 158 248 212;
+  --color-brand-800: 200 251 232;
+  --color-brand-900: 234 254 246;
+
+  --color-text-primary: 234 254 246;
+  --color-text-secondary: 158 248 212;
+  --color-text-muted: 139 172 161;
+  --color-text-inverse: 0 33 24;
+  --color-text-on-brand: 0 33 24;
+
+  --color-bg-primary: 10 20 16;
+  --color-bg-secondary: 16 30 24;
+  --color-bg-surface: 22 38 32;
+  --color-bg-surface-alt: 28 46 38;
+  --color-bg-brand: 9 115 67;
+
+  --color-interactive: 47 215 159;
+  --color-interactive-hover: 97 254 180;
+  --color-interactive-pressed: 158 248 212;
+  --color-interactive-secondary: 0 83 64;
+  --color-interactive-accent: 175 252 87;
+  --color-interactive-disabled: 50 70 62;
+
+  --color-border: 38 62 52;
+  --color-border-strong: 97 254 180;
+  --color-border-subtle: 28 46 38;
+  --color-border-focus: 47 215 159;
+
+  --color-success: 47 215 159;
+  --color-warning: 175 252 87;
+  --color-warning-subtle: 22 35 15;
+  --color-warning-muted: 200 255 130;
+  --color-error: 255 130 120;
+  --color-error-subtle: 45 20 18;
+  --color-info: 100 165 255;
+
+  --color-skill-beginner: 47 215 159;
+  --color-skill-intermediate: 255 200 40;
+  --color-skill-advanced: 158 248 212;
+}
+
+html { scroll-behavior: smooth; }
 html, body, #root { height: 100%; }
 input[type="time"], input[type="date"] {
   -webkit-appearance: none;
@@ -11,25 +122,40 @@ input[type="time"], input[type="date"] {
 }
 body {
   -webkit-tap-highlight-color: transparent;
-  background-image: url("/bg-pattern.svg");
-  background-size: 360px 360px;
-  background-repeat: repeat;
+  background-color: rgb(var(--color-bg-primary));
+}
+.bg-pattern {
+  position: relative;
+  background-color: rgb(var(--color-bg-primary));
+}
+.bg-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: url("/bg-pattern.svg");
+  mask-image: url("/bg-pattern.svg");
+  -webkit-mask-size: 360px 360px;
+  mask-size: 360px 360px;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  background-color: rgb(var(--color-text-primary) / 0.07);
+  pointer-events: none;
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-2xl bg-coffee-800 px-5 py-3 text-base font-semibold text-coffee-50 shadow-sm active:scale-[.98] transition disabled:opacity-50 disabled:active:scale-100;
+    @apply inline-flex items-center justify-center rounded-2xl bg-interactive px-5 py-3 text-base font-semibold text-inverse shadow-sm active:scale-[.98] transition disabled:opacity-50 disabled:active:scale-100;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-2xl border border-coffee-200 px-4 py-2 text-sm font-medium text-coffee-800 active:bg-coffee-100 transition;
+    @apply inline-flex items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium text-primary active:bg-bg-alt transition;
   }
   .card {
-    @apply rounded-3xl bg-white p-5 shadow-[0_1px_2px_rgba(74,46,22,0.06),0_8px_24px_-12px_rgba(74,46,22,0.18)] border border-coffee-100;
+    @apply rounded-3xl bg-surface p-5 shadow-[0_1px_2px_rgba(0,63,46,0.06),0_8px_24px_-12px_rgba(0,63,46,0.12)] border border-border;
   }
   .input {
-    @apply w-full rounded-2xl border border-coffee-200 bg-white px-4 py-3 text-base placeholder:text-coffee-400/70 focus:border-coffee-600 focus:outline-none focus:ring-2 focus:ring-coffee-200;
+    @apply w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-primary placeholder:text-muted/70 focus:border-interactive focus:outline-none focus:ring-2 focus:ring-border-focus/30;
   }
   .pill {
-    @apply inline-flex items-center gap-1 rounded-full bg-coffee-100 px-2.5 py-1 text-xs font-medium text-coffee-800;
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-primary;
   }
 }
