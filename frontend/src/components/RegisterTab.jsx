@@ -37,7 +37,11 @@ export default function RegisterTab() {
     try {
       const { sessions } = await api.listSessions()
       setSessions(sessions)
-      setSelected(prev => prev ? sessions.find(s => s.id === prev.id) || prev : prev)
+      setSelected(prev => {
+        if (prev) return sessions.find(s => s.id === prev.id) || prev
+        if (sessions.length === 1) return sessions[0]
+        return prev
+      })
     } catch (e) {
       if (!silent) setError(e.message || 'Could not load sessions')
     } finally {
@@ -46,6 +50,10 @@ export default function RegisterTab() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (selected) loadPlayers(selected.id)
+  }, [selected?.id])
 
   useEffect(() => {
     const interval = setInterval(() => {
