@@ -31,22 +31,22 @@ export default function Login() {
 
   if (resetSent) {
     return (
-      <div className="min-h-screen bg-[#F6F1E7] bg-[url('/bg-pattern.svg')] bg-[length:360px_360px] bg-repeat flex items-center justify-center p-5">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-sm text-center space-y-3">
-          <h1 className="text-[#2B1F17] font-bold text-lg">Check your email</h1>
-          <p className="text-sm text-[#8C8A7D]">We sent a reset link to <strong>{email}</strong></p>
-          <button onClick={() => { setResetSent(false); setResetMode(false) }} className="text-sm text-[#4F6B4F] font-medium">Back to login</button>
+      <div className="min-h-screen bg-pattern flex items-center justify-center p-5">
+        <div className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-sm text-center space-y-3">
+          <h1 className="text-primary font-bold text-lg">Check your email</h1>
+          <p className="text-sm text-muted">We sent a reset link to <strong>{email}</strong></p>
+          <button onClick={() => { setResetSent(false); setResetMode(false) }} className="text-sm text-secondary font-medium">Back to login</button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F1E7] bg-[url('/bg-pattern.svg')] bg-[length:360px_360px] bg-repeat flex items-center justify-center p-5">
-      <form onSubmit={resetMode ? handleReset : handleLogin} className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-sm space-y-4">
-        <h1 className="text-[#2B1F17] font-bold text-lg text-center">{resetMode ? 'Reset password' : 'DOC Admin'}</h1>
+    <div className="min-h-screen bg-pattern flex items-center justify-center p-5">
+      <form onSubmit={resetMode ? handleReset : handleLogin} className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-sm space-y-4">
+        <h1 className="text-primary font-bold text-lg text-center">{resetMode ? 'Reset password' : 'DOC Admin'}</h1>
         <div>
-          <label className="text-xs font-semibold text-[#2B1F17]">Email</label>
+          <label className="text-xs font-semibold text-primary">Email</label>
           <input
             type="email" className="input mt-1" value={email}
             onChange={e => setEmail(e.target.value)} required
@@ -54,18 +54,18 @@ export default function Login() {
         </div>
         {!resetMode && (
           <div>
-            <label className="text-xs font-semibold text-[#2B1F17]">Password</label>
+            <label className="text-xs font-semibold text-primary">Password</label>
             <input
               type="password" className="input mt-1" value={password}
               onChange={e => setPassword(e.target.value)} required
             />
           </div>
         )}
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? 'Processing…' : resetMode ? 'Send reset link' : 'Sign in'}
         </button>
-        <button type="button" onClick={() => { setResetMode(!resetMode); setError(null) }} className="w-full text-center text-xs text-[#8C8A7D]">
+        <button type="button" onClick={() => { setResetMode(!resetMode); setError(null) }} className="w-full text-center text-xs text-muted">
           {resetMode ? 'Back to login' : 'Forgot password?'}
         </button>
       </form>
