@@ -2,6 +2,7 @@ import { Routes, Route, Link } from 'react-router-dom'
 import Landing from './components/Landing.jsx'
 import RegisterTab from './components/RegisterTab.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
+import Logo from './components/Logo.jsx'
 
 export default function App() {
   return (
@@ -13,11 +14,7 @@ export default function App() {
             <header className="pt-[env(safe-area-inset-top)]">
               <div className="flex items-center justify-between pt-5 pb-4">
                 <Link to="/" className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 bg-interactive text-inverse grid place-items-center font-bold text-[9px] rounded-xl">DOC</div>
-                  <div className="leading-tight">
-                    <div className="text-text font-bold text-sm">Dink Over Coffee</div>
-                    <div className="text-secondary text-[11px]">Play. Connect. Belong.</div>
-                  </div>
+                  <Logo className="h-10 w-auto" />
                 </Link>
                 <ThemeToggle />
               </div>
@@ -27,8 +24,7 @@ export default function App() {
             </main>
             <footer className="py-6 border-t border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 bg-interactive text-inverse grid place-items-center font-bold text-[6px] rounded-md">DOC</div>
-                <span className="text-primary font-bold text-sm">Dink Over Coffee</span>
+                <Logo className="h-7 w-auto" />
               </div>
               <p className="text-muted text-xs">Play. Connect. Belong.</p>
             </footer>
