@@ -1,4 +1,4 @@
-const SHOW_LOGO = false
+const SHOW_LOGO = true
 
 export default function Logo({ className = '' }) {
   if (!SHOW_LOGO) {
