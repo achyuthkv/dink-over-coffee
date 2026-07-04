@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 function fmtDate(d) {
   if (!d) return ''
   const dt = new Date(d + 'T00:00:00')
@@ -5,6 +7,31 @@ function fmtDate(d) {
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   return `${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]}`
+}
+
+function CancellationPolicy() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); setOpen(!open) }}
+        className="flex items-center gap-1.5 text-muted text-[11px] font-medium hover:text-primary transition w-full"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`transition-transform ${open ? 'rotate-90' : ''}`}><polyline points="9 18 15 12 9 6"/></svg>
+        Cancellation Policy
+      </button>
+      {open && (
+        <div className="mt-2 text-muted text-[11px] leading-relaxed space-y-1.5 pl-4">
+          <p>Refund is subject to a replacement taking up your slot.</p>
+          <p>Once a replacement is confirmed, the refund will be processed.</p>
+          <p>If no replacement is found, the amount may not be refundable.</p>
+          <p className="pt-1 text-interactive font-medium">Organizer cancellations (weather, venue, safety) are fully refunded within 24 hours.</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function SessionCard({ session, onSelect, selected }) {
@@ -121,6 +148,8 @@ export default function SessionCard({ session, onSelect, selected }) {
           )}
         </div>
       )}
+
+      <CancellationPolicy />
     </button>
   )
 }
