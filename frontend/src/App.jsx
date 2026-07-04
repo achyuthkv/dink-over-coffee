@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import Landing from './components/Landing.jsx'
 import RegisterTab from './components/RegisterTab.jsx'
+import Terms from './components/Terms.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import Logo from './components/Logo.jsx'
 
@@ -14,7 +15,7 @@ export default function App() {
             <header className="pt-[env(safe-area-inset-top)]">
               <div className="flex items-center justify-between pt-5 pb-4">
                 <Link to="/" className="flex items-center gap-2.5">
-                  <Logo className="h-10 w-auto" />
+                  <Logo className="h-12 w-auto" />
                 </Link>
                 <ThemeToggle />
               </div>
@@ -24,13 +25,14 @@ export default function App() {
             </main>
             <footer className="py-6 border-t border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Logo className="h-7 w-auto" />
+                <Logo className="h-9 w-auto" />
               </div>
               <p className="text-muted text-xs">Play. Connect. Belong.</p>
             </footer>
           </div>
         </div>
       } />
+      <Route path="/terms" element={<Terms />} />
     </Routes>
   )
 }
