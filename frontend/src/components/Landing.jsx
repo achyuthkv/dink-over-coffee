@@ -27,7 +27,7 @@ export default function Landing() {
       {/* Nav */}
       <nav className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-5 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <Logo className="h-10 w-auto" />
+          <Logo className="h-12 w-auto" />
         </Link>
         <ThemeToggle />
       </nav>
@@ -143,9 +143,12 @@ export default function Landing() {
       {/* Footer */}
       <footer className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-6 mt-auto border-t border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Logo className="h-7 w-auto" />
+          <Logo className="h-9 w-auto" />
         </div>
-        <p className="text-muted text-xs">Play. Connect. Belong.</p>
+        <div className="flex items-center gap-4">
+          <Link to="/terms" className="text-muted text-xs hover:text-primary transition">Guidelines</Link>
+          <p className="text-muted text-xs">Play. Connect. Belong.</p>
+        </div>
       </footer>
 
     </div>
