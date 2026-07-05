@@ -18,7 +18,6 @@ export default function Terms() {
       <main className="px-6 md:px-12 lg:px-20 max-w-3xl mx-auto w-full pt-10 pb-16">
 
         <div className="text-center mb-10">
-          <p className="text-3xl mb-2">☕ 🏓</p>
           <h1 className="text-primary text-2xl md:text-3xl font-extrabold tracking-tight">
             Dink Over Coffee
           </h1>
@@ -79,7 +78,7 @@ export default function Terms() {
             <div className="bg-surface rounded-2xl p-5 border border-border">
               <h3 className="text-primary text-sm font-semibold mb-2">Media & Privacy</h3>
               <p className="text-muted text-sm leading-relaxed">
-                📸 Media captured during meetups may be used for community building, including on our social media — not for any commercial purpose.
+                Media captured during meetups may be used for community building, including on our social media — not for any commercial purpose.
               </p>
             </div>
 
@@ -278,7 +277,7 @@ export default function Terms() {
           <p className="text-muted text-sm mt-3 leading-relaxed max-w-md mx-auto">
             We appreciate every member who contributes positively and helps make this space enjoyable for everyone.
           </p>
-          <p className="text-secondary text-lg font-bold mt-5">☕ 🏓 See you on the court!</p>
+          <p className="text-secondary text-lg font-bold mt-5">See you on the court!</p>
         </section>
 
       </main>

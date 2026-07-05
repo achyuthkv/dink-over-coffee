@@ -2,6 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
 
+let razorpayPromise = null
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve()
+  if (razorpayPromise) return razorpayPromise
+  razorpayPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.onload = resolve
+    script.onerror = () => reject(new Error('Failed to load Razorpay'))
+    document.head.appendChild(script)
+  })
+  return razorpayPromise
+}
+
 const ALL_SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
@@ -50,6 +64,7 @@ export default function RegisterTab() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => { if (PAYMENTS_ENABLED && selected) loadRazorpay() }, [selected])
 
   useEffect(() => {
     if (selected) loadPlayers(selected.id)
@@ -190,13 +205,13 @@ export default function RegisterTab() {
     }
   }
 
-  function openCheckout(order, player) {
+  async function openCheckout(order, player) {
+    try { await loadRazorpay() } catch {
+      setError('Razorpay failed to load. Check your network.')
+      setSubmitting(false)
+      return
+    }
     return new Promise((resolve) => {
-      if (!window.Razorpay) {
-        setError('Razorpay failed to load. Check your network.')
-        setSubmitting(false)
-        return resolve()
-      }
       const rzp = new window.Razorpay({
         key: RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -328,29 +343,64 @@ export default function RegisterTab() {
 
   return (
     <div className="space-y-5">
-      {/* Sessions */}
+      {/* Session picker — compact horizontal strip */}
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="text-text font-bold md:text-lg">Upcoming sessions</h2>
+          <h2 className="text-text font-bold md:text-lg">Pick a session</h2>
           <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-secondary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
         </div>
-        <div className="mt-3 space-y-3">
-          {loading && <div className="card text-center text-secondary text-sm">Loading sessions…</div>}
-          {!loading && sessions.length === 0 && (
-            <div className="card text-center text-secondary text-sm">No sessions scheduled yet. Check back soon.</div>
-          )}
-          {!loading && sessions.map(s => (
-            <SessionCard
-              key={s.id}
-              session={s}
-              selected={selected?.id === s.id}
-              onSelect={handleSelect}
-            />
-          ))}
-        </div>
+        {loading && <div className="mt-3 card text-center text-secondary text-sm">Loading sessions…</div>}
+        {!loading && sessions.length === 0 && (
+          <div className="mt-3 card text-center text-secondary text-sm">No sessions scheduled yet. Check back soon.</div>
+        )}
+        {!loading && sessions.length > 0 && (
+          <div className="mt-3 flex gap-2 overflow-x-auto py-1 -mx-1 px-1 snap-x">
+            {sessions.map(s => {
+              const taken = Number(s.takenSlots || 0)
+              const max = Number(s.maxSlots || 0)
+              const remaining = Math.max(0, max - taken)
+              const full = remaining <= 0
+              const isSelected = selected?.id === s.id
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSelect(s)}
+                  className={`snap-start shrink-0 rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[.98] ${
+                    isSelected
+                      ? 'border-interactive bg-interactive/5'
+                      : full
+                      ? 'border-border opacity-60'
+                      : 'border-border hover:border-interactive/50'
+                  }`}
+                >
+                  <p className="text-primary text-sm font-semibold whitespace-nowrap">{fmtShort(s.date, s.time)}</p>
+                  {s.title && <p className="text-muted text-xs mt-0.5 whitespace-nowrap">{s.title}</p>}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={`text-xs font-medium ${full ? 'text-error' : 'text-secondary'}`}>
+                      {full ? 'Full' : `${remaining} left`}
+                    </span>
+                    <span className="text-muted text-xs">· ₹{s.price}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </section>
+
+      {/* Selected session details */}
+      {selected && (
+        <section>
+          <SessionCard
+            session={selected}
+            selected={true}
+            onSelect={() => {}}
+          />
+        </section>
+      )}
 
       {/* Who's playing */}
       {selected && players.length > 0 && (
