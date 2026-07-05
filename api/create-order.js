@@ -1,11 +1,13 @@
 import supabase from './_lib/supabase.js';
 import { createRazorpayOrder } from './_lib/razorpay.js';
 import { getSlotCounts, checkAvailability } from './_lib/slots.js';
+import { rateLimit } from './_lib/rateLimit.js';
 
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES) || 5;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  if (!rateLimit(req).ok) return res.status(429).json({ ok: false, error: 'Too many requests. Please try again shortly.' });
 
   const { sessionId, player } = req.body;
   if (!sessionId || !player?.name || !player?.phone || !player?.skill) {
