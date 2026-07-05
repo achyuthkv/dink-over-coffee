@@ -13,11 +13,11 @@ function fmtDate(d) {
 }
 
 export default function Landing() {
-  const [nextSession, setNextSession] = useState(null)
+  const [sessions, setSessions] = useState([])
 
   useEffect(() => {
     api.listSessions().then(({ sessions }) => {
-      if (sessions?.length) setNextSession(sessions[0])
+      if (sessions?.length) setSessions(sessions)
     }).catch(() => {})
   }, [])
 
@@ -58,19 +58,40 @@ export default function Landing() {
 
         {/* Right column — session card + how it works */}
         <div className="mt-10 lg:mt-0 lg:w-[380px] shrink-0 space-y-5">
-          {nextSession && (
+          {sessions.length > 0 && (
             <div>
-              <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-2">Upcoming session</p>
-              <Link to="/events" className="flex items-center gap-4 bg-surface rounded-2xl p-4 border border-border active:scale-[.99] transition">
-                <div className="w-10 h-10 rounded-xl bg-interactive/10 grid place-items-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-primary text-sm font-semibold truncate">{nextSession.title || 'Upcoming Session'}</p>
-                  <p className="text-muted text-xs truncate">{fmtDate(nextSession.date)} · {nextSession.time} · {Math.max(0, nextSession.maxSlots - nextSession.takenSlots)} spots left</p>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="text-muted shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
-              </Link>
+              <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-2">This week's schedule</p>
+              <div className="space-y-2">
+                {sessions.slice(0, 5).map(s => {
+                  const remaining = Math.max(0, s.maxSlots - s.takenSlots)
+                  const full = remaining <= 0
+                  return (
+                    <Link key={s.id} to="/events" className="flex items-center gap-3 bg-surface rounded-xl p-3 border border-border active:scale-[.99] transition">
+                      <div className="w-10 h-10 rounded-lg bg-interactive/10 grid place-items-center shrink-0">
+                        <div className="text-center leading-none">
+                          <p className="text-interactive text-[10px] font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                          <p className="text-interactive text-sm font-bold">{new Date(s.date + 'T00:00:00').getDate()}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-primary text-sm font-semibold truncate">{s.title || s.venue}</p>
+                        <p className="text-muted text-xs truncate">{s.time} · {s.venue}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`text-xs font-semibold ${full ? 'text-error' : 'text-interactive'}`}>
+                          {full ? 'Full' : `${remaining} left`}
+                        </p>
+                        <p className="text-muted text-[10px]">₹{s.price}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+              {sessions.length > 5 && (
+                <Link to="/events" className="block text-center text-interactive text-xs font-medium mt-2 hover:underline">
+                  +{sessions.length - 5} more sessions →
+                </Link>
+              )}
             </div>
           )}
 
