@@ -43,7 +43,7 @@ export default function Landing() {
           </h1>
 
           <p className="mt-5 text-muted text-sm md:text-base leading-relaxed">
-            Pickleball sessions every week in Bangalore. All levels. No partner needed. Just show up.
+            Bangalore's pickleball community. Sessions every week in Jayanagar. All levels. No partner needed. Just show up.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-2.5">
@@ -141,13 +141,19 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-6 mt-auto border-t border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Logo className="h-9 w-auto" />
-        </div>
-        <div className="flex items-center gap-4">
-          <Link to="/terms" className="text-muted text-xs hover:text-primary transition">Guidelines</Link>
+      <footer className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-6 mt-auto border-t border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Logo className="h-9 w-auto" />
+          </div>
           <p className="text-muted text-xs">Play. Connect. Belong.</p>
+        </div>
+        <div className="flex items-center justify-center gap-3 mt-3 text-muted text-[11px]">
+          <Link to="/terms" className="hover:text-primary transition">Guidelines</Link>
+          <span>·</span>
+          <Link to="/privacy" className="hover:text-primary transition">Privacy</Link>
+          <span>·</span>
+          <a href="mailto:dinkovercoffee@gmail.com" className="hover:text-primary transition">dinkovercoffee@gmail.com</a>
         </div>
       </footer>
 
