@@ -1,0 +1,16 @@
+{
+  "name": "Dink Over Coffee",
+  "short_name": "DoC",
+  "description": "Bangalore's pickleball community — weekly sessions in banglore",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7FFFB",
+  "theme_color": "#05AD86",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
