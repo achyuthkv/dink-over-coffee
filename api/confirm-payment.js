@@ -41,7 +41,11 @@ export default async function handler(req, res) {
       amount: Number(order.amount) / 100,
       razorpay_payment_id,
       razorpay_order_id,
-      status: 'confirmed'
+      status: 'confirmed',
+      ...(notes.duprId && { dupr_id: notes.duprId }),
+      ...(notes.partnerName && { partner_name: notes.partnerName.trim() }),
+      ...(notes.partnerPhone && { partner_phone: notes.partnerPhone.trim() }),
+      ...(notes.partnerDuprId && { partner_dupr_id: notes.partnerDuprId.trim() })
     });
 
   if (insertErr && insertErr.code !== '23505') {

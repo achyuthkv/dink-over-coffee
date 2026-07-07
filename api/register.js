@@ -51,7 +51,10 @@ export default async function handler(req, res) {
       razorpay_payment_id: 'FREE_MODE',
       razorpay_order_id: 'FREE_MODE',
       status: 'confirmed',
-      ...(player.duprId && { dupr_id: player.duprId })
+      ...(player.duprId && { dupr_id: player.duprId }),
+      ...(player.partnerName && { partner_name: player.partnerName.trim() }),
+      ...(player.partnerPhone && { partner_phone: player.partnerPhone.trim() }),
+      ...(player.partnerDuprId && { partner_dupr_id: player.partnerDuprId.trim() })
     });
 
   if (insertErr) {

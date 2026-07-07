@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     amount: amountPaise,
     currency: 'INR',
     receipt,
-    notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), skill: player.skill }
+    notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), skill: player.skill, ...(player.duprId && { duprId: player.duprId }), ...(player.partnerName && { partnerName: player.partnerName.trim() }), ...(player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }) }
   });
 
   const now = new Date();
