@@ -37,6 +37,7 @@ export default function RegisterTab() {
       return { name: saved.name || '', phone: saved.phone || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
     } catch { return { name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
   })
+  const [hasPartner, setHasPartner] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
   const [waitlistSuccess, setWaitlistSuccess] = useState(null)
@@ -87,6 +88,7 @@ export default function RegisterTab() {
 
   function handleSelect(session) {
     setSelected(session)
+    setHasPartner(null)
     const noBeginner = session.beginnerSlots !== null && session.beginnerSlots !== undefined && session.beginnerSlots === 0
     if (noBeginner && form.skill === 'Beginner') {
       setForm(f => ({ ...f, skill: 'Intermediate' }))
@@ -112,7 +114,8 @@ export default function RegisterTab() {
     if (!selected) return 'Pick a session first'
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
-    if (isDoubles) {
+    if (isDoubles && hasPartner === null) return 'Please select whether you have a partner'
+    if (isDoubles && hasPartner) {
       if (!form.partnerName.trim() || form.partnerName.trim().length < 2) return 'Enter your partner\'s name'
       if (!/^[0-9]{10}$/.test(form.partnerPhone.trim())) return 'Enter a valid 10-digit phone number for your partner'
     }
@@ -158,8 +161,9 @@ export default function RegisterTab() {
       const player = {
         name: form.name.trim(), phone: form.phone.trim(), skill: form.skill,
         ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
-        ...(isDoubles && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
-        ...(isDoubles && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() })
+        ...(isDoubles && hasPartner && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
+        ...(isDoubles && hasPartner && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
+        ...(isDoubles && !hasPartner && { needsPartner: true })
       }
       const res = await api.joinWaitlist(selected.id, player)
       if (res.alreadyRegistered) {
@@ -194,8 +198,9 @@ export default function RegisterTab() {
         phone: form.phone.trim(),
         skill: form.skill,
         ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
-        ...(isDoubles && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
-        ...(isDoubles && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() })
+        ...(isDoubles && hasPartner === true && { isTeam: true, partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
+        ...(isDoubles && hasPartner === true && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
+        ...(isDoubles && hasPartner === false && { needsPartner: true })
       }
 
       if (!PAYMENTS_ENABLED) {
@@ -205,7 +210,7 @@ export default function RegisterTab() {
           setSubmitting(false)
           return
         }
-        setSuccess({ session: selected, player })
+        setSuccess({ session: selected, player, isTeam: player.isTeam })
         localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
         setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
         setSelected(null)
@@ -250,7 +255,7 @@ export default function RegisterTab() {
               razorpay_payment_id: resp.razorpay_payment_id,
               razorpay_signature: resp.razorpay_signature
             })
-            setSuccess({ session: selected, player })
+            setSuccess({ session: selected, player, isTeam: player.isTeam })
             localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
             setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
             setSelected(null)
@@ -289,7 +294,7 @@ export default function RegisterTab() {
   if (success) {
     const accounts = success.session.upiAccounts || []
     const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
-    const amt = success.session.price
+    const amt = success.isTeam ? success.session.price * 2 : success.session.price
     const upiParams = (pa) => `pa=${encodeURIComponent(pa)}&pn=Dink%20Over%20Coffee&am=${amt}&cu=INR&tn=${tn}`
 
     const upiApps = [
@@ -440,7 +445,7 @@ export default function RegisterTab() {
                     <div className="flex flex-wrap gap-1.5">
                       {group.map((p, i) => (
                         <span key={i} className="inline-flex items-center rounded-full bg-interactive/10 px-2.5 py-1 text-xs font-medium text-secondary">
-                          {p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}
+                          {p.partner_name ? `${p.name} & ${p.partner_name}` : p.needs_partner ? `${p.name} (needs partner)` : (p.name || 'Player')}
                         </span>
                       ))}
                     </div>
@@ -520,32 +525,51 @@ export default function RegisterTab() {
 
           {isDoubles && (
             <div className="mt-4 pt-4 border-t border-border">
-              <h3 className="text-text font-bold text-sm">Partner details</h3>
-              <div className="mt-3 space-y-3">
-                <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
-                  <div>
-                    <label className="text-xs font-semibold text-primary">Partner name <span className="text-error">*</span></label>
-                    <input className="input mt-1" value={form.partnerName} onChange={e => update('partnerName', e.target.value)} placeholder="Partner's name" required />
-                    {form.partnerName.length > 0 && form.partnerName.trim().length < 2 && (
-                      <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-primary">Partner phone <span className="text-error">*</span></label>
-                    <input className="input mt-1" inputMode="numeric" value={form.partnerPhone} onChange={e => update('partnerPhone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
-                    {form.partnerPhone.length > 0 && form.partnerPhone.length < 10 && (
-                      <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-primary">Partner DUPR ID <span className="text-error">*</span></label>
-                  <input className="input mt-1" value={form.partnerDuprId} onChange={e => update('partnerDuprId', e.target.value)} placeholder="e.g. 123456789" required />
-                  {(form.partnerDuprId || '').length > 0 && form.partnerDuprId.trim().length < 3 && (
-                    <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
-                  )}
-                </div>
+              <h3 className="text-text font-bold text-sm">Do you have a partner?</h3>
+              <div className="mt-2 flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="hasPartner" checked={hasPartner === true} onChange={() => setHasPartner(true)} className="accent-primary" />
+                  <span className="text-sm text-text">Yes</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="hasPartner" checked={hasPartner === false} onChange={() => setHasPartner(false)} className="accent-primary" />
+                  <span className="text-sm text-text">No</span>
+                </label>
               </div>
+
+              {hasPartner === true && (
+                <div className="mt-3 space-y-3">
+                  <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
+                    <div>
+                      <label className="text-xs font-semibold text-primary">Partner name <span className="text-error">*</span></label>
+                      <input className="input mt-1" value={form.partnerName} onChange={e => update('partnerName', e.target.value)} placeholder="Partner's name" required />
+                      {form.partnerName.length > 0 && form.partnerName.trim().length < 2 && (
+                        <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-primary">Partner phone <span className="text-error">*</span></label>
+                      <input className="input mt-1" inputMode="numeric" value={form.partnerPhone} onChange={e => update('partnerPhone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
+                      {form.partnerPhone.length > 0 && form.partnerPhone.length < 10 && (
+                        <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-primary">Partner DUPR ID <span className="text-error">*</span></label>
+                    <input className="input mt-1" value={form.partnerDuprId} onChange={e => update('partnerDuprId', e.target.value)} placeholder="e.g. 123456789" required />
+                    {(form.partnerDuprId || '').length > 0 && form.partnerDuprId.trim().length < 3 && (
+                      <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {hasPartner === false && (
+                <p className="mt-3 text-sm text-secondary bg-surface-alt rounded-lg px-3 py-2">
+                  No worries! We'll find you a partner.
+                </p>
+              )}
             </div>
           )}
 
@@ -554,9 +578,9 @@ export default function RegisterTab() {
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
-            {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
+            {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
           {waitlistAvailable && <p className="text-[11px] text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
           {slotsFull && !waitlistAvailable && <p className="text-[11px] text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
