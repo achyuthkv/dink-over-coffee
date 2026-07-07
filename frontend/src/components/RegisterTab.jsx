@@ -34,8 +34,8 @@ export default function RegisterTab() {
   const [form, setForm] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('doc_player') || '{}')
-      return { name: saved.name || '', phone: saved.phone || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '' }
-    } catch { return { name: '', phone: '', skill: 'Beginner', duprId: '' } }
+      return { name: saved.name || '', phone: saved.phone || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
+    } catch { return { name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
   })
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(null)
@@ -52,7 +52,11 @@ export default function RegisterTab() {
       const { sessions } = await api.listSessions()
       setSessions(sessions)
       setSelected(prev => {
-        if (prev) return sessions.find(s => s.id === prev.id) || prev
+        if (prev) {
+          const found = sessions.find(s => s.id === prev.id)
+          if (found) return found
+          return sessions.length === 1 ? sessions[0] : null
+        }
         if (sessions.length === 1) return sessions[0]
         return prev
       })
@@ -102,10 +106,16 @@ export default function RegisterTab() {
 
   function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
+  const isDoubles = selected?.event_type === 'dupr_doubles'
+
   function validate() {
     if (!selected) return 'Pick a session first'
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
+    if (isDoubles) {
+      if (!form.partnerName.trim() || form.partnerName.trim().length < 2) return 'Enter your partner\'s name'
+      if (!/^[0-9]{10}$/.test(form.partnerPhone.trim())) return 'Enter a valid 10-digit phone number for your partner'
+    }
     return null
   }
 
@@ -145,7 +155,12 @@ export default function RegisterTab() {
     if (v) { setError(v); return }
     setError(null); setSubmitting(true)
     try {
-      const player = { name: form.name.trim(), phone: form.phone.trim(), skill: form.skill, ...(form.duprId.trim() && { duprId: form.duprId.trim() }) }
+      const player = {
+        name: form.name.trim(), phone: form.phone.trim(), skill: form.skill,
+        ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
+        ...(isDoubles && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
+        ...(isDoubles && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() })
+      }
       const res = await api.joinWaitlist(selected.id, player)
       if (res.alreadyRegistered) {
         setError('You are already registered for this session.')
@@ -158,8 +173,8 @@ export default function RegisterTab() {
         return
       }
       setWaitlistSuccess({ session: selected, player, position: res.position })
-      localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
-      setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
+      localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+      setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
       setSelected(null)
       await load()
     } catch (e) {
@@ -178,7 +193,9 @@ export default function RegisterTab() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         skill: form.skill,
-        ...(form.duprId.trim() && { duprId: form.duprId.trim() })
+        ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
+        ...(isDoubles && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
+        ...(isDoubles && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() })
       }
 
       if (!PAYMENTS_ENABLED) {
@@ -189,8 +206,8 @@ export default function RegisterTab() {
           return
         }
         setSuccess({ session: selected, player })
-        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
-        setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
+        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+        setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
         setSelected(null)
         await load()
         setSubmitting(false)
@@ -234,8 +251,8 @@ export default function RegisterTab() {
               razorpay_signature: resp.razorpay_signature
             })
             setSuccess({ session: selected, player })
-            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '' }))
-            setForm({ name: '', phone: '', skill: 'Beginner', duprId: '' })
+            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+            setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
             setSelected(null)
             await load()
           } catch (e) {
@@ -423,7 +440,7 @@ export default function RegisterTab() {
                     <div className="flex flex-wrap gap-1.5">
                       {group.map((p, i) => (
                         <span key={i} className="inline-flex items-center rounded-full bg-interactive/10 px-2.5 py-1 text-xs font-medium text-secondary">
-                          {p.name || 'Player'}
+                          {p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}
                         </span>
                       ))}
                     </div>
@@ -438,7 +455,7 @@ export default function RegisterTab() {
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {players.filter(p => p.status === 'waitlisted').map((p, i) => (
                   <span key={i} className="inline-flex items-center rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-muted">
-                    {p.name || 'Player'}
+                    {p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}
                   </span>
                 ))}
               </div>
@@ -491,7 +508,7 @@ export default function RegisterTab() {
             </div>
           </div>
 
-          {selected?.event_type === 'dupr' && (
+          {(selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && (
             <div className="mt-3">
               <label className="text-xs font-semibold text-primary">DUPR ID <span className="text-error">*</span></label>
               <input className="input mt-1" value={form.duprId} onChange={e => update('duprId', e.target.value)} placeholder="e.g. 123456789" required />
@@ -501,12 +518,43 @@ export default function RegisterTab() {
             </div>
           )}
 
+          {isDoubles && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <h3 className="text-text font-bold text-sm">Partner details</h3>
+              <div className="mt-3 space-y-3">
+                <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
+                  <div>
+                    <label className="text-xs font-semibold text-primary">Partner name <span className="text-error">*</span></label>
+                    <input className="input mt-1" value={form.partnerName} onChange={e => update('partnerName', e.target.value)} placeholder="Partner's name" required />
+                    {form.partnerName.length > 0 && form.partnerName.trim().length < 2 && (
+                      <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-primary">Partner phone <span className="text-error">*</span></label>
+                    <input className="input mt-1" inputMode="numeric" value={form.partnerPhone} onChange={e => update('partnerPhone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
+                    {form.partnerPhone.length > 0 && form.partnerPhone.length < 10 && (
+                      <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-primary">Partner DUPR ID <span className="text-error">*</span></label>
+                  <input className="input mt-1" value={form.partnerDuprId} onChange={e => update('partnerDuprId', e.target.value)} placeholder="e.g. 123456789" required />
+                  {(form.partnerDuprId || '').length > 0 && form.partnerDuprId.trim().length < 3 && (
+                    <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && <div className="mt-3 text-sm text-error">{error}</div>}
 
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || (selected?.event_type === 'dupr' && form.duprId.trim().length < 3)}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${selected.price} & confirm` : 'Register'}
           </button>

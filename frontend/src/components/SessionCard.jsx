@@ -75,6 +75,7 @@ export default function SessionCard({ session, onSelect, selected }) {
       <div className="flex items-center gap-2">
         <span className="text-secondary-dark text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
         {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
+        {session.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Doubles</span>}
       </div>
       {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
