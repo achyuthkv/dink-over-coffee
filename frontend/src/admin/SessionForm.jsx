@@ -151,15 +151,16 @@ export default function SessionForm({ session, onSave, onCancel }) {
           <div>
             <label className="text-xs font-semibold text-primary">Event type</label>
             <div className="flex gap-2 mt-1.5">
-              {['regular', 'dupr'].map(t => {
+              {['regular', 'dupr', 'dupr_doubles'].map(t => {
                 const active = form.event_type === t
+                const label = t === 'dupr' ? 'DUPR' : t === 'dupr_doubles' ? 'DUPR Doubles' : 'Regular'
                 return (
                   <button
                     key={t}
                     type="button"
                     onClick={() => update('event_type', t)}
                     className={`rounded-2xl border px-4 py-2 text-sm font-medium transition ${active ? 'border-interactive bg-interactive text-inverse' : 'border-border-muted text-primary'}`}
-                  >{t === 'dupr' ? 'DUPR' : 'Regular'}</button>
+                  >{label}</button>
                 )
               })}
             </div>

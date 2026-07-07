@@ -106,6 +106,7 @@ export default function Dashboard() {
   const [calendarDate, setCalendarDate] = useState(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deletePlayerCount, setDeletePlayerCount] = useState(0)
   const [showUpi, setShowUpi] = useState(false)
 
   async function loadSessions() {
@@ -151,16 +152,18 @@ export default function Dashboard() {
     loadSessions()
   }
 
-  function deleteSession(session) {
+  async function deleteSession(session) {
+    const { count } = await supabase.from('players').select('*', { count: 'exact', head: true }).eq('session_id', session.id)
+    setDeletePlayerCount(count || 0)
     setDeleteConfirm(session)
   }
 
   async function confirmDelete() {
     if (!deleteConfirm) return
-    await supabase.from('players').delete().eq('session_id', deleteConfirm.id)
+    await supabase.from('sessions').update({ active: false }).eq('id', deleteConfirm.id)
     await supabase.from('holds').delete().eq('session_id', deleteConfirm.id)
-    await supabase.from('sessions').delete().eq('id', deleteConfirm.id)
     setDeleteConfirm(null)
+    setDeletePlayerCount(0)
     loadSessions()
   }
 
@@ -279,10 +282,18 @@ export default function Dashboard() {
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
             <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
-              <p className="text-sm text-primary font-medium text-center">Delete <strong>{deleteConfirm.title || deleteConfirm.id}</strong>?<br/><span className="text-xs text-muted font-normal">This cannot be undone.</span></p>
+              <p className="text-sm text-primary font-medium text-center">
+                Remove <strong>{deleteConfirm.title || deleteConfirm.id}</strong>?
+              </p>
+              {deletePlayerCount > 0 && (
+                <p className="text-xs text-warning-muted text-center font-medium">
+                  This session has {deletePlayerCount} registered player{deletePlayerCount === 1 ? '' : 's'}.
+                </p>
+              )}
+              <p className="text-xs text-muted text-center">Session will be deactivated. Player data is preserved.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Cancel</button>
-                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-tertiary text-white text-sm font-medium active:scale-[.98] transition">Delete</button>
+                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-tertiary text-white text-sm font-medium active:scale-[.98] transition">Deactivate</button>
               </div>
             </div>
           </div>
@@ -301,6 +312,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2">
                       <span className="text-primary font-semibold text-sm truncate">{s.title || s.venue}</span>
                       {s.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded shrink-0">DUPR</span>}
+                      {s.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded shrink-0">DUPR Doubles</span>}
                     </div>
                     <div className="text-muted text-xs mt-0.5">{fmtDate(s.date)} · {s.time} · {s.venue} · ₹{s.price}</div>
                   </div>
