@@ -134,6 +134,8 @@ describe('register handler', () => {
     ]);
     mockSupabase.__queueResponses('players', [
       { data: null, error: null }, // no existing player
+      { data: null, error: null }, // partner not registered as player
+      { data: null, error: null }, // partner not on another team
       // getSlotCounts
       { data: [], error: null },
     ]);
