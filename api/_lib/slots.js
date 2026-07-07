@@ -4,21 +4,23 @@ export async function getSlotCounts(sessionId) {
   const [playersResult, holdsResult] = await Promise.all([
     supabase
       .from('players')
-      .select('skill, status')
+      .select('skill, status, partner_name')
       .eq('session_id', sessionId),
     supabase
       .from('holds')
-      .select('id')
+      .select('id, slots')
       .eq('session_id', sessionId)
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
   ]);
 
   const players = playersResult.data || [];
-  const activeHolds = (holdsResult.data || []).length;
+  const activeHolds = (holdsResult.data || []).reduce((sum, h) => sum + (h.slots || 1), 0);
 
-  const confirmedBeginner = players.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').length;
-  const confirmedOther = players.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').length;
+  const slotWeight = (p) => p.partner_name ? 2 : 1;
+
+  const confirmedBeginner = players.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
+  const confirmedOther = players.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
   const waitlistedBeginner = players.filter(p => p.status === 'waitlisted' && p.skill === 'Beginner').length;
   const waitlistedOther = players.filter(p => p.status === 'waitlisted' && p.skill !== 'Beginner').length;
 

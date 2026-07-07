@@ -24,7 +24,8 @@ export async function atomicRegister(sessionId, session, playerData, status) {
       p_dupr_id: playerData.duprId || null,
       p_partner_name: playerData.partnerName || null,
       p_partner_phone: playerData.partnerPhone || null,
-      p_partner_dupr_id: playerData.partnerDuprId || null
+      p_partner_dupr_id: playerData.partnerDuprId || null,
+      p_needs_partner: playerData.needsPartner || false
     });
 
     if (!rpcErr && rpcResult) {
@@ -51,7 +52,8 @@ export async function atomicRegister(sessionId, session, playerData, status) {
     ...(playerData.duprId && { dupr_id: playerData.duprId }),
     ...(playerData.partnerName && { partner_name: playerData.partnerName }),
     ...(playerData.partnerPhone && { partner_phone: playerData.partnerPhone }),
-    ...(playerData.partnerDuprId && { partner_dupr_id: playerData.partnerDuprId })
+    ...(playerData.partnerDuprId && { partner_dupr_id: playerData.partnerDuprId }),
+    ...(playerData.needsPartner && { needs_partner: true })
   };
 
   const { data: inserted, error: insertErr } = await supabase

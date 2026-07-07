@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from('players')
-      .select('name, skill, status, partner_name')
+      .select('name, skill, status, partner_name, needs_partner')
       .eq('session_id', sessionId)
       .order('created_at');
 

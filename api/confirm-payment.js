@@ -46,7 +46,8 @@ export default async function handler(req, res) {
         ...(notes.duprId && { dupr_id: notes.duprId }),
         ...(notes.partnerName && { partner_name: notes.partnerName.trim() }),
         ...(notes.partnerPhone && { partner_phone: notes.partnerPhone.trim() }),
-        ...(notes.partnerDuprId && { partner_dupr_id: notes.partnerDuprId.trim() })
+        ...(notes.partnerDuprId && { partner_dupr_id: notes.partnerDuprId.trim() }),
+        ...(notes.needsPartner === 'true' && { needs_partner: true })
       });
 
     if (insertErr && insertErr.code !== '23505') {

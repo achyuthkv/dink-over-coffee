@@ -43,7 +43,7 @@ const server = createServer(async (req, rawRes) => {
   let body = '';
   for await (const chunk of req) body += chunk;
 
-  const reqObj = { method: req.method, body: body ? JSON.parse(body) : {} };
+  const reqObj = { method: req.method, headers: req.headers, socket: req.socket, body: body ? JSON.parse(body) : {} };
   const resObj = {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

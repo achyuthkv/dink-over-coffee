@@ -46,8 +46,8 @@ export default async function handler(req, res) {
     if (sessionIds.length === 0) return res.status(200).json({ ok: true, sessions: [] });
 
     const [playersResult, holdsResult, upisResult] = await Promise.all([
-      supabase.from('players').select('session_id, skill, status').in('session_id', sessionIds),
-      supabase.from('holds').select('session_id, id').eq('status', 'active').gt('expires_at', new Date().toISOString()).in('session_id', sessionIds),
+      supabase.from('players').select('session_id, skill, status, partner_name').in('session_id', sessionIds),
+      supabase.from('holds').select('session_id, id, slots').eq('status', 'active').gt('expires_at', new Date().toISOString()).in('session_id', sessionIds),
       supabase.from('session_upis').select('session_id, sort_order, upi_accounts(id, label, upi_id, qr_image_url)').in('session_id', sessionIds).order('sort_order')
     ]);
 
@@ -60,8 +60,9 @@ export default async function handler(req, res) {
       const sh = holds.filter(h => h.session_id === s.id);
       const upiRows = sessionUpis.filter(u => u.session_id === s.id).sort((a, b) => a.sort_order - b.sort_order);
 
-      const confirmedBeginner = sp.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').length;
-      const confirmedOther = sp.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').length;
+      const slotWeight = (p) => p.partner_name ? 2 : 1;
+      const confirmedBeginner = sp.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
+      const confirmedOther = sp.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
       const waitlistedBeginner = sp.filter(p => p.status === 'waitlisted' && p.skill === 'Beginner').length;
       const waitlistedOther = sp.filter(p => p.status === 'waitlisted' && p.skill !== 'Beginner').length;
 
@@ -81,7 +82,7 @@ export default async function handler(req, res) {
         title: s.title,
         description: s.description,
         event_type: s.event_type || 'regular',
-        takenSlots: confirmedBeginner + confirmedOther + sh.length,
+        takenSlots: confirmedBeginner + confirmedOther + sh.reduce((sum, h) => sum + (h.slots || 1), 0),
         waitlistCount: waitlistedBeginner + waitlistedOther,
         beginnerTaken: confirmedBeginner,
         otherTaken: confirmedOther,

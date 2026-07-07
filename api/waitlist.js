@@ -35,6 +35,25 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, alreadyWaitlisted: true });
     }
 
+    if (player.partnerPhone) {
+      const partnerPhone = player.partnerPhone.trim();
+      const { data: partnerAsPlayer } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('phone', partnerPhone)
+        .maybeSingle();
+      if (partnerAsPlayer) return res.status(409).json({ ok: false, error: 'Your partner is already registered for this session' });
+
+      const { data: partnerOnTeam } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('partner_phone', partnerPhone)
+        .maybeSingle();
+      if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
+    }
+
     const counts = await getSlotCounts(sessionId);
     const isBeginner = player.skill === 'Beginner';
 
@@ -57,7 +76,8 @@ export default async function handler(req, res) {
       duprId: player.duprId || null,
       partnerName: player.partnerName ? player.partnerName.trim() : null,
       partnerPhone: player.partnerPhone ? player.partnerPhone.trim() : null,
-      partnerDuprId: player.partnerDuprId ? player.partnerDuprId.trim() : null
+      partnerDuprId: player.partnerDuprId ? player.partnerDuprId.trim() : null,
+      needsPartner: player.needsPartner || false
     }, 'waitlisted');
 
     if (!result.ok) {

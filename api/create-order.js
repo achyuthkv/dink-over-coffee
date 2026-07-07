@@ -32,14 +32,34 @@ export default async function handler(req, res) {
       return res.status(409).json({ ok: false, error: 'No slots available' });
     }
 
-    const amountPaise = Math.round(Number(session.price) * 100);
+    if (player.partnerPhone) {
+      const partnerPhone = player.partnerPhone.trim();
+      const { data: partnerAsPlayer } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('phone', partnerPhone)
+        .maybeSingle();
+      if (partnerAsPlayer) return res.status(409).json({ ok: false, error: 'Your partner is already registered for this session' });
+
+      const { data: partnerOnTeam } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('partner_phone', partnerPhone)
+        .maybeSingle();
+      if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
+    }
+
+    const isTeam = player.isTeam === true;
+    const amountPaise = Math.round(Number(session.price) * (isTeam ? 2 : 1) * 100);
     const receipt = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
     const order = await createRazorpayOrder({
       amount: amountPaise,
       currency: 'INR',
       receipt,
-      notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), skill: player.skill, ...(player.duprId && { duprId: player.duprId }), ...(player.partnerName && { partnerName: player.partnerName.trim() }), ...(player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }) }
+      notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), skill: player.skill, ...(player.duprId && { duprId: player.duprId }), ...(player.partnerName && { partnerName: player.partnerName.trim() }), ...(player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }), ...(player.needsPartner && { needsPartner: 'true' }) }
     });
 
     const now = new Date();
@@ -51,7 +71,8 @@ export default async function handler(req, res) {
         session_id: sessionId,
         razorpay_order_id: order.id,
         expires_at: expiresAt.toISOString(),
-        status: 'active'
+        status: 'active',
+        slots: isTeam ? 2 : 1
       })
       .select('id')
       .single();
