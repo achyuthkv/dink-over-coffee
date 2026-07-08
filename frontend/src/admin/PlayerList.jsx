@@ -8,6 +8,10 @@ export default function PlayerList({ session, onBack }) {
   const [shareText, setShareText] = useState('')
   const [removePlayer, setRemovePlayer] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
+  const [emailModal, setEmailModal] = useState(false)
+  const [emailBody, setEmailBody] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailResult, setEmailResult] = useState(null)
 
   async function loadPlayers() {
     setLoading(true)
@@ -128,6 +132,30 @@ export default function PlayerList({ session, onBack }) {
     setShareModal(false)
   }
 
+  async function sendEmail() {
+    if (!emailBody.trim()) return
+    setEmailSending(true)
+    setEmailResult(null)
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, body: emailBody.trim() })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setEmailResult(`Email sent to ${data.sent} player${data.sent > 1 ? 's' : ''}`)
+        setTimeout(() => { setEmailModal(false); setEmailBody(''); setEmailResult(null) }, 2000)
+      } else {
+        setEmailResult(data.error || 'Failed to send')
+      }
+    } catch (e) {
+      setEmailResult(e.message || 'Failed to send')
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
   function toggleExpand(id) {
     setExpandedId(prev => prev === id ? null : id)
   }
@@ -147,6 +175,9 @@ export default function PlayerList({ session, onBack }) {
             <div className="text-primary font-bold text-[15px] truncate">{session.title || session.venue}</div>
             <div className="text-muted text-xs">{session.date} · {session.time}</div>
           </div>
+          <button onClick={() => setEmailModal(true)} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-secondary active:bg-surface transition" title="Email players">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+          </button>
           <button onClick={openShareModal} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-secondary active:bg-surface transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
@@ -193,7 +224,8 @@ export default function PlayerList({ session, onBack }) {
                               onClick={() => toggleExpand(p.id)}
                               className="flex-1 min-w-0 flex items-center gap-3 text-left"
                             >
-                              <span className="text-sm text-primary font-medium truncate">{p.name}</span>
+                              <span className="text-sm text-primary font-medium truncate">{p.partner_name ? `${p.name} & ${p.partner_name}` : p.name}</span>
+                              {p.needs_partner && <span className="text-[10px] text-warning font-medium shrink-0">(needs partner)</span>}
                               {p.phone && <span className="text-[11px] text-muted shrink-0">{p.phone}</span>}
                             </button>
                             <button
@@ -311,6 +343,34 @@ export default function PlayerList({ session, onBack }) {
                 onChange={e => setShareText(e.target.value)}
               />
               <button onClick={sendShare} className="w-full bg-interactive text-inverse text-sm font-semibold py-3 rounded-full active:scale-[.98] transition">Send via WhatsApp</button>
+            </div>
+          </div>
+        )}
+
+        {/* Email modal */}
+        {emailModal && (
+          <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => { setEmailModal(false); setEmailResult(null) }}>
+            <div className="bg-surface rounded-2xl w-full max-w-md p-5 space-y-3" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-primary">Email confirmed players</span>
+                <button onClick={() => { setEmailModal(false); setEmailResult(null) }} className="w-8 h-8 flex items-center justify-center rounded-full text-muted active:bg-bg transition">✕</button>
+              </div>
+              <p className="text-xs text-muted">{confirmed.filter(p => p.email).length} player{confirmed.filter(p => p.email).length !== 1 ? 's' : ''} with email &middot; Calendar invite attached automatically</p>
+              <textarea
+                className="w-full bg-bg border-0 rounded-xl p-3 text-sm text-primary resize-none focus:ring-1 focus:ring-primary/20 focus:outline-none"
+                rows={8}
+                placeholder="Your message to players..."
+                value={emailBody}
+                onChange={e => setEmailBody(e.target.value)}
+              />
+              {emailResult && <p className={`text-xs ${emailResult.includes('sent') ? 'text-secondary' : 'text-error'}`}>{emailResult}</p>}
+              <button
+                onClick={sendEmail}
+                disabled={emailSending || !emailBody.trim()}
+                className="w-full bg-interactive text-inverse text-sm font-semibold py-3 rounded-full active:scale-[.98] transition disabled:opacity-50"
+              >
+                {emailSending ? 'Sending...' : 'Send email'}
+              </button>
             </div>
           </div>
         )}
