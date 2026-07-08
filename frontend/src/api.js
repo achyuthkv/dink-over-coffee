@@ -6,9 +6,9 @@ async function call(endpoint, payload = {}) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   })
-  if (!res.ok) throw new Error(`API ${endpoint} failed: ${res.status}`)
-  const data = await res.json()
-  if (!data.ok) throw new Error(data.error || `API ${endpoint} returned not ok`)
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error((data && data.error) || `API ${endpoint} failed: ${res.status}`)
+  if (!data || !data.ok) throw new Error((data && data.error) || `API ${endpoint} returned not ok`)
   return data
 }
 
