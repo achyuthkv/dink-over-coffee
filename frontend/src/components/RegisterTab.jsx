@@ -34,8 +34,8 @@ export default function RegisterTab() {
   const [form, setForm] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('doc_player') || '{}')
-      return { name: saved.name || '', phone: saved.phone || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
-    } catch { return { name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
+      return { name: saved.name || '', phone: saved.phone || '', email: saved.email || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
+    } catch { return { name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
   })
   const [hasPartner, setHasPartner] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -114,6 +114,7 @@ export default function RegisterTab() {
     if (!selected) return 'Pick a session first'
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'Enter a valid email address'
     if (isDoubles && hasPartner === null) return 'Please select whether you have a partner'
     if (isDoubles && hasPartner) {
       if (!form.partnerName.trim() || form.partnerName.trim().length < 2) return 'Enter your partner\'s name'
@@ -159,7 +160,7 @@ export default function RegisterTab() {
     setError(null); setSubmitting(true)
     try {
       const player = {
-        name: form.name.trim(), phone: form.phone.trim(), skill: form.skill,
+        name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), skill: form.skill,
         ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && hasPartner && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
         ...(isDoubles && hasPartner && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
@@ -167,18 +168,18 @@ export default function RegisterTab() {
       }
       const res = await api.joinWaitlist(selected.id, player)
       if (res.alreadyRegistered) {
-        setError('You are already registered for this session.')
+        setError('You are already registered for this session. Please check the phone number.')
         setSubmitting(false)
         return
       }
       if (res.alreadyWaitlisted) {
-        setError('You are already on the waitlist for this session.')
+        setError('You are already on the waitlist for this session. Please check the phone number.')
         setSubmitting(false)
         return
       }
       setWaitlistSuccess({ session: selected, player, position: res.position })
-      localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-      setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+      localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+      setForm({ name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
       setSelected(null)
       await load()
     } catch (e) {
@@ -196,6 +197,7 @@ export default function RegisterTab() {
       const player = {
         name: form.name.trim(),
         phone: form.phone.trim(),
+        email: form.email.trim(),
         skill: form.skill,
         ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && hasPartner === true && { isTeam: true, partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
@@ -206,13 +208,13 @@ export default function RegisterTab() {
       if (!PAYMENTS_ENABLED) {
         const res = await api.registerFree(selected.id, player)
         if (res.alreadyRegistered) {
-          setError('You are already registered for this session.')
+          setError('You are already registered for this session. Please check the phone number.')
           setSubmitting(false)
           return
         }
         setSuccess({ session: selected, player, isTeam: player.isTeam })
-        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-        setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+        setForm({ name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
         setSelected(null)
         await load()
         setSubmitting(false)
@@ -256,8 +258,8 @@ export default function RegisterTab() {
               razorpay_signature: resp.razorpay_signature
             })
             setSuccess({ session: selected, player, isTeam: player.isTeam })
-            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-            setForm({ name: '', phone: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+            setForm({ name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
             setSelected(null)
             await load()
           } catch (e) {
@@ -404,7 +406,7 @@ export default function RegisterTab() {
                     <span className={`text-xs font-medium ${full ? 'text-error' : 'text-secondary'}`}>
                       {full ? 'Full' : `${remaining} left`}
                     </span>
-                    <span className="text-muted text-xs">· ₹{s.price}</span>
+                    <span className="text-muted text-xs">· ₹{s.price} per person</span>
                   </div>
                 </button>
               )
@@ -489,6 +491,13 @@ export default function RegisterTab() {
                   <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
                 )}
               </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-primary">Email <span className="text-error">*</span></label>
+              <input className="input mt-1" autoComplete="email" type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="you@example.com" required />
+              {form.email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && (
+                <p className="text-[11px] text-error mt-1">Enter a valid email address</p>
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-primary">Skill level</label>
@@ -578,7 +587,7 @@ export default function RegisterTab() {
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
+            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
