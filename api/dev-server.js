@@ -15,7 +15,7 @@ envContent.split('\n').forEach(line => {
 
 const routes = {};
 async function loadRoutes() {
-  const files = ['sessions', 'players', 'register', 'waitlist', 'promote', 'create-order', 'confirm-payment'];
+  const files = ['sessions', 'players', 'register', 'waitlist', 'promote', 'create-order', 'confirm-payment', 'send-email'];
   for (const f of files) {
     const mod = await import(`./${f}.js`);
     routes[f] = mod.default;

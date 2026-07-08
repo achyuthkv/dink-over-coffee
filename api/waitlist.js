@@ -72,6 +72,7 @@ export default async function handler(req, res) {
     const result = await atomicRegister(sessionId, session, {
       name: player.name.trim(),
       phone: player.phone.trim(),
+      email: player.email ? player.email.trim() : null,
       skill: player.skill,
       duprId: player.duprId || null,
       partnerName: player.partnerName ? player.partnerName.trim() : null,

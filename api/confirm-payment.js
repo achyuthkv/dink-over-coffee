@@ -1,5 +1,6 @@
 import supabase from './_lib/supabase.js';
 import { verifySignature, fetchOrder } from './_lib/razorpay.js';
+import { sendConfirmationEmail } from './_lib/sendConfirmationEmail.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
         session_id: sessionId,
         name: (notes.name || '').trim(),
         phone: (notes.phone || '').trim(),
+        email: (notes.email || '').trim() || null,
         skill: notes.skill || 'Beginner',
         amount: Number(order.amount) / 100,
         razorpay_payment_id,
@@ -58,6 +60,19 @@ export default async function handler(req, res) {
       .from('holds')
       .update({ status: 'consumed' })
       .eq('id', holdId);
+
+    const { data: session } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (session) {
+      sendConfirmationEmail(session, {
+        name: (notes.name || '').trim(),
+        email: (notes.email || '').trim() || null
+      });
+    }
 
     return res.status(200).json({ ok: true });
   } catch (err) {

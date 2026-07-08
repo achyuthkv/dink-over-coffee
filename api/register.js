@@ -2,6 +2,7 @@ import supabase from './_lib/supabase.js';
 import { getSlotCounts, checkAvailability } from './_lib/slots.js';
 import { atomicRegister } from './_lib/atomicRegister.js';
 import { rateLimit } from './_lib/rateLimit.js';
+import { sendConfirmationEmail } from './_lib/sendConfirmationEmail.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -66,6 +67,7 @@ export default async function handler(req, res) {
     const result = await atomicRegister(sessionId, session, {
       name: player.name.trim(),
       phone: player.phone.trim(),
+      email: player.email ? player.email.trim() : null,
       skill: player.skill,
       duprId: player.duprId || null,
       partnerName: player.partnerName ? player.partnerName.trim() : null,
@@ -82,6 +84,11 @@ export default async function handler(req, res) {
     if (result.alreadyExists) {
       return res.status(200).json({ ok: true, alreadyRegistered: true });
     }
+
+    sendConfirmationEmail(session, {
+      name: player.name.trim(),
+      email: player.email ? player.email.trim() : null
+    });
 
     return res.status(200).json({ ok: true });
   } catch (err) {
