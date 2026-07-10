@@ -11,6 +11,7 @@ export default async function handler(req, res) {
       .from('players')
       .select('name, skill, status, partner_name, needs_partner')
       .eq('session_id', sessionId)
+      .in('status', ['confirmed', 'waitlisted'])
       .order('created_at');
 
     if (error) return res.status(500).json({ ok: false, error: error.message });
