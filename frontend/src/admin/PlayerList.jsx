@@ -51,7 +51,7 @@ export default function PlayerList({ session, onBack }) {
 
   async function confirmRemove() {
     if (!removePlayer) return
-    await supabase.from('players').delete().eq('id', removePlayer.id)
+    await supabase.from('players').update({ status: 'withdrew' }).eq('id', removePlayer.id)
     setRemovePlayer(null)
     setExpandedId(null)
     loadPlayers()
@@ -59,6 +59,7 @@ export default function PlayerList({ session, onBack }) {
 
   const confirmed = players.filter(p => p.status === 'confirmed')
   const waitlisted = players.filter(p => p.status === 'waitlisted')
+  const withdrew = players.filter(p => p.status === 'withdrew')
   const paidCount = confirmed.filter(p => p.paid).length
   const totalSlots = Number(session.max_slots || 0)
   const remaining = Math.max(0, totalSlots - confirmed.length)
@@ -304,6 +305,26 @@ export default function PlayerList({ session, onBack }) {
               </div>
             )}
 
+            {/* Withdrew */}
+            {withdrew.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 px-1 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-muted" />
+                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Withdrew</span>
+                  <span className="text-[11px] text-muted">({withdrew.length})</span>
+                </div>
+                <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg opacity-60">
+                  {withdrew.map(p => (
+                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
+                      <span className="text-sm text-primary font-medium truncate line-through">{p.partner_name ? `${p.name} & ${p.partner_name}` : p.name}</span>
+                      <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${skillDot(p.skill)}`} />
+                      {p.phone && <span className="text-[11px] text-muted shrink-0">{p.phone}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {players.length === 0 && (
               <div className="rounded-xl border border-border bg-surface px-4 py-8 text-center">
                 <div className="text-muted text-sm">No players yet</div>
@@ -318,7 +339,7 @@ export default function PlayerList({ session, onBack }) {
             <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
               <p className="text-sm text-primary font-medium text-center">
                 Remove <strong>{removePlayer.name}</strong>?
-                <br /><span className="text-xs text-muted font-normal">This cannot be undone.</span>
+                <br /><span className="text-xs text-muted font-normal">They will be marked as withdrew.</span>
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setRemovePlayer(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Cancel</button>
