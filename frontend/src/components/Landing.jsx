@@ -66,7 +66,7 @@ export default function Landing() {
                   const remaining = Math.max(0, s.maxSlots - s.takenSlots)
                   const full = remaining <= 0
                   return (
-                    <Link key={s.id} to="/events" className="flex items-center gap-3 bg-surface rounded-xl p-3 border border-border active:scale-[.99] transition">
+                    <Link key={s.id} to={`/events?session=${s.id}`} className="flex items-center gap-3 bg-surface rounded-xl p-3 border border-border active:scale-[.99] transition">
                       <div className="w-10 h-10 rounded-lg bg-interactive/10 grid place-items-center shrink-0">
                         <div className="text-center leading-none">
                           <p className="text-interactive text-[10px] font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
@@ -131,6 +131,7 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
 
       {/* The vibe */}
       <section className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-12 border-t border-border">
