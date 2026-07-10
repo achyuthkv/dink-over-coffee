@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
 
@@ -45,6 +46,7 @@ export default function RegisterTab() {
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const formRef = useRef(null)
   const [qrIndex, setQrIndex] = useState(0)
+  const [searchParams] = useSearchParams()
 
   async function load(silent) {
     if (!silent) setLoading(true)
@@ -57,6 +59,11 @@ export default function RegisterTab() {
           const found = sessions.find(s => s.id === prev.id)
           if (found) return found
           return sessions.length === 1 ? sessions[0] : null
+        }
+        const paramId = searchParams.get('session')
+        if (paramId) {
+          const match = sessions.find(s => s.id === paramId)
+          if (match) return match
         }
         if (sessions.length === 1) return sessions[0]
         return prev
