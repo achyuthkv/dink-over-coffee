@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import SessionCard from './SessionCard.jsx'
+import WaiverConsent from './WaiverConsent.jsx'
 
 let razorpayPromise = null
 function loadRazorpay() {
@@ -46,6 +47,8 @@ export default function RegisterTab() {
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const formRef = useRef(null)
   const [qrIndex, setQrIndex] = useState(0)
+  const [waiverSigned, setWaiverSigned] = useState(false)
+  const waiverRef = useRef(null)
   const [searchParams] = useSearchParams()
 
   async function load(silent) {
@@ -113,7 +116,10 @@ export default function RegisterTab() {
     finally { if (!silent) setLoadingPlayers(false) }
   }
 
-  function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
+  function update(k, v) {
+    if (k === 'phone') setWaiverSigned(false)
+    setForm(f => ({ ...f, [k]: v }))
+  }
 
   const isDoubles = selected?.event_type === 'dupr_doubles'
 
@@ -161,11 +167,19 @@ export default function RegisterTab() {
     }
   }
 
+  async function saveWaiverIfNeeded() {
+    const sig = waiverRef.current?.getSignature()
+    if (sig) {
+      await api.signWaiver(form.phone.trim(), form.name.trim(), sig).catch(() => {})
+    }
+  }
+
   async function handleWaitlist() {
     const v = validate()
     if (v) { setError(v); return }
     setError(null); setSubmitting(true)
     try {
+      await saveWaiverIfNeeded();
       const player = {
         name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), skill: form.skill,
         ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
@@ -201,6 +215,7 @@ export default function RegisterTab() {
     if (v) { setError(v); return }
     setError(null); setSubmitting(true)
     try {
+      await saveWaiverIfNeeded();
       const player = {
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -589,12 +604,21 @@ export default function RegisterTab() {
             </div>
           )}
 
+          {form.phone.length === 10 && form.name.trim().length >= 2 && (
+            <WaiverConsent
+              ref={waiverRef}
+              phone={form.phone}
+              name={form.name.trim()}
+              onReady={(ready) => setWaiverSigned(ready)}
+            />
+          )}
+
           {error && <div className="mt-3 text-sm text-error">{error}</div>}
 
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
+            disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
