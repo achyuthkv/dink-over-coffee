@@ -51,7 +51,6 @@ export default function Landing() {
           <p className="mt-5 text-muted text-sm md:text-base leading-relaxed">
             Bangalore's pickleball community. Sessions every week in Jayanagar. All levels. No partner needed. Just show up.
           </p>
-          <p className="mt-3 text-interactive text-xs font-semibold tracking-wide">200+ community members · 5 sessions a week · Since 2024</p>
 
           <div className="mt-7 flex flex-wrap gap-2.5">
             <Link to="/events" className="inline-flex items-center gap-2 rounded-full bg-interactive text-inverse px-6 py-3 text-sm font-semibold active:scale-[.98] transition shadow-lg shadow-interactive/10">
