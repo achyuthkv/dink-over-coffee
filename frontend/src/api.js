@@ -18,7 +18,10 @@ export const api = {
   registerFree: (sessionId, player) => call('register', { sessionId, player }),
   joinWaitlist: (sessionId, player) => call('waitlist', { sessionId, player }),
   createOrder: (sessionId, player) => call('create-order', { sessionId, player }),
-  confirmPayment: (payload) => call('confirm-payment', payload)
+  confirmPayment: (payload) => call('confirm-payment', payload),
+  sessionHistory: () => call('session-history'),
+  checkWaiver: (phone) => call('waiver', { action: 'check', phone }),
+  signWaiver: (phone, name, signature) => call('waiver', { action: 'sign', phone, name, signature })
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
