@@ -32,7 +32,8 @@ export default async function handler(req, res) {
 
     if (existing) {
       if (existing.status === 'confirmed') return res.status(200).json({ ok: true, alreadyRegistered: true });
-      return res.status(200).json({ ok: true, alreadyWaitlisted: true });
+      if (existing.status === 'waitlisted') return res.status(200).json({ ok: true, alreadyWaitlisted: true });
+      await supabase.from('players').delete().eq('id', existing.id);
     }
 
     if (player.partnerPhone) {
@@ -42,6 +43,7 @@ export default async function handler(req, res) {
         .select('id')
         .eq('session_id', sessionId)
         .eq('phone', partnerPhone)
+        .in('status', ['confirmed', 'waitlisted'])
         .maybeSingle();
       if (partnerAsPlayer) return res.status(409).json({ ok: false, error: 'Your partner is already registered for this session' });
 
@@ -50,6 +52,7 @@ export default async function handler(req, res) {
         .select('id')
         .eq('session_id', sessionId)
         .eq('partner_phone', partnerPhone)
+        .in('status', ['confirmed', 'waitlisted'])
         .maybeSingle();
       if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
     }
