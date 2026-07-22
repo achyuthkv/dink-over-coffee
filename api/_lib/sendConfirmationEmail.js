@@ -110,7 +110,7 @@ See you on the court!
 <p style="margin:8px 0 0;font-size:11px;color:#93a29b;">
 <a href="https://dinkovercoffee.com" style="color:#00B08A;text-decoration:none;">dinkovercoffee.com</a>
 &nbsp;&middot;&nbsp;
-<a href="mailto:dinkovercoffee@gmail.com" style="color:#00B08A;text-decoration:none;">dinkovercoffee@gmail.com</a>
+<a href="mailto:connect@dinkovercoffee.com" style="color:#00B08A;text-decoration:none;">connect@dinkovercoffee.com</a>
 </p>
 </td></tr>
 
