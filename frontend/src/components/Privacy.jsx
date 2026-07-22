@@ -103,7 +103,7 @@ export default function Privacy() {
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" />Withdraw consent at any time</li>
             </ul>
             <p className="text-muted text-sm leading-relaxed mt-3">
-              To exercise any of these rights, contact us at <a href="mailto:dinkovercoffee@gmail.com" className="text-interactive font-medium">dinkovercoffee@gmail.com</a>.
+              To exercise any of these rights, contact us at <a href="mailto:connect@dinkovercoffee.com" className="text-interactive font-medium">connect@dinkovercoffee.com</a>.
             </p>
           </section>
 
@@ -122,7 +122,7 @@ export default function Privacy() {
             <div className="mt-3 bg-surface rounded-2xl p-5 border border-border">
               <p className="text-primary text-sm font-semibold">Dink Over Coffee</p>
               <p className="text-muted text-sm mt-1">Jayanagar & Basavangudi, Bengaluru, Karnataka, India</p>
-              <p className="text-muted text-sm mt-1">Email: <a href="mailto:dinkovercoffee@gmail.com" className="text-interactive font-medium">dinkovercoffee@gmail.com</a></p>
+              <p className="text-muted text-sm mt-1">Email: <a href="mailto:connect@dinkovercoffee.com" className="text-interactive font-medium">connect@dinkovercoffee.com</a></p>
             </div>
           </section>
 

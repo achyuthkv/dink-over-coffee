@@ -101,7 +101,7 @@ export default function PlayersTab() {
               <div className="text-text text-lg font-bold">{active.time}</div>
               <div className="text-primary text-sm">{active.venue}</div>
             </div>
-            <span className="pill">{active.takenSlots || 0}/{active.maxSlots} booked</span>
+            <span className="pill">{Math.max(0, Number(active.maxSlots || 0) - Number(active.takenSlots || 0))} left</span>
           </div>
 
           <div className="mt-4 divide-y divide-border">

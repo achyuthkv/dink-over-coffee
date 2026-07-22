@@ -193,7 +193,7 @@ export default function Landing() {
           <span>·</span>
           <Link to="/privacy" className="hover:text-primary transition">Privacy</Link>
           <span>·</span>
-          <a href="mailto:dinkovercoffee@gmail.com" className="hover:text-primary transition">dinkovercoffee@gmail.com</a>
+          <a href="mailto:connect@dinkovercoffee.com" className="hover:text-primary transition">connect@dinkovercoffee.com</a>
         </div>
       </footer>
 

@@ -91,7 +91,6 @@ export default function SessionCard({ session, onSelect, selected }) {
               <span className={beginnerRemaining <= 0 ? 'text-interactive-pressed' : 'text-secondary'}>
                 Beginner: {beginnerRemaining <= 0 ? 'Full' : `${beginnerRemaining} left`}
               </span>
-              <span className="text-secondary">{beginnerTaken}/{beginnerSlots}</span>
             </div>
             <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
@@ -110,7 +109,6 @@ export default function SessionCard({ session, onSelect, selected }) {
               <span className={otherRemaining <= 0 ? 'text-interactive-pressed' : 'text-secondary'}>
                 Intermediate+: {otherRemaining <= 0 ? 'Full' : `${otherRemaining} left`}
               </span>
-              <span className="text-secondary">{otherTaken}/{otherSlots}</span>
             </div>
             <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
@@ -131,7 +129,6 @@ export default function SessionCard({ session, onSelect, selected }) {
             <span className={full ? 'text-interactive-pressed' : 'text-secondary'}>
               {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
             </span>
-            <span className="text-secondary">{taken}/{max}</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full rounded-full bg-border overflow-hidden">
             <div
