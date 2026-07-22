@@ -4,7 +4,6 @@ import SessionForm from './SessionForm.jsx'
 import PlayerList from './PlayerList.jsx'
 import UpiAccounts from './UpiAccounts.jsx'
 import Waivers from './Waivers.jsx'
-import Metrics from './Metrics.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function MiniCalendar({ sessions, selectedDate, onSelect }) {
@@ -111,7 +110,6 @@ export default function Dashboard() {
   const [deletePlayerCount, setDeletePlayerCount] = useState(0)
   const [showUpi, setShowUpi] = useState(false)
   const [showWaivers, setShowWaivers] = useState(false)
-  const [showMetrics, setShowMetrics] = useState(false)
 
   async function loadSessions() {
     setLoading(true)
@@ -205,10 +203,6 @@ export default function Dashboard() {
     await supabase.auth.signOut()
   }
 
-  if (showMetrics) {
-    return <Metrics onBack={() => setShowMetrics(false)} />
-  }
-
   if (showWaivers) {
     return <Waivers onBack={() => setShowWaivers(false)} />
   }
@@ -234,9 +228,6 @@ export default function Dashboard() {
           <h1 className="text-primary font-bold text-lg">Sessions</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <button onClick={() => setShowMetrics(true)} title="Metrics" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </button>
             <button onClick={() => setShowWaivers(true)} title="Waivers" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </button>
@@ -351,9 +342,6 @@ export default function Dashboard() {
                   </button>
                   <button onClick={() => exportCSV(s)} title="Export CSV" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </button>
-                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/r/${s.id}`); alert('Recap link copied!') }} title="Copy recap link" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-interactive active:bg-bg transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                   </button>
                   <button onClick={() => toggleActive(s)} title={s.active ? 'Deactivate' : 'Activate'} className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
                     {s.active ? (
