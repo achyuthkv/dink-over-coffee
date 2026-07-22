@@ -32,7 +32,7 @@
   ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/r/:id", "destination": "/api/recap-meta?id=:id" },
+    { "source": "/r/:id", "destination": "/api/recap?id=:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
