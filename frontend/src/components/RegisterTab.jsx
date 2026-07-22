@@ -153,7 +153,8 @@ export default function RegisterTab() {
         waitlistAvailable = slotsFull && bWlMax > 0 && bWlCount < bWlMax
       } else {
         const otherSlots = Number(selected.maxSlots) - Number(selected.beginnerSlots)
-        const otherRemaining = Math.max(0, otherSlots - Number(selected.otherTaken || 0))
+        const beginnerOverflow = Math.max(0, Number(selected.beginnerTaken || 0) - Number(selected.beginnerSlots))
+        const otherRemaining = Math.max(0, otherSlots - beginnerOverflow - Number(selected.otherTaken || 0))
         slotsFull = otherRemaining <= 0
         const wlMax = Number(selected.waitlistMax || 0)
         const wlCount = Number(selected.otherWaitlistCount || 0)

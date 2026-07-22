@@ -47,8 +47,9 @@ export default function SessionCard({ session, onSelect, selected }) {
   const hasSplit = beginnerSlots > 0
 
   const beginnerRemaining = hasSplit ? Math.max(0, beginnerSlots - beginnerTaken) : null
+  const beginnerOverflow = hasSplit ? Math.max(0, beginnerTaken - beginnerSlots) : 0
   const otherSlots = hasSplit ? max - beginnerSlots : null
-  const otherRemaining = hasSplit ? Math.max(0, otherSlots - otherTaken) : null
+  const otherRemaining = hasSplit ? Math.max(0, otherSlots - beginnerOverflow - otherTaken) : null
 
   const waitlistMax = Number(session.waitlistMax || 0)
   const waitlistCount = Number(session.waitlistCount || 0)
@@ -113,7 +114,7 @@ export default function SessionCard({ session, onSelect, selected }) {
             <div className="mt-1 h-1.5 w-full rounded-full bg-border overflow-hidden">
               <div
                 className={`h-full ${otherRemaining <= 0 ? 'bg-interactive-pressed' : 'bg-secondary'}`}
-                style={{ width: `${otherSlots > 0 ? Math.min(100, Math.round((otherTaken / otherSlots) * 100)) : 0}%` }}
+                style={{ width: `${(otherSlots - beginnerOverflow) > 0 ? Math.min(100, Math.round((otherTaken / (otherSlots - beginnerOverflow)) * 100)) : 100}%` }}
               />
             </div>
             {otherRemaining <= 0 && waitlistMax > 0 && otherWaitlistCount < waitlistMax && (
