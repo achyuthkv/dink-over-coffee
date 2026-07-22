@@ -54,7 +54,7 @@ export default function Recap() {
 
   const { session, stats, players, nextSession } = recap
   const shareText = `${stats.totalPlayers} players hit the courts at ${session.venue} this ${DAYS[new Date(session.date + 'T00:00:00').getDay()]}! ${stats.firstTimers > 0 ? `${stats.firstTimers} first-timer${stats.firstTimers > 1 ? 's' : ''} joined us.` : ''} Check it out:`
-  const shareUrl = `${window.location.origin}/recap/${sessionId}`
+  const shareUrl = `${window.location.origin}/r/${sessionId}`
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n' + shareUrl)}`
 
   return (
