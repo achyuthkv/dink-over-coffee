@@ -21,7 +21,8 @@ export const api = {
   confirmPayment: (payload) => call('confirm-payment', payload),
   sessionHistory: () => call('session-history'),
   checkWaiver: (phone) => call('waiver', { action: 'check', phone }),
-  signWaiver: (phone, name, signature) => call('waiver', { action: 'sign', phone, name, signature })
+  signWaiver: (phone, name, signature) => call('waiver', { action: 'sign', phone, name, signature }),
+  getRecap: (sessionId) => call('recap', { sessionId })
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
