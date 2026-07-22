@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import Landing from './components/Landing.jsx'
 import RegisterTab from './components/RegisterTab.jsx'
+import Recap from './components/Recap.jsx'
 import Terms from './components/Terms.jsx'
 import Privacy from './components/Privacy.jsx'
 import NotFound from './components/NotFound.jsx'
@@ -43,6 +44,7 @@ export default function App() {
           </div>
         </div>
       } />
+      <Route path="/recap/:sessionId" element={<Recap />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="*" element={<NotFound />} />
