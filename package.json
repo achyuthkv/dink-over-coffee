@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2",
+    "@vercel/og": "^0.6",
     "ws": "^8.21.0"
   },
   "devDependencies": {
