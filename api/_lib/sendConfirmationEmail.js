@@ -37,7 +37,7 @@ function generateICS(session) {
     `DTSTART;TZID=Asia/Kolkata:${dtStart}`,
     `DTEND;TZID=Asia/Kolkata:${dtEnd}`,
     `SUMMARY:${session.title || 'Dink Over Coffee'}`,
-    `LOCATION:${session.venue || ''}`,
+    `LOCATION:${session.venue || ''}${session.venues?.address ? ', ' + session.venues.address : ''}`,
     `DESCRIPTION:Play. Connect. Belong.`,
     'STATUS:CONFIRMED',
     'END:VEVENT',
@@ -48,6 +48,8 @@ function generateICS(session) {
 function buildConfirmationHtml(session, playerName) {
   const dateFormatted = formatSessionDate(session.date);
   const title = session.title || 'Dink Over Coffee';
+  const mapsUrl = session.venues?.google_maps_url || null;
+  const venueAddress = session.venues?.address || '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -75,7 +77,7 @@ function buildConfirmationHtml(session, playerName) {
 <tr><td style="padding:16px 20px;">
 <p style="margin:0;font-size:14px;color:#003D30;font-weight:600;">${title}</p>
 <p style="margin:4px 0 0;font-size:13px;color:#5d7a71;">${dateFormatted} &middot; ${session.time || ''}</p>
-<p style="margin:4px 0 0;font-size:13px;color:#5d7a71;">${session.venue || ''}</p>
+<p style="margin:4px 0 0;font-size:13px;color:#5d7a71;">${mapsUrl ? `<a href="${mapsUrl}" style="color:#00B08A;text-decoration:none;">${session.venue || ''}</a>` : (session.venue || '')}${venueAddress ? ` — ${venueAddress}` : ''}</p>
 </td></tr>
 </table>
 </td></tr>

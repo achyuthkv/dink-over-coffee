@@ -63,7 +63,7 @@ export default async function handler(req, res) {
 
     const { data: session } = await supabase
       .from('sessions')
-      .select('*')
+      .select('*, venues(name, address, google_maps_url)')
       .eq('id', sessionId)
       .single();
 

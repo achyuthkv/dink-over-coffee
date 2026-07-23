@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
     const { data: session, error: sessErr } = await supabase
       .from('sessions')
-      .select('*')
+      .select('*, venues(name, address, google_maps_url)')
       .eq('id', sessionId)
       .eq('active', true)
       .single();
