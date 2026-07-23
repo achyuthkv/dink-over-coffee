@@ -28,10 +28,18 @@ export default function SessionForm({ session, onSave, onCancel }) {
   const [error, setError] = useState(null)
   const [upiAccounts, setUpiAccounts] = useState([])
   const [selectedUpis, setSelectedUpis] = useState([])
+  const [venues, setVenues] = useState([])
+  const [venueId, setVenueId] = useState(session?.venue_id || '')
 
   useEffect(() => {
     loadUpiAccounts()
+    loadVenues()
   }, [])
+
+  async function loadVenues() {
+    const { data } = await supabase.from('venues').select('*').order('name')
+    setVenues(data || [])
+  }
 
   async function loadUpiAccounts() {
     const { data } = await supabase.from('upi_accounts').select('*').eq('active', true).order('created_at')
@@ -58,6 +66,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
     const payload = {
       ...rest,
       time,
+      venue_id: venueId || null,
       price: Number(form.price),
       max_slots: Number(form.max_slots),
       waitlist_max: Number(form.waitlist_max),
@@ -119,7 +128,26 @@ export default function SessionForm({ session, onSave, onCancel }) {
 
           <div>
             <label className="text-xs font-semibold text-primary">Venue</label>
-            <input className="input mt-1" value={form.venue} onChange={e => update('venue', e.target.value)} placeholder="Venue" required />
+            {venues.length > 0 ? (
+              <select
+                className="input mt-1"
+                value={venueId}
+                onChange={e => {
+                  const id = e.target.value
+                  setVenueId(id)
+                  const v = venues.find(v => v.id === id)
+                  if (v) update('venue', v.name)
+                }}
+                required
+              >
+                <option value="">Select venue...</option>
+                {venues.map(v => (
+                  <option key={v.id} value={v.id}>{v.name}{v.address ? ` — ${v.address}` : ''}</option>
+                ))}
+              </select>
+            ) : (
+              <input className="input mt-1" value={form.venue} onChange={e => update('venue', e.target.value)} placeholder="Venue" required />
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3">

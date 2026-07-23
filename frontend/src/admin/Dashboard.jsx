@@ -5,6 +5,7 @@ import PlayerList from './PlayerList.jsx'
 import UpiAccounts from './UpiAccounts.jsx'
 import Waivers from './Waivers.jsx'
 import Finances from './Finances.jsx'
+import Venues from './Venues.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -203,6 +204,7 @@ export default function Dashboard() {
   const [showUpi, setShowUpi] = useState(false)
   const [showWaivers, setShowWaivers] = useState(false)
   const [showFinances, setShowFinances] = useState(false)
+  const [showVenues, setShowVenues] = useState(false)
   const [showAllSessions, setShowAllSessions] = useState(false)
 
   async function loadSessions() {
@@ -322,6 +324,10 @@ export default function Dashboard() {
     return <Waivers onBack={() => setShowWaivers(false)} />
   }
 
+  if (showVenues) {
+    return <Venues onBack={() => setShowVenues(false)} />
+  }
+
   if (showUpi) {
     return <UpiAccounts onBack={() => setShowUpi(false)} />
   }
@@ -381,6 +387,9 @@ export default function Dashboard() {
           </button>
           <button onClick={() => setShowWaivers(true)} title="Waivers" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </button>
+          <button onClick={() => setShowVenues(true)} title="Venues" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </button>
           <button onClick={() => setShowUpi(true)} title="Payment methods" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
