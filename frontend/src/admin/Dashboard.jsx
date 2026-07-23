@@ -1,115 +1,209 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import SessionForm from './SessionForm.jsx'
 import PlayerList from './PlayerList.jsx'
 import UpiAccounts from './UpiAccounts.jsx'
 import Waivers from './Waivers.jsx'
+import Finances from './Finances.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
-function MiniCalendar({ sessions, selectedDate, onSelect }) {
-  const [viewDate, setViewDate] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
+function DateStrip({ selectedDate, onSelect, sessionDates }) {
+  const scrollRef = useRef(null)
+  const selectedRef = useRef(null)
+  const [viewMonth, setViewMonth] = useState(() => {
+    const d = new Date(selectedDate + 'T00:00:00')
+    return { year: d.getFullYear(), month: d.getMonth() }
   })
 
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
+  const days = useMemo(() => {
+    const { year, month } = viewMonth
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const result = []
+    for (let d = 1; d <= daysInMonth; d++) {
+      result.push(new Date(year, month, d))
+    }
+    return result
+  }, [viewMonth])
 
-  const sessionDates = useMemo(() => {
-    const set = new Set()
-    sessions.forEach(s => { if (s.date) set.add(s.date) })
-    return set
-  }, [sessions])
+  useEffect(() => {
+    if (selectedRef.current && scrollRef.current) {
+      const container = scrollRef.current
+      const el = selectedRef.current
+      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+    }
+  }, [selectedDate, viewMonth])
 
-  const today = new Date().toISOString().slice(0, 10)
-
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  const cells = []
-  for (let i = 0; i < firstDay; i++) cells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
-
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-  function prev() { setViewDate(new Date(year, month - 1, 1)) }
-  function next() { setViewDate(new Date(year, month + 1, 1)) }
-
-  function dateStr(d) {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  function prevMonth() {
+    setViewMonth(v => {
+      const m = v.month === 0 ? 11 : v.month - 1
+      const y = v.month === 0 ? v.year - 1 : v.year
+      const lastDay = new Date(y, m + 1, 0).getDate()
+      onSelect(`${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`)
+      return { year: y, month: m }
+    })
   }
 
+  function nextMonth() {
+    setViewMonth(v => {
+      const m = v.month === 11 ? 0 : v.month + 1
+      const y = v.month === 11 ? v.year + 1 : v.year
+      onSelect(`${y}-${String(m + 1).padStart(2, '0')}-01`)
+      return { year: y, month: m }
+    })
+  }
+
+  function goToToday() {
+    const now = new Date()
+    const todayStr = now.toISOString().slice(0, 10)
+    setViewMonth({ year: now.getFullYear(), month: now.getMonth() })
+    onSelect(todayStr)
+  }
+
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const today = new Date().toISOString().slice(0, 10)
+  const isCurrentMonth = viewMonth.year === new Date().getFullYear() && viewMonth.month === new Date().getMonth()
+
   return (
-    <div className="bg-surface rounded-2xl border border-border p-4 mb-5">
-      <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="w-7 h-7 flex items-center justify-center rounded-full text-muted active:bg-bg transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <span className="text-primary text-sm font-semibold">{monthNames[month]} {year}</span>
-        <button onClick={next} className="w-7 h-7 flex items-center justify-center rounded-full text-muted active:bg-bg transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-primary font-bold text-lg">Schedule</h1>
+        <div className="flex items-center gap-1">
+          {!isCurrentMonth && (
+            <button onClick={goToToday} className="text-[11px] text-interactive font-medium px-2 py-1 rounded-full active:opacity-70 transition mr-1">
+              Today
+            </button>
+          )}
+          <button onClick={prevMonth} className="w-7 h-7 flex items-center justify-center rounded-full text-muted active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span className="text-primary text-sm font-semibold min-w-[120px] text-center">{monthNames[viewMonth.month]} {viewMonth.year}</span>
+          <button onClick={nextMonth} className="w-7 h-7 flex items-center justify-center rounded-full text-muted active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
       </div>
-      <div className="grid grid-cols-7 text-center text-[10px] font-medium text-muted mb-1">
-        {['S','M','T','W','T','F','S'].map((d, i) => <span key={i}>{d}</span>)}
-      </div>
-      <div className="grid grid-cols-7 gap-0.5">
-        {cells.map((d, i) => {
-          if (!d) return <span key={i} />
-          const ds = dateStr(d)
-          const hasSession = sessionDates.has(ds)
-          const isToday = ds === today
+      <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5">
+        {days.map(d => {
+          const ds = d.toISOString().slice(0, 10)
           const isSelected = ds === selectedDate
+          const isToday = ds === today
+          const hasSession = sessionDates.has(ds)
           return (
             <button
-              key={i}
-              type="button"
-              onClick={() => onSelect(isSelected ? null : ds)}
-              className={`relative w-full aspect-square flex items-center justify-center rounded-lg text-xs transition
-                ${isSelected ? 'bg-interactive text-inverse font-bold' : isToday ? 'font-bold text-interactive' : 'text-primary'}
-                ${hasSession && !isSelected ? 'font-semibold' : ''}
-                active:scale-90
+              key={ds}
+              ref={isSelected ? selectedRef : null}
+              onClick={() => onSelect(ds)}
+              className={`flex flex-col items-center shrink-0 w-[52px] py-2 rounded-xl transition
+                ${isSelected ? 'bg-interactive text-inverse' : 'text-primary'}
+                ${!isSelected && isToday ? 'border-2 border-interactive' : !isSelected ? 'border border-border' : ''}
+                active:scale-95
               `}
             >
-              {d}
+              <span className={`text-[10px] font-semibold tracking-wide ${isSelected ? 'text-inverse/70' : 'text-muted'}`}>
+                {dayNames[d.getDay()]}
+              </span>
+              <span className={`text-lg font-bold mt-0.5`}>
+                {d.getDate()}
+              </span>
               {hasSession && !isSelected && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-interactive" />
+                <span className="w-1.5 h-1.5 rounded-full bg-interactive mt-0.5" />
+              )}
+              {hasSession && isSelected && (
+                <span className="w-1.5 h-1.5 rounded-full bg-inverse/60 mt-0.5" />
               )}
             </button>
           )
         })}
       </div>
-      {selectedDate && (
-        <button onClick={() => onSelect(null)} className="mt-2 text-[11px] text-interactive font-medium w-full text-center">
-          Clear filter
+    </div>
+  )
+}
+
+function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, onDuplicate, onToggleActive, onDelete, onExport }) {
+  const [expanded, setExpanded] = useState(false)
+  const total = Number(session.max_slots || 0)
+
+  return (
+    <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onViewPlayers(session)}
+        className="w-full text-left px-5 py-4"
+      >
+        <div className="flex items-start justify-between">
+          <div className="min-w-0">
+            <div className="text-interactive font-bold text-base">{session.time}</div>
+            <div className="text-primary font-semibold text-sm mt-0.5 truncate">{session.title || session.venue}</div>
+          </div>
+          <div className="text-right shrink-0 ml-3">
+            <div className="text-primary font-bold text-base">{playerCount}<span className="text-muted font-normal">/{total}</span></div>
+            <div className="text-[10px] text-muted uppercase tracking-wide">Players</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {session.venue && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-bg border border-border px-2.5 py-1 rounded-full">
+              {session.venue}
+            </span>
+          )}
+          {session.event_type === 'dupr' && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR</span>
+          )}
+          {session.event_type === 'dupr_doubles' && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
+          )}
+          {paidCount != null && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${paidCount === playerCount ? 'text-secondary bg-secondary/10' : 'text-warning bg-warning/10'}`}>
+              {paidCount}/{playerCount} paid
+            </span>
+          )}
+        </div>
+      </button>
+
+      <div className="border-t border-border px-5 py-3 flex items-center justify-between">
+        <span className={`text-[11px] font-medium ${session.active ? 'text-secondary' : 'text-muted'}`}>
+          {session.active ? 'Active' : 'Inactive'}
+        </span>
+        <button
+          type="button"
+          onClick={() => setExpanded(v => !v)}
+          className="text-[11px] text-muted font-medium flex items-center gap-1 active:opacity-70 transition"
+        >
+          Actions
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`transition-transform ${expanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
         </button>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-border px-5 py-3 flex flex-wrap gap-2">
+          <button onClick={() => onEdit(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Edit</button>
+          <button onClick={() => onDuplicate(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Duplicate</button>
+          <button onClick={() => onExport(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Export CSV</button>
+          <button onClick={() => onToggleActive(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">
+            {session.active ? 'Deactivate' : 'Activate'}
+          </button>
+          <button onClick={() => onDelete(session)} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/30 active:bg-error-subtle transition">Delete</button>
+        </div>
       )}
     </div>
   )
 }
 
-function fmtDate(d) {
-  if (!d) return ''
-  const dt = new Date(d + 'T00:00:00')
-  if (isNaN(dt)) return String(d)
-  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  return `${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]}`
-}
-
 export default function Dashboard() {
   const [sessions, setSessions] = useState([])
+  const [playerCounts, setPlayerCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [viewPlayers, setViewPlayers] = useState(null)
-  const [filter, setFilter] = useState('upcoming')
-  const [calendarDate, setCalendarDate] = useState(null)
-  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlayerCount, setDeletePlayerCount] = useState(0)
   const [showUpi, setShowUpi] = useState(false)
   const [showWaivers, setShowWaivers] = useState(false)
+  const [showFinances, setShowFinances] = useState(false)
+  const [showAllSessions, setShowAllSessions] = useState(false)
 
   async function loadSessions() {
     setLoading(true)
@@ -118,20 +212,37 @@ export default function Dashboard() {
       .select('*')
       .order('date', { ascending: false })
     setSessions(data || [])
+
+    if (data && data.length > 0) {
+      const { data: players } = await supabase
+        .from('players')
+        .select('session_id, status, paid')
+        .eq('status', 'confirmed')
+      const counts = {}
+      ;(players || []).forEach(p => {
+        if (!counts[p.session_id]) counts[p.session_id] = { total: 0, paid: 0 }
+        counts[p.session_id].total++
+        if (p.paid) counts[p.session_id].paid++
+      })
+      setPlayerCounts(counts)
+    }
     setLoading(false)
   }
 
   useEffect(() => { loadSessions() }, [])
 
-  const today = new Date().toISOString().slice(0, 10)
-  const filtered = sessions.filter(s => {
-    if (calendarDate) return s.date === calendarDate
-    if (filter === 'upcoming') return s.date >= today
-    if (filter === 'past') return s.date < today
-    if (filter === 'active') return s.active
-    if (filter === 'inactive') return !s.active
-    return true
-  })
+  const sessionDates = useMemo(() => {
+    const set = new Set()
+    sessions.forEach(s => { if (s.date) set.add(s.date) })
+    return set
+  }, [sessions])
+
+  const daySessions = useMemo(() => {
+    return sessions.filter(s => s.date === selectedDate)
+  }, [sessions, selectedDate])
+
+  const activeDaySessions = daySessions.filter(s => s.active)
+  const inactiveDaySessions = daySessions.filter(s => !s.active)
 
   function handleEdit(session) {
     setEditing(session)
@@ -203,6 +314,10 @@ export default function Dashboard() {
     await supabase.auth.signOut()
   }
 
+  if (showFinances) {
+    return <Finances onBack={() => setShowFinances(false)} />
+  }
+
   if (showWaivers) {
     return <Waivers onBack={() => setShowWaivers(false)} />
   }
@@ -219,75 +334,153 @@ export default function Dashboard() {
     return <SessionForm session={editing} onSave={handleSaved} onCancel={() => { setShowForm(false); setEditing(null) }} />
   }
 
-  const filters = ['upcoming', 'past', 'active', 'inactive', 'all']
+  if (showAllSessions) {
+    const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
+    return (
+      <div className="min-h-screen bg-pattern">
+        <div className="max-w-xl mx-auto px-5 py-6">
+          <div className="flex items-center gap-3 mb-5">
+            <button onClick={() => setShowAllSessions(false)} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h1 className="text-primary font-bold text-lg">All Sessions</h1>
+          </div>
+          <div className="space-y-2">
+            {sorted.map(s => {
+              const counts = playerCounts[s.id] || { total: 0, paid: 0 }
+              return (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  playerCount={counts.total}
+                  paidCount={counts.paid}
+                  onViewPlayers={setViewPlayers}
+                  onEdit={handleEdit}
+                  onDuplicate={duplicateSession}
+                  onToggleActive={toggleActive}
+                  onDelete={deleteSession}
+                  onExport={exportCSV}
+                />
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-5xl mx-auto px-5 py-8">
-        <div className="flex items-center justify-between mb-5">
-          <h1 className="text-primary font-bold text-lg">Sessions</h1>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <button onClick={() => setShowWaivers(true)} title="Waivers" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            </button>
-            <button onClick={() => setShowUpi(true)} title="Payment methods" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </button>
-            <button onClick={handleNew} title="New session" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-secondary active:bg-bg transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-            <button onClick={handleLogout} title="Logout" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
-          </div>
+      <div className="max-w-xl mx-auto px-5 py-6">
+
+        {/* Toolbar */}
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <ThemeToggle />
+          <button onClick={() => setShowFinances(true)} title="Finances" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-secondary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </button>
+          <button onClick={() => setShowWaivers(true)} title="Waivers" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </button>
+          <button onClick={() => setShowUpi(true)} title="Payment methods" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </button>
+          <button onClick={() => setShowAllSessions(true)} title="All sessions" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+          <button onClick={handleLogout} title="Logout" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
 
-        <div className="md:flex md:gap-6 md:items-start">
-          {/* Desktop: sticky sidebar calendar */}
-          <div className="hidden md:block md:w-72 md:shrink-0 md:sticky md:top-8">
-            <MiniCalendar sessions={sessions} selectedDate={calendarDate} onSelect={(d) => { setCalendarDate(d); if (d) setFilter('all') }} />
-          </div>
+        {/* Date strip */}
+        <DateStrip selectedDate={selectedDate} onSelect={setSelectedDate} sessionDates={sessionDates} />
 
-          {/* Mobile: collapsible calendar */}
-          <div className="md:hidden">
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={() => setCalendarOpen(v => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-interactive active:opacity-70 transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                {calendarOpen ? 'Hide calendar' : 'Show calendar'}
-              </button>
-              {calendarDate && (
-                <button
-                  onClick={() => { setCalendarDate(null); setFilter('upcoming') }}
-                  className="flex items-center gap-1 text-[11px] bg-interactive/10 text-interactive px-2.5 py-1 rounded-full font-medium active:opacity-70 transition"
-                >
-                  {calendarDate}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+        {loading && <p className="text-muted text-sm text-center py-8">Loading...</p>}
+
+        {!loading && (
+          <>
+            {/* Active sessions header */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Active Sessions</span>
+              {activeDaySessions.length > 0 && (
+                <span className="text-[11px] font-medium text-interactive">{activeDaySessions.length} Active Today</span>
               )}
             </div>
-            {calendarOpen && (
-              <MiniCalendar sessions={sessions} selectedDate={calendarDate} onSelect={(d) => { setCalendarDate(d); if (d) setFilter('all') }} />
-            )}
-          </div>
 
-          {/* Session list */}
-          <div className="flex-1 min-w-0">
-            <div className="flex gap-1 mb-4 overflow-x-auto">
-              {filters.map(f => (
-                <button
-                  key={f}
-                  onClick={() => { setFilter(f); setCalendarDate(null) }}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize transition ${filter === f && !calendarDate ? 'bg-interactive text-inverse' : 'text-muted'}`}
-                >{f}</button>
-              ))}
+            {/* Session cards */}
+            {daySessions.length === 0 && (
+              <div className="bg-surface rounded-2xl border border-border px-5 py-10 text-center">
+                <p className="text-muted text-sm mb-3">No sessions on this day</p>
+                <button onClick={handleNew} className="text-sm font-semibold text-interactive active:opacity-70 transition">
+                  + Create session
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {activeDaySessions.map(s => {
+                const counts = playerCounts[s.id] || { total: 0, paid: 0 }
+                return (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    playerCount={counts.total}
+                    paidCount={counts.paid}
+                    onViewPlayers={setViewPlayers}
+                    onEdit={handleEdit}
+                    onDuplicate={duplicateSession}
+                    onToggleActive={toggleActive}
+                    onDelete={deleteSession}
+                    onExport={exportCSV}
+                  />
+                )
+              })}
             </div>
 
-        {loading && <p className="text-muted text-sm text-center py-8">Loading…</p>}
+            {inactiveDaySessions.length > 0 && (
+              <>
+                <div className="flex items-center justify-between mt-6 mb-3">
+                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Inactive</span>
+                  <span className="text-[11px] text-muted">{inactiveDaySessions.length}</span>
+                </div>
+                <div className="space-y-3 opacity-60">
+                  {inactiveDaySessions.map(s => {
+                    const counts = playerCounts[s.id] || { total: 0, paid: 0 }
+                    return (
+                      <SessionCard
+                        key={s.id}
+                        session={s}
+                        playerCount={counts.total}
+                        paidCount={counts.paid}
+                        onViewPlayers={setViewPlayers}
+                        onEdit={handleEdit}
+                        onDuplicate={duplicateSession}
+                        onToggleActive={toggleActive}
+                        onDelete={deleteSession}
+                        onExport={exportCSV}
+                      />
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
+            {/* New session FAB */}
+            {daySessions.length > 0 && (
+              <div className="fixed bottom-6 right-6">
+                <button
+                  onClick={handleNew}
+                  className="w-14 h-14 rounded-full bg-interactive text-inverse shadow-lg flex items-center justify-center active:scale-95 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Delete confirmation modal */}
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
             <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
@@ -307,59 +500,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
-        {!loading && filtered.length === 0 && (
-          <p className="text-muted text-sm text-center py-8">No sessions.</p>
-        )}
-
-        {!loading && filtered.length > 0 && (
-          <div className="rounded-xl overflow-hidden border border-border divide-y divide-bg">
-            {filtered.map(s => (
-              <div key={s.id} className="bg-surface px-4 py-3">
-                <div className={`flex items-center justify-between ${!s.active ? 'opacity-40' : ''}`}>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-primary font-semibold text-sm truncate">{s.title || s.venue}</span>
-                      {s.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded shrink-0">DUPR</span>}
-                      {s.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded shrink-0">DUPR Doubles</span>}
-                    </div>
-                    <div className="text-muted text-xs mt-0.5">{fmtDate(s.date)} · {s.time} · {s.venue} · ₹{s.price}</div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    <span className="text-[11px] text-muted">{s.max_slots}</span>
-                    <span className={`w-2 h-2 rounded-full ${s.active ? 'bg-secondary' : 'bg-border-muted'}`} />
-                  </div>
-                </div>
-                <div className="flex justify-between mt-2.5">
-                  <button onClick={() => setViewPlayers(s)} title="Players" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  </button>
-                  <button onClick={() => handleEdit(s)} title="Edit" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                  <button onClick={() => duplicateSession(s)} title="Duplicate" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  </button>
-                  <button onClick={() => exportCSV(s)} title="Export CSV" className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </button>
-                  <button onClick={() => toggleActive(s)} title={s.active ? 'Deactivate' : 'Activate'} className="w-10 h-10 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
-                    {s.active ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    )}
-                  </button>
-                  <button onClick={() => deleteSession(s)} title="Delete" className="w-10 h-10 flex items-center justify-center rounded-full border border-tertiary/30 text-tertiary active:bg-error-subtle transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-          </div>
-        </div>
       </div>
     </div>
   )
