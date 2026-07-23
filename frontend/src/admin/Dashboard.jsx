@@ -155,7 +155,7 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
             <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
           )}
           {paidCount != null && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${paidCount === playerCount ? 'text-secondary bg-secondary/10' : 'text-warning bg-warning/10'}`}>
+            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${paidCount === playerCount ? 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10' : 'text-amber-800 bg-amber-100 dark:text-warning dark:bg-warning/10'}`}>
               {paidCount}/{playerCount} paid
             </span>
           )}
@@ -163,7 +163,7 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
       </button>
 
       <div className="border-t border-border px-5 py-3 flex items-center justify-between">
-        <span className={`text-[11px] font-medium ${session.active ? 'text-secondary' : 'text-muted'}`}>
+        <span className={`text-[11px] font-medium ${session.active ? 'text-green-700 dark:text-secondary' : 'text-muted'}`}>
           {session.active ? 'Active' : 'Inactive'}
         </span>
         <button
@@ -177,14 +177,26 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
       </div>
 
       {expanded && (
-        <div className="border-t border-border px-5 py-3 flex flex-wrap gap-2">
-          <button onClick={() => onEdit(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Edit</button>
-          <button onClick={() => onDuplicate(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Duplicate</button>
-          <button onClick={() => onExport(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Export CSV</button>
-          <button onClick={() => onToggleActive(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">
-            {session.active ? 'Deactivate' : 'Activate'}
-          </button>
-          <button onClick={() => onDelete(session)} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/30 active:bg-error-subtle transition">Delete</button>
+        <div className="border-t border-border px-5 py-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted font-mono select-all">{session.id}</span>
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(session.id); }}
+              className="text-[10px] text-interactive font-medium active:opacity-70"
+            >
+              Copy ID
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => onEdit(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Edit</button>
+            <button onClick={() => onDuplicate(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Duplicate</button>
+            <button onClick={() => onExport(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">Export CSV</button>
+            <button onClick={() => onToggleActive(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">
+              {session.active ? 'Deactivate' : 'Activate'}
+            </button>
+            <button onClick={() => onDelete(session)} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/30 active:bg-error-subtle transition">Delete</button>
+          </div>
         </div>
       )}
     </div>
@@ -497,7 +509,7 @@ export default function Dashboard() {
                 Remove <strong>{deleteConfirm.title || deleteConfirm.id}</strong>?
               </p>
               {deletePlayerCount > 0 && (
-                <p className="text-xs text-warning-muted text-center font-medium">
+                <p className="text-xs text-amber-700 dark:text-warning-muted text-center font-medium">
                   This session has {deletePlayerCount} registered player{deletePlayerCount === 1 ? '' : 's'}.
                 </p>
               )}

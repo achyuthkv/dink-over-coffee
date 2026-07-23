@@ -191,7 +191,7 @@ export default function PlayerList({ session, onBack }) {
             <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Registered</div>
           </div>
           <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
-            <div className="text-lg font-bold text-secondary">{paidCount}<span className="text-muted font-normal text-sm">/{confirmed.length}</span></div>
+            <div className="text-lg font-bold text-green-700 dark:text-secondary">{paidCount}<span className="text-muted font-normal text-sm">/{confirmed.length}</span></div>
             <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Paid</div>
           </div>
           <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
@@ -226,13 +226,13 @@ export default function PlayerList({ session, onBack }) {
                               className="flex-1 min-w-0 flex items-center gap-3 text-left"
                             >
                               <span className="text-sm text-primary font-medium truncate">{p.partner_name ? `${p.name} & ${p.partner_name}` : p.name}</span>
-                              {p.needs_partner && <span className="text-[10px] text-warning font-medium shrink-0">(needs partner)</span>}
+                              {p.needs_partner && <span className="text-[10px] text-amber-700 dark:text-warning font-medium shrink-0">(needs partner)</span>}
                               {p.phone && <span className="text-[11px] text-muted shrink-0">{p.phone}</span>}
                             </button>
                             <button
                               type="button"
                               onClick={() => togglePaid(p)}
-                              className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${p.paid ? 'bg-secondary' : 'bg-border'}`}
+                              className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${p.paid ? 'bg-green-600 dark:bg-secondary' : 'bg-border'}`}
                             >
                               <span className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${p.paid ? 'translate-x-[18px]' : ''}`} />
                             </button>
@@ -259,7 +259,7 @@ export default function PlayerList({ session, onBack }) {
             {waitlistedGroups.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 px-1 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-warning" />
+                  <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-warning" />
                   <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Waitlist</span>
                   <span className="text-[11px] text-muted">({waitlisted.length})</span>
                 </div>
@@ -281,7 +281,7 @@ export default function PlayerList({ session, onBack }) {
                             </button>
                             <button
                               onClick={() => promote(p)}
-                              className="shrink-0 text-xs text-secondary font-semibold px-3 py-1.5 rounded-full border border-secondary/20 active:bg-secondary/5 transition"
+                              className="shrink-0 text-xs text-green-700 dark:text-secondary font-semibold px-3 py-1.5 rounded-full border border-green-200 dark:border-secondary/20 active:bg-green-50 dark:active:bg-secondary/5 transition"
                             >
                               Promote
                             </button>
@@ -384,7 +384,7 @@ export default function PlayerList({ session, onBack }) {
                 value={emailBody}
                 onChange={e => setEmailBody(e.target.value)}
               />
-              {emailResult && <p className={`text-xs ${emailResult.includes('sent') ? 'text-secondary' : 'text-error'}`}>{emailResult}</p>}
+              {emailResult && <p className={`text-xs ${emailResult.includes('sent') ? 'text-green-700 dark:text-secondary' : 'text-error'}`}>{emailResult}</p>}
               <button
                 onClick={sendEmail}
                 disabled={emailSending || !emailBody.trim()}
