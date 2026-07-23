@@ -20,12 +20,14 @@ function MonthStrip({ selectedMonth, onSelect, sessionMonths }) {
   }, [])
 
   useEffect(() => {
-    if (selectedRef.current && scrollRef.current) {
-      const container = scrollRef.current
-      const el = selectedRef.current
-      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
-    }
-  }, [selectedMonth])
+    requestAnimationFrame(() => {
+      if (selectedRef.current && scrollRef.current) {
+        const container = scrollRef.current
+        const el = selectedRef.current
+        container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+      }
+    })
+  }, [])
 
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
   const fullMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

@@ -26,13 +26,29 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
     return result
   }, [viewMonth])
 
+  const didMount = useRef(false)
   useEffect(() => {
-    if (selectedRef.current && scrollRef.current) {
-      const container = scrollRef.current
-      const el = selectedRef.current
-      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+    if (!didMount.current) {
+      didMount.current = true
+      requestAnimationFrame(() => {
+        if (selectedRef.current && scrollRef.current) {
+          const container = scrollRef.current
+          const el = selectedRef.current
+          container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+        }
+      })
     }
-  }, [selectedDate, viewMonth])
+  }, [])
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (selectedRef.current && scrollRef.current) {
+        const container = scrollRef.current
+        const el = selectedRef.current
+        container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+      }
+    })
+  }, [viewMonth])
 
   function prevMonth() {
     setViewMonth(v => {
@@ -54,15 +70,16 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
   }
 
   function goToToday() {
-    const now = new Date()
-    const todayStr = now.toISOString().slice(0, 10)
-    setViewMonth({ year: now.getFullYear(), month: now.getMonth() })
+    const n = new Date()
+    const todayStr = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`
+    setViewMonth({ year: n.getFullYear(), month: n.getMonth() })
     onSelect(todayStr)
   }
 
   const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const today = new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const isCurrentMonth = viewMonth.year === new Date().getFullYear() && viewMonth.month === new Date().getMonth()
 
   return (
@@ -86,7 +103,7 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
       </div>
       <div ref={scrollRef} className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5">
         {days.map(d => {
-          const ds = d.toISOString().slice(0, 10)
+          const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
           const isSelected = ds === selectedDate
           const isToday = ds === today
           const hasSession = sessionDates.has(ds)
@@ -210,7 +227,10 @@ export default function Dashboard() {
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [viewPlayers, setViewPlayers] = useState(null)
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlayerCount, setDeletePlayerCount] = useState(0)
   const [showUpi, setShowUpi] = useState(false)
@@ -297,7 +317,7 @@ export default function Dashboard() {
   function duplicateSession(session) {
     const nextWeek = new Date(session.date + 'T00:00:00')
     nextWeek.setDate(nextWeek.getDate() + 7)
-    const newDate = nextWeek.toISOString().slice(0, 10)
+    const newDate = `${nextWeek.getFullYear()}-${String(nextWeek.getMonth() + 1).padStart(2, '0')}-${String(nextWeek.getDate()).padStart(2, '0')}`
     setEditing({
       ...session,
       id: undefined,

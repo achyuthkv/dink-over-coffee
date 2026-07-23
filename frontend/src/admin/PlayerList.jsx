@@ -255,8 +255,8 @@ export default function PlayerList({ session, onBack }) {
               )
             })}
 
-            {/* Waitlist */}
-            {waitlistedGroups.length > 0 && (
+            {/* Waitlist — sorted by registration time */}
+            {waitlisted.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 px-1 mb-2">
                   <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-warning" />
@@ -264,12 +264,12 @@ export default function PlayerList({ session, onBack }) {
                   <span className="text-[11px] text-muted">({waitlisted.length})</span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg">
-                  {waitlistedGroups.map(g =>
-                    g.players.map(p => {
+                  {[...waitlisted].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map((p, idx) => {
                       const isExpanded = expandedId === p.id
                       return (
                         <div key={p.id}>
                           <div className="px-4 py-3 flex items-center gap-3">
+                            <span className="text-[11px] text-muted font-medium shrink-0">#{idx + 1}</span>
                             <button
                               type="button"
                               onClick={() => toggleExpand(p.id)}
@@ -299,8 +299,7 @@ export default function PlayerList({ session, onBack }) {
                           )}
                         </div>
                       )
-                    })
-                  )}
+                    })}
                 </div>
               </div>
             )}
