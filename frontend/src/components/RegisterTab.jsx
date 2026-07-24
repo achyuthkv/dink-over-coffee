@@ -36,8 +36,8 @@ export default function RegisterTab() {
   const [form, setForm] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('doc_player') || '{}')
-      return { name: saved.name || '', phone: saved.phone || '', email: saved.email || '', skill: saved.skill || 'Beginner', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
-    } catch { return { name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
+      return { name: saved.name || '', phone: saved.phone || '', email: saved.email || '', skill: saved.skill || '', duprId: saved.duprId || '', partnerName: saved.partnerName || '', partnerPhone: saved.partnerPhone || '', partnerDuprId: saved.partnerDuprId || '' }
+    } catch { return { name: '', phone: '', email: '', skill: '', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' } }
   })
   const [hasPartner, setHasPartner] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -129,6 +129,7 @@ export default function RegisterTab() {
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'Enter a valid email address'
+    if (!isNonPickleball && !form.skill) return 'Select your skill level'
     if (isDoubles && hasPartner === null) return 'Please select whether you have a partner'
     if (isDoubles && hasPartner) {
       if (!form.partnerName.trim() || form.partnerName.trim().length < 2) return 'Enter your partner\'s name'
@@ -239,7 +240,7 @@ export default function RegisterTab() {
         }
         setSuccess({ session: selected, player, isTeam: player.isTeam })
         localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-        setForm({ name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+        setForm({ name: '', phone: '', email: '', skill: '', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
         setSelected(null)
         await load()
         setSubmitting(false)
@@ -284,7 +285,7 @@ export default function RegisterTab() {
             })
             setSuccess({ session: selected, player, isTeam: player.isTeam })
             localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-            setForm({ name: '', phone: '', email: '', skill: 'Beginner', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+            setForm({ name: '', phone: '', email: '', skill: '', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
             setSelected(null)
             await load()
           } catch (e) {
@@ -631,7 +632,7 @@ export default function RegisterTab() {
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
+            disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || (!isNonPickleball && !form.skill) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : (PAYMENTS_ENABLED && Number(selected.price) > 0) ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
