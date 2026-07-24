@@ -230,7 +230,7 @@ export default function RegisterTab() {
         ...(isDoubles && hasPartner === false && { needsPartner: true })
       }
 
-      if (!PAYMENTS_ENABLED) {
+      if (!PAYMENTS_ENABLED || Number(selected.price) === 0) {
         const res = await api.registerFree(selected.id, player)
         if (res.alreadyRegistered) {
           setError('You are already registered for this session. Please check the phone number.')
@@ -340,7 +340,7 @@ export default function RegisterTab() {
         <p className="mt-1 text-primary text-sm">
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
-        {accounts.length > 0 && (
+        {accounts.length > 0 && Number(success.session.price) > 0 && (
           <div className="mt-5">
             <p className="text-xs font-semibold text-primary mb-3">Pay ₹{amt}</p>
 
@@ -431,7 +431,7 @@ export default function RegisterTab() {
                     <span className={`text-xs font-medium ${full ? 'text-error' : 'text-secondary'}`}>
                       {full ? 'Full' : `${remaining} left`}
                     </span>
-                    <span className="text-muted text-xs">· ₹{s.price} per person</span>
+                    <span className="text-muted text-xs">· {Number(s.price) === 0 ? 'Free' : `₹${s.price} per person`}</span>
                   </div>
                 </button>
               )
@@ -633,11 +633,11 @@ export default function RegisterTab() {
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
             disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && form.duprId.trim().length < 3) || (isDoubles && hasPartner === null) || (isDoubles && hasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
-            {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : PAYMENTS_ENABLED ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
+            {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : (PAYMENTS_ENABLED && Number(selected.price) > 0) ? `Pay ₹${(isDoubles && hasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
           {waitlistAvailable && <p className="text-[11px] text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
           {slotsFull && !waitlistAvailable && <p className="text-[11px] text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
-          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && <p className="text-[11px] text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && Number(selected.price) > 0 && <p className="text-[11px] text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
         </section>
       )}
 
