@@ -171,6 +171,9 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
           {session.event_type === 'dupr_doubles' && (
             <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
           )}
+          {session.event_type === 'non_pickleball' && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-2 py-1 rounded-full">Event</span>
+          )}
           {paidCount != null && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${paidCount === playerCount ? 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10' : 'text-amber-800 bg-amber-100 dark:text-warning dark:bg-warning/10'}`}>
               {paidCount}/{playerCount} paid

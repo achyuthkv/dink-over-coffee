@@ -55,7 +55,13 @@ export default function SessionForm({ session, onSave, onCancel }) {
     setSelectedUpis(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
-  function update(k, v) { setForm(f => ({ ...f, [k]: v })) }
+  function update(k, v) {
+    if (k === 'event_type' && v === 'non_pickleball') {
+      setForm(f => ({ ...f, [k]: v, beginner_slots: '', beginner_waitlist_max: 0 }))
+    } else {
+      setForm(f => ({ ...f, [k]: v }))
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -165,23 +171,12 @@ export default function SessionForm({ session, onSave, onCancel }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-primary">Beginner slots</label>
-              <input type="number" className="input mt-1" value={form.beginner_slots} onChange={e => update('beginner_slots', e.target.value)} min="0" placeholder="blank = all" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-primary">Beginner waitlist</label>
-              <input type="number" className="input mt-1" value={form.beginner_waitlist_max} onChange={e => update('beginner_waitlist_max', e.target.value)} min="0" />
-            </div>
-          </div>
-
           <div>
             <label className="text-xs font-semibold text-primary">Event type</label>
-            <div className="flex gap-2 mt-1.5">
-              {['regular', 'dupr', 'dupr_doubles'].map(t => {
+            <div className="flex gap-2 mt-1.5 flex-wrap">
+              {['regular', 'dupr', 'dupr_doubles', 'non_pickleball'].map(t => {
                 const active = form.event_type === t
-                const label = t === 'dupr' ? 'DUPR' : t === 'dupr_doubles' ? 'DUPR Doubles' : 'Regular'
+                const label = t === 'dupr' ? 'DUPR' : t === 'dupr_doubles' ? 'DUPR Doubles' : t === 'non_pickleball' ? 'Non-Pickleball' : 'Regular'
                 return (
                   <button
                     key={t}
@@ -193,6 +188,19 @@ export default function SessionForm({ session, onSave, onCancel }) {
               })}
             </div>
           </div>
+
+          {form.event_type !== 'non_pickleball' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-primary">Beginner slots</label>
+              <input type="number" className="input mt-1" value={form.beginner_slots} onChange={e => update('beginner_slots', e.target.value)} min="0" placeholder="blank = all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-primary">Beginner waitlist</label>
+              <input type="number" className="input mt-1" value={form.beginner_waitlist_max} onChange={e => update('beginner_waitlist_max', e.target.value)} min="0" />
+            </div>
+          </div>
+          )}
 
           <div>
             <label className="text-xs font-semibold text-primary">Payment methods</label>
