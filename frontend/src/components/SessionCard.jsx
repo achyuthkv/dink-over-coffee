@@ -82,7 +82,7 @@ export default function SessionCard({ session, onSelect, selected }) {
       {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
         <div className="text-primary text-sm">{session.venue}</div>
-        <div className="text-text text-sm font-bold whitespace-nowrap">₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></div>
+        <div className="text-text text-sm font-bold whitespace-nowrap">{Number(session.price) === 0 ? <span className="text-secondary">Free</span> : <>₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></>}</div>
       </div>
       {session.description && <p className="text-secondary text-xs mt-2 leading-relaxed">{session.description}</p>}
 
