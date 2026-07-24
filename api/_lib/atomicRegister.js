@@ -19,7 +19,7 @@ export async function atomicRegister(sessionId, session, playerData, status) {
       p_name: playerData.name,
       p_phone: playerData.phone,
       p_email: playerData.email || null,
-      p_skill: playerData.skill,
+      p_skill: playerData.skill || 'N/A',
       p_amount: session.price,
       p_status: status,
       p_dupr_id: playerData.duprId || null,
@@ -46,7 +46,7 @@ export async function atomicRegister(sessionId, session, playerData, status) {
     name: playerData.name,
     phone: playerData.phone,
     email: playerData.email || null,
-    skill: playerData.skill,
+    skill: playerData.skill || 'N/A',
     amount: session.price,
     razorpay_payment_id: 'FREE_MODE',
     razorpay_order_id: 'FREE_MODE',
@@ -83,10 +83,12 @@ export async function atomicRegister(sessionId, session, playerData, status) {
     if (session.beginner_slots === null || session.beginner_slots === undefined) {
       overCapacity = counts.confirmed + counts.activeHolds > session.max_slots;
     } else if (isBeginner) {
-      overCapacity = counts.confirmedBeginner > session.beginner_slots;
+      overCapacity = counts.confirmedBeginner > session.beginner_slots ||
+        counts.confirmed + counts.activeHolds > session.max_slots;
     } else {
       const otherSlots = session.max_slots - session.beginner_slots;
-      overCapacity = counts.confirmedOther > otherSlots;
+      overCapacity = counts.confirmedOther > otherSlots ||
+        counts.confirmed + counts.activeHolds > session.max_slots;
     }
 
     if (overCapacity) {

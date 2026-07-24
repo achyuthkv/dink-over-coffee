@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         name: (notes.name || '').trim(),
         phone: (notes.phone || '').trim(),
         email: (notes.email || '').trim() || null,
-        skill: notes.skill || 'Beginner',
+        skill: notes.skill || 'N/A',
         amount: Number(order.amount) / 100,
         razorpay_payment_id,
         razorpay_order_id,

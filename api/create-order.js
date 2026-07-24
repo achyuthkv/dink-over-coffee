@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     if (!rateLimit(req).ok) return res.status(429).json({ ok: false, error: 'Too many requests. Please try again shortly.' });
 
     const { sessionId, player } = req.body;
-    if (!sessionId || !player?.name || !player?.phone || !player?.skill) {
+    if (!sessionId || !player?.name || !player?.phone) {
       return res.status(400).json({ ok: false, error: 'Missing required fields' });
     }
 
@@ -53,7 +53,17 @@ export default async function handler(req, res) {
       if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
     }
 
-    const isTeam = player.isTeam === true;
+    const isDuprEvent = session.event_type === 'dupr' || session.event_type === 'dupr_doubles'
+    const isDoublesEvent = session.event_type === 'dupr_doubles'
+
+    if (isDuprEvent && (!player.duprId || player.duprId.trim().length < 3)) {
+      return res.status(400).json({ ok: false, error: 'DUPR ID is required for this event' });
+    }
+    if (isDoublesEvent && player.partnerName && (!player.partnerDuprId || player.partnerDuprId.trim().length < 3)) {
+      return res.status(400).json({ ok: false, error: 'Partner DUPR ID is required for doubles events' });
+    }
+
+    const isTeam = isDoublesEvent && !!player.partnerName;
     const amountPaise = Math.round(Number(session.price) * (isTeam ? 2 : 1) * 100);
     const receipt = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
@@ -61,7 +71,7 @@ export default async function handler(req, res) {
       amount: amountPaise,
       currency: 'INR',
       receipt,
-      notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), email: player.email ? player.email.trim() : '', skill: player.skill, ...(player.duprId && { duprId: player.duprId }), ...(player.partnerName && { partnerName: player.partnerName.trim() }), ...(player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }), ...(player.needsPartner && { needsPartner: 'true' }) }
+      notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), email: player.email ? player.email.trim() : '', ...(player.skill && { skill: player.skill }), ...(isDuprEvent && player.duprId && { duprId: player.duprId }), ...(isDoublesEvent && player.partnerName && { partnerName: player.partnerName.trim() }), ...(isDoublesEvent && player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(isDoublesEvent && player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }), ...(isDoublesEvent && player.needsPartner && { needsPartner: 'true' }) }
     });
 
     const now = new Date();
