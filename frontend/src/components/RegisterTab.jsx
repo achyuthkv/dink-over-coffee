@@ -122,6 +122,7 @@ export default function RegisterTab() {
   }
 
   const isDoubles = selected?.event_type === 'dupr_doubles'
+  const isNonPickleball = selected?.event_type === 'non_pickleball'
 
   function validate() {
     if (!selected) return 'Pick a session first'
@@ -182,8 +183,9 @@ export default function RegisterTab() {
     try {
       await saveWaiverIfNeeded();
       const player = {
-        name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(), skill: form.skill,
-        ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
+        name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(),
+        skill: isNonPickleball ? 'N/A' : form.skill,
+        ...(!isNonPickleball && form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && hasPartner && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
         ...(isDoubles && hasPartner && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
         ...(isDoubles && !hasPartner && { needsPartner: true })
@@ -221,8 +223,8 @@ export default function RegisterTab() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
-        skill: form.skill,
-        ...(form.duprId.trim() && { duprId: form.duprId.trim() }),
+        skill: isNonPickleball ? 'N/A' : form.skill,
+        ...(!isNonPickleball && form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && hasPartner === true && { isTeam: true, partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
         ...(isDoubles && hasPartner === true && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
         ...(isDoubles && hasPartner === false && { needsPartner: true })
@@ -452,9 +454,17 @@ export default function RegisterTab() {
       {/* Who's playing */}
       {selected && players.length > 0 && (
         <section className="card">
-          <h2 className="text-text font-bold text-sm">Who's playing</h2>
+          <h2 className="text-text font-bold text-sm">{isNonPickleball ? "Who's going" : "Who's playing"}</h2>
           {loadingPlayers ? (
             <p className="text-xs text-secondary mt-2">Loading…</p>
+          ) : isNonPickleball ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {players.filter(p => p.status !== 'waitlisted').map((p, i) => (
+                <span key={i} className="inline-flex items-center rounded-full bg-interactive/10 px-2.5 py-1 text-xs font-medium text-secondary">
+                  {p.name || 'Player'}
+                </span>
+              ))}
+            </div>
           ) : (
             <div className="mt-3 space-y-2.5">
               {['Beginner', 'Intermediate', 'Advanced'].map(skill => {
@@ -522,6 +532,7 @@ export default function RegisterTab() {
                 <p className="text-[11px] text-error mt-1">Enter a valid email address</p>
               )}
             </div>
+            {!isNonPickleball && (
             <div>
               <label className="text-xs font-semibold text-primary">Skill level</label>
               <div className={`grid gap-2 mt-1 ${skillLevels.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -543,6 +554,7 @@ export default function RegisterTab() {
                 })}
               </div>
             </div>
+            )}
           </div>
 
           {(selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles') && (

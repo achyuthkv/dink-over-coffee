@@ -14,14 +14,14 @@ function CancellationPolicy() {
 
   return (
     <div className="mt-3 border-t border-border pt-3">
-      <button
-        type="button"
+      <div
+        role="button"
         onClick={e => { e.stopPropagation(); setOpen(!open) }}
-        className="flex items-center gap-1.5 text-muted text-[11px] font-medium hover:text-primary transition w-full"
+        className="flex items-center gap-1.5 text-muted text-[11px] font-medium hover:text-primary transition w-full cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`transition-transform ${open ? 'rotate-90' : ''}`}><polyline points="9 18 15 12 9 6"/></svg>
         Cancellation Policy
-      </button>
+      </div>
       {open && (
         <div className="mt-2 text-muted text-[11px] leading-relaxed space-y-1.5 pl-4">
           <p>Refund is subject to a replacement taking up your slot.</p>
@@ -77,6 +77,7 @@ export default function SessionCard({ session, onSelect, selected }) {
         <span className="text-secondary-dark text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
         {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
         {session.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Doubles</span>}
+        {session.event_type === 'non_pickleball' && <span className="text-[9px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-1.5 py-0.5 rounded">Event</span>}
       </div>
       {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
