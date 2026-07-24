@@ -15,7 +15,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
     timeFrom: initialTime.from,
     timeTo: initialTime.to,
     venue: session?.venue || '',
-    price: session?.price || 350,
+    price: session?.price ?? 350,
     max_slots: session?.max_slots || 10,
     waitlist_max: session?.waitlist_max || 0,
     beginner_slots: session?.beginner_slots ?? '',
