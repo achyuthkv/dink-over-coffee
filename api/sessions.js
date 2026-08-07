@@ -60,7 +60,8 @@ export default async function handler(req, res) {
       const sh = holds.filter(h => h.session_id === s.id);
       const upiRows = sessionUpis.filter(u => u.session_id === s.id).sort((a, b) => a.sort_order - b.sort_order);
 
-      const slotWeight = (p) => p.partner_name ? 2 : 1;
+      const isTeamsOnly = s.event_type === 'dupr_teams';
+      const slotWeight = (p) => (isTeamsOnly ? 1 : (p.partner_name ? 2 : 1));
       const confirmedBeginner = sp.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
       const confirmedOther = sp.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
       const waitlistedBeginner = sp.filter(p => p.status === 'waitlisted' && p.skill === 'Beginner').length;

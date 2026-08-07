@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
     if (sessErr || !session) return res.status(404).json({ ok: false, error: 'Session not found or inactive' });
 
-    const counts = await getSlotCounts(sessionId);
+    const counts = await getSlotCounts(sessionId, session);
     const availability = checkAvailability(session, player.skill, counts);
 
     if (!availability.available || availability.type !== 'confirmed') {
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         razorpay_order_id: order.id,
         expires_at: expiresAt.toISOString(),
         status: 'active',
-        slots: isTeam ? 2 : 1
+        slots: isTeamsOnly ? 1 : (isTeam ? 2 : 1)
       })
       .select('id')
       .single();

@@ -72,7 +72,7 @@ export async function atomicRegister(sessionId, session, playerData, status) {
   }
 
   // Re-count after insert to detect over-subscription
-  const counts = await getSlotCounts(sessionId);
+  const counts = await getSlotCounts(sessionId, session);
   const availability = checkAvailability(session, playerData.skill, counts);
 
   if (status === 'confirmed') {

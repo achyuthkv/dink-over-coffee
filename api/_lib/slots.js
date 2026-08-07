@@ -1,6 +1,6 @@
 import supabase from './supabase.js';
 
-export async function getSlotCounts(sessionId) {
+export async function getSlotCounts(sessionId, session) {
   const [playersResult, holdsResult] = await Promise.all([
     supabase
       .from('players')
@@ -17,7 +17,8 @@ export async function getSlotCounts(sessionId) {
   const players = playersResult.data || [];
   const activeHolds = (holdsResult.data || []).reduce((sum, h) => sum + (h.slots || 1), 0);
 
-  const slotWeight = (p) => p.partner_name ? 2 : 1;
+  const isTeamsOnly = session?.event_type === 'dupr_teams';
+  const slotWeight = (p) => (isTeamsOnly ? 1 : (p.partner_name ? 2 : 1));
 
   const confirmedBeginner = players.filter(p => p.status === 'confirmed' && p.skill === 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);
   const confirmedOther = players.filter(p => p.status === 'confirmed' && p.skill !== 'Beginner').reduce((sum, p) => sum + slotWeight(p), 0);

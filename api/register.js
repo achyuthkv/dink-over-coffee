@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
     }
 
-    const counts = await getSlotCounts(sessionId);
+    const counts = await getSlotCounts(sessionId, session);
     const availability = checkAvailability(session, player.skill, counts);
 
     if (!availability.available) {
