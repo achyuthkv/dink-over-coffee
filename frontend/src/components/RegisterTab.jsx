@@ -127,6 +127,7 @@ export default function RegisterTab() {
   const isDoubles = selected?.event_type === 'dupr_doubles' || selected?.event_type === 'dupr_teams'
   const isTeamsOnly = selected?.event_type === 'dupr_teams'
   const isNonPickleball = selected?.event_type === 'non_pickleball'
+  const skillNotRequired = isNonPickleball || isDoubles
   const effectiveHasPartner = isTeamsOnly ? true : hasPartner
 
   function validate() {
@@ -134,8 +135,8 @@ export default function RegisterTab() {
     if (!form.name.trim() || form.name.trim().length < 2) return 'Enter your name'
     if (!/^[0-9]{10}$/.test(form.phone.trim())) return 'Enter a valid 10-digit phone number'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'Enter a valid email address'
-    if (!isNonPickleball && !form.skill) return 'Select your skill level'
-    if (!isNonPickleball && !skillLevels.includes(form.skill)) return 'Select your skill level'
+    if (!skillNotRequired && !form.skill) return 'Select your skill level'
+    if (!skillNotRequired && !skillLevels.includes(form.skill)) return 'Select your skill level'
     if (isDoubles && !isTeamsOnly && hasPartner === null) return 'Please select whether you have a partner'
     if (isDoubles && effectiveHasPartner) {
       if (!form.partnerName.trim() || form.partnerName.trim().length < 2) return 'Enter your partner\'s name'
@@ -192,7 +193,7 @@ export default function RegisterTab() {
       await saveWaiverIfNeeded();
       const player = {
         name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim(),
-        skill: isNonPickleball ? 'N/A' : form.skill,
+        skill: skillNotRequired ? 'N/A' : form.skill,
         ...(!isNonPickleball && form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && effectiveHasPartner && { partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
         ...(isDoubles && effectiveHasPartner && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
@@ -231,7 +232,7 @@ export default function RegisterTab() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
-        skill: isNonPickleball ? 'N/A' : form.skill,
+        skill: skillNotRequired ? 'N/A' : form.skill,
         ...(!isNonPickleball && form.duprId.trim() && { duprId: form.duprId.trim() }),
         ...(isDoubles && effectiveHasPartner === true && { isTeam: true, partnerName: form.partnerName.trim(), partnerPhone: form.partnerPhone.trim() }),
         ...(isDoubles && effectiveHasPartner === true && form.partnerDuprId.trim() && { partnerDuprId: form.partnerDuprId.trim() }),
@@ -465,11 +466,11 @@ export default function RegisterTab() {
           <h2 className="text-text font-bold text-sm">{isNonPickleball ? "Who's going" : "Who's playing"}</h2>
           {loadingPlayers ? (
             <p className="text-xs text-secondary mt-2">Loading…</p>
-          ) : isNonPickleball ? (
+          ) : skillNotRequired ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {players.filter(p => p.status !== 'waitlisted').map((p, i) => (
                 <span key={i} className="inline-flex items-center rounded-full bg-interactive/10 px-2.5 py-1 text-xs font-medium text-secondary">
-                  {p.name || 'Player'}
+                  {p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}
                 </span>
               ))}
             </div>
@@ -540,7 +541,7 @@ export default function RegisterTab() {
                 <p className="text-[11px] text-error mt-1">Enter a valid email address</p>
               )}
             </div>
-            {!isNonPickleball && (
+            {!skillNotRequired && (
             <div>
               <label className="text-xs font-semibold text-primary">Skill level</label>
               <div className={`grid gap-2 mt-1 ${skillLevels.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -645,7 +646,7 @@ export default function RegisterTab() {
           <button
             className="w-full mt-4 btn-primary"
             onClick={waitlistAvailable ? handleWaitlist : handlePay}
-            disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || (!isNonPickleball && !skillLevels.includes(form.skill)) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles' || selected?.event_type === 'dupr_teams') && form.duprId.trim().length < 3) || (isDoubles && !isTeamsOnly && hasPartner === null) || (isDoubles && effectiveHasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
+            disabled={submitting || !waiverSigned || (slotsFull && !waitlistAvailable) || !form.name.trim() || form.name.trim().length < 2 || form.phone.length !== 10 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || (!skillNotRequired && !skillLevels.includes(form.skill)) || ((selected?.event_type === 'dupr' || selected?.event_type === 'dupr_doubles' || selected?.event_type === 'dupr_teams') && form.duprId.trim().length < 3) || (isDoubles && !isTeamsOnly && hasPartner === null) || (isDoubles && effectiveHasPartner && (!form.partnerName.trim() || form.partnerName.trim().length < 2 || form.partnerPhone.length !== 10 || form.partnerDuprId.trim().length < 3))}
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : (PAYMENTS_ENABLED && Number(selected.price) > 0) ? `Pay ₹${isTeamsOnly ? selected.price : (isDoubles && effectiveHasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
