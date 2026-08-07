@@ -174,9 +174,9 @@ export default function SessionForm({ session, onSave, onCancel }) {
           <div>
             <label className="text-xs font-semibold text-primary">Event type</label>
             <div className="flex gap-2 mt-1.5 flex-wrap">
-              {['regular', 'dupr', 'dupr_doubles', 'non_pickleball'].map(t => {
+              {['regular', 'dupr', 'dupr_doubles', 'dupr_teams', 'non_pickleball'].map(t => {
                 const active = form.event_type === t
-                const label = t === 'dupr' ? 'DUPR' : t === 'dupr_doubles' ? 'DUPR Doubles' : t === 'non_pickleball' ? 'Non-Pickleball' : 'Regular'
+                const label = t === 'dupr' ? 'DUPR' : t === 'dupr_doubles' ? 'DUPR Doubles' : t === 'dupr_teams' ? 'DUPR Teams' : t === 'non_pickleball' ? 'Non-Pickleball' : 'Regular'
                 return (
                   <button
                     key={t}

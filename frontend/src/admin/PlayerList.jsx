@@ -86,11 +86,12 @@ export default function PlayerList({ session, onBack }) {
     const dateStr = `${days[dt.getDay()]} ${dt.getDate()} ${months[dt.getMonth()]}`
 
     let text = `*${session.title || 'Dink Over Coffee'}*\n${dateStr} | ${session.time}\n${session.venue}\n\n`
+    const nameOf = (p) => p.partner_name ? `${p.name} & ${p.partner_name}` : p.name
     let num = 1
     confirmedGroups.forEach(g => {
       text += `*${g.skill} (${g.players.length}):*\n`
       g.players.forEach(p => {
-        text += `${num}. ${p.name}\n`
+        text += `${num}. ${nameOf(p)}\n`
         num++
       })
       text += '\n'
@@ -98,7 +99,7 @@ export default function PlayerList({ session, onBack }) {
     if (waitlisted.length > 0) {
       text += `*Waitlist (${waitlisted.length}):*\n`
       waitlisted.forEach((p, i) => {
-        text += `${i + 1}. ${p.name} (${p.skill})\n`
+        text += `${i + 1}. ${nameOf(p)} (${p.skill})\n`
       })
       text += '\n'
     }
@@ -163,6 +164,37 @@ export default function PlayerList({ session, onBack }) {
 
   const skillDot = (skill) => skill === 'Beginner' ? 'bg-skill-beginner' : skill === 'Advanced' ? 'bg-skill-advanced' : 'bg-skill-intermediate'
 
+  const showDupr = session.event_type === 'dupr_doubles' || session.event_type === 'dupr_teams'
+
+  function PlayerLine({ name, duprId, phone }) {
+    return (
+      <div className="flex items-baseline gap-2 min-w-0">
+        <span className="text-sm text-primary font-medium truncate">{name}</span>
+        {showDupr && duprId && <span className="text-[11px] text-muted font-mono shrink-0">{duprId}</span>}
+        {phone && <span className="text-[11px] text-muted shrink-0">{phone}</span>}
+      </div>
+    )
+  }
+
+  function PlayerIdentity({ p }) {
+    if (p.partner_name) {
+      return (
+        <div className="flex-1 min-w-0 flex items-stretch gap-3">
+          <span className="w-0.5 rounded-full bg-secondary/40 shrink-0" aria-hidden="true" />
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <PlayerLine name={p.name} duprId={p.dupr_id} phone={p.phone} />
+            <PlayerLine name={p.partner_name} duprId={p.partner_dupr_id} phone={p.partner_phone} />
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="flex-1 min-w-0">
+        <PlayerLine name={p.name} duprId={p.dupr_id} phone={p.phone} />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-pattern">
       <div className="max-w-xl mx-auto px-5 py-6">
@@ -225,9 +257,8 @@ export default function PlayerList({ session, onBack }) {
                               onClick={() => toggleExpand(p.id)}
                               className="flex-1 min-w-0 flex items-center gap-3 text-left"
                             >
-                              <span className="text-sm text-primary font-medium truncate">{p.partner_name ? `${p.name} & ${p.partner_name}` : p.name}</span>
+                              <PlayerIdentity p={p} />
                               {p.needs_partner && <span className="text-[10px] text-amber-700 dark:text-warning font-medium shrink-0">(needs partner)</span>}
-                              {p.phone && <span className="text-[11px] text-muted shrink-0">{p.phone}</span>}
                             </button>
                             <button
                               type="button"
@@ -275,7 +306,7 @@ export default function PlayerList({ session, onBack }) {
                               onClick={() => toggleExpand(p.id)}
                               className="flex-1 min-w-0 flex items-center gap-2 text-left"
                             >
-                              <span className="text-sm text-primary font-medium truncate">{p.name}</span>
+                              <PlayerIdentity p={p} />
                               <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${skillDot(p.skill)}`} />
                               <span className="text-[11px] text-muted">{p.skill}</span>
                             </button>
@@ -314,10 +345,9 @@ export default function PlayerList({ session, onBack }) {
                 </div>
                 <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg opacity-60">
                   {withdrew.map(p => (
-                    <div key={p.id} className="px-4 py-3 flex items-center gap-3">
-                      <span className="text-sm text-primary font-medium truncate line-through">{p.partner_name ? `${p.name} & ${p.partner_name}` : p.name}</span>
+                    <div key={p.id} className="px-4 py-3 flex items-center gap-3 line-through">
+                      <PlayerIdentity p={p} />
                       <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${skillDot(p.skill)}`} />
-                      {p.phone && <span className="text-[11px] text-muted shrink-0">{p.phone}</span>}
                     </div>
                   ))}
                 </div>

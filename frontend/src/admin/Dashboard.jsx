@@ -171,6 +171,9 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
           {session.event_type === 'dupr_doubles' && (
             <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
           )}
+          {session.event_type === 'dupr_teams' && (
+            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Teams</span>
+          )}
           {session.event_type === 'non_pickleball' && (
             <span className="text-[10px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-2 py-1 rounded-full">Event</span>
           )}
@@ -298,7 +301,8 @@ export default function Dashboard() {
   }
 
   async function toggleActive(session) {
-    await supabase.from('sessions').update({ active: !session.active }).eq('id', session.id)
+    const currentlyActive = session.active === true
+    await supabase.from('sessions').update({ active: !currentlyActive }).eq('id', session.id)
     loadSessions()
   }
 
