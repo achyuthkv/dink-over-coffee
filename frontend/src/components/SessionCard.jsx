@@ -77,12 +77,13 @@ export default function SessionCard({ session, onSelect, selected }) {
         <span className="text-secondary-dark text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
         {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
         {session.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Doubles</span>}
+        {session.event_type === 'dupr_teams' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Teams</span>}
         {session.event_type === 'non_pickleball' && <span className="text-[9px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-1.5 py-0.5 rounded">Event</span>}
       </div>
       {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
         <div className="text-primary text-sm">{session.venue}</div>
-        <div className="text-text text-sm font-bold whitespace-nowrap">{Number(session.price) === 0 ? <span className="text-secondary">Free</span> : <>₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></>}</div>
+        <div className="text-text text-sm font-bold whitespace-nowrap">{Number(session.price) === 0 ? <span className="text-secondary">Free</span> : session.event_type === 'dupr_teams' ? <>₹{session.price} <span className="text-secondary font-normal text-xs">per team</span></> : <>₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></>}</div>
       </div>
       {session.description && <p className="text-secondary text-xs mt-2 leading-relaxed">{session.description}</p>}
 

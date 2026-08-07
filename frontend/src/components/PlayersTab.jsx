@@ -113,9 +113,9 @@ export default function PlayersTab() {
               <div key={i} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-full bg-border grid place-items-center text-primary font-bold text-sm">
-                    {firstName(p.name).slice(0, 1).toUpperCase()}
+                    {firstName(p.name).slice(0, 1).toUpperCase()}{p.partner_name ? firstName(p.partner_name).slice(0, 1).toUpperCase() : ''}
                   </div>
-                  <div className="text-text font-medium">{p.name || 'Player'}</div>
+                  <div className="text-text font-medium">{p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}</div>
                 </div>
                 <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${SKILL_COLOR[p.skill] || 'bg-border text-primary'}`}>
                   {p.skill || 'Player'}
@@ -132,9 +132,9 @@ export default function PlayersTab() {
                   <div key={i} className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-warning/10 grid place-items-center text-warning-muted font-bold text-xs">
-                        {firstName(p.name).slice(0, 1).toUpperCase()}
+                        {firstName(p.name).slice(0, 1).toUpperCase()}{p.partner_name ? firstName(p.partner_name).slice(0, 1).toUpperCase() : ''}
                       </div>
-                      <div className="text-primary font-medium text-sm">{p.name || 'Player'}</div>
+                      <div className="text-primary font-medium text-sm">{p.partner_name ? `${p.name} & ${p.partner_name}` : (p.name || 'Player')}</div>
                     </div>
                     <span className="text-[11px] font-medium text-warning-muted">#{i + 1}</span>
                   </div>
