@@ -130,7 +130,7 @@ export default function SessionCard({ session, onSelect, selected }) {
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs font-medium">
             <span className={full ? 'text-interactive-pressed' : 'text-secondary'}>
-              {full ? 'Full' : `${remaining} slot${remaining === 1 ? '' : 's'} left`}
+              {full ? 'Full' : `${remaining} ${session.event_type === 'dupr_teams' ? (remaining === 1 ? 'team' : 'teams') : (remaining === 1 ? 'slot' : 'slots')} left`}
             </span>
           </div>
           <div className="mt-1.5 h-1.5 w-full rounded-full bg-border overflow-hidden">
