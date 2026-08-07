@@ -53,18 +53,32 @@ export default async function handler(req, res) {
       if (partnerOnTeam) return res.status(409).json({ ok: false, error: 'Your partner is already on another team for this session' });
     }
 
-    const isDuprEvent = session.event_type === 'dupr' || session.event_type === 'dupr_doubles'
-    const isDoublesEvent = session.event_type === 'dupr_doubles'
+    const isDuprEvent = session.event_type === 'dupr' || session.event_type === 'dupr_doubles' || session.event_type === 'dupr_teams'
+    const isDoublesEvent = session.event_type === 'dupr_doubles' || session.event_type === 'dupr_teams'
+    const isTeamsOnly = session.event_type === 'dupr_teams'
 
     if (isDuprEvent && (!player.duprId || player.duprId.trim().length < 3)) {
       return res.status(400).json({ ok: false, error: 'DUPR ID is required for this event' });
+    }
+    if (isTeamsOnly) {
+      if (!player.partnerName || player.partnerName.trim().length < 2) {
+        return res.status(400).json({ ok: false, error: 'Partner name is required for this event' });
+      }
+      if (!player.partnerPhone || !/^[0-9]{10}$/.test(player.partnerPhone.trim())) {
+        return res.status(400).json({ ok: false, error: 'A valid 10-digit partner phone is required for this event' });
+      }
+      if (!player.partnerDuprId || player.partnerDuprId.trim().length < 3) {
+        return res.status(400).json({ ok: false, error: 'Partner DUPR ID is required for this event' });
+      }
     }
     if (isDoublesEvent && player.partnerName && (!player.partnerDuprId || player.partnerDuprId.trim().length < 3)) {
       return res.status(400).json({ ok: false, error: 'Partner DUPR ID is required for doubles events' });
     }
 
     const isTeam = isDoublesEvent && !!player.partnerName;
-    const amountPaise = Math.round(Number(session.price) * (isTeam ? 2 : 1) * 100);
+    const perTeamPricing = isTeamsOnly;
+    const priceMultiplier = perTeamPricing ? 1 : (isTeam ? 2 : 1);
+    const amountPaise = Math.round(Number(session.price) * priceMultiplier * 100);
     const receipt = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
     const order = await createRazorpayOrder({

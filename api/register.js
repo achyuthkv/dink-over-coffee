@@ -73,11 +73,23 @@ export default async function handler(req, res) {
       return res.status(409).json({ ok: false, error: 'Slots full — use waitlist endpoint' });
     }
 
-    const isDuprEvent = session.event_type === 'dupr' || session.event_type === 'dupr_doubles'
-    const isDoublesEvent = session.event_type === 'dupr_doubles'
+    const isDuprEvent = session.event_type === 'dupr' || session.event_type === 'dupr_doubles' || session.event_type === 'dupr_teams'
+    const isDoublesEvent = session.event_type === 'dupr_doubles' || session.event_type === 'dupr_teams'
+    const isTeamsOnly = session.event_type === 'dupr_teams'
 
     if (isDuprEvent && (!player.duprId || player.duprId.trim().length < 3)) {
       return res.status(400).json({ ok: false, error: 'DUPR ID is required for this event' });
+    }
+    if (isTeamsOnly) {
+      if (!player.partnerName || player.partnerName.trim().length < 2) {
+        return res.status(400).json({ ok: false, error: 'Partner name is required for this event' });
+      }
+      if (!player.partnerPhone || !/^[0-9]{10}$/.test(player.partnerPhone.trim())) {
+        return res.status(400).json({ ok: false, error: 'A valid 10-digit partner phone is required for this event' });
+      }
+      if (!player.partnerDuprId || player.partnerDuprId.trim().length < 3) {
+        return res.status(400).json({ ok: false, error: 'Partner DUPR ID is required for this event' });
+      }
     }
     if (isDoublesEvent && player.partnerName && (!player.partnerDuprId || player.partnerDuprId.trim().length < 3)) {
       return res.status(400).json({ ok: false, error: 'Partner DUPR ID is required for doubles events' });
@@ -93,7 +105,7 @@ export default async function handler(req, res) {
       partnerName: isDoublesEvent && player.partnerName ? player.partnerName.trim() : null,
       partnerPhone: isDoublesEvent && player.partnerPhone ? player.partnerPhone.trim() : null,
       partnerDuprId: isDoublesEvent && player.partnerDuprId ? player.partnerDuprId.trim() : null,
-      needsPartner: isDoublesEvent ? (player.needsPartner || false) : false
+      needsPartner: isDoublesEvent && !isTeamsOnly ? (player.needsPartner || false) : false
     }, 'confirmed');
 
     if (!result.ok) {
