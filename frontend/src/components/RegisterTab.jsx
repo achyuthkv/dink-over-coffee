@@ -330,7 +330,8 @@ export default function RegisterTab() {
   if (success) {
     const accounts = success.session.upiAccounts || []
     const tn = encodeURIComponent(success.session.venue + ' ' + fmtShort(success.session.date, success.session.time))
-    const amt = success.isTeam ? success.session.price * 2 : success.session.price
+    const successIsTeamsOnly = success.session.event_type === 'dupr_teams'
+    const amt = successIsTeamsOnly ? success.session.price : success.isTeam ? success.session.price * 2 : success.session.price
     const upiParams = (pa) => `pa=${encodeURIComponent(pa)}&pn=Dink%20Over%20Coffee&am=${amt}&cu=INR&tn=${tn}`
 
     const upiApps = [
