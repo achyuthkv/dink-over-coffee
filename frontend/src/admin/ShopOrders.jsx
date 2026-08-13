@@ -5,24 +5,74 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function Toggle({ on, onClick, activeClass = 'bg-green-600 dark:bg-secondary' }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${on ? activeClass : 'bg-border'}`}
-    >
-      <span className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${on ? 'translate-x-[18px]' : ''}`} />
-    </button>
-  )
+function fmtDateTime(iso) {
+  return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+const STATUS_FLOW = ['placed', 'confirmed', 'packed', 'shipped', 'delivered']
+
+const STATUS_LABEL = {
+  placed: 'Placed', confirmed: 'Confirmed', packed: 'Packed',
+  shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled'
+}
+
+// What the primary action button does at each stage. 'shipped' opens the
+// shipping-details modal instead of transitioning immediately.
+const NEXT_ACTION = {
+  placed: { next: 'confirmed', label: 'Confirm order' },
+  confirmed: { next: 'packed', label: 'Mark as packed' },
+  packed: { next: 'shipped', label: 'Ship order' },
+  shipped: { next: 'delivered', label: 'Mark as delivered' }
 }
 
 const FILTERS = [
   { key: 'all', label: 'All' },
-  { key: 'awaiting_payment', label: 'Awaiting payment' },
-  { key: 'awaiting_fulfillment', label: 'Awaiting fulfillment' },
-  { key: 'fulfilled', label: 'Fulfilled' }
+  { key: 'payment_pending', label: 'Payment pending' },
+  { key: 'placed', label: 'Placed' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'packed', label: 'Packed' },
+  { key: 'shipped', label: 'Shipped' },
+  { key: 'delivered', label: 'Delivered' },
+  { key: 'cancelled', label: 'Cancelled' }
 ]
+
+function PaymentBadge({ status }) {
+  const styles = {
+    paid: 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10',
+    pending: 'text-amber-800 bg-amber-100 dark:text-warning dark:bg-warning/10',
+    refunded: 'text-muted bg-bg'
+  }
+  const label = { paid: 'Paid', pending: 'Payment pending', refunded: 'Refunded' }
+  return (
+    <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${styles[status] || styles.pending}`}>
+      {label[status] || status}
+    </span>
+  )
+}
+
+function StatusStepper({ status }) {
+  if (status === 'cancelled') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-error">
+        <span className="w-1.5 h-1.5 rounded-full bg-error" /> Cancelled
+      </span>
+    )
+  }
+  const idx = STATUS_FLOW.indexOf(status)
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center">
+        {STATUS_FLOW.map((s, i) => (
+          <div key={s} className="flex items-center">
+            <span className={`w-1.5 h-1.5 rounded-full ${i <= idx ? 'bg-interactive' : 'bg-border'}`} />
+            {i < STATUS_FLOW.length - 1 && <span className={`w-3 h-px ${i < idx ? 'bg-interactive' : 'bg-border'}`} />}
+          </div>
+        ))}
+      </div>
+      <span className="text-xs font-semibold text-primary">{STATUS_LABEL[status]}</span>
+    </div>
+  )
+}
 
 export default function ShopOrders({ onBack }) {
   const [orders, setOrders] = useState([])
@@ -30,6 +80,10 @@ export default function ShopOrders({ onBack }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
+  const [shipModal, setShipModal] = useState(null)
+  const [shipForm, setShipForm] = useState({ carrier: '', trackingNumber: '', trackingUrl: '' })
+  const [cancelModal, setCancelModal] = useState(null)
+  const [cancelReason, setCancelReason] = useState('')
 
   async function loadOrders() {
     setLoading(true)
@@ -43,25 +97,58 @@ export default function ShopOrders({ onBack }) {
 
   useEffect(() => { loadOrders() }, [])
 
-  async function togglePaid(order) {
-    const newStatus = order.status === 'confirmed' ? 'pending' : 'confirmed'
-    setOrders(os => os.map(o => o.id === order.id ? { ...o, status: newStatus } : o))
-    await supabase.from('shop_orders').update({ status: newStatus }).eq('id', order.id)
+  function patchOrder(id, patch) {
+    setOrders(os => os.map(o => o.id === id ? { ...o, ...patch } : o))
   }
 
-  async function toggleFulfilled(order) {
-    const newVal = !order.fulfilled
-    const fulfilled_at = newVal ? new Date().toISOString() : null
-    setOrders(os => os.map(o => o.id === order.id ? { ...o, fulfilled: newVal, fulfilled_at } : o))
-    await supabase.from('shop_orders').update({ fulfilled: newVal, fulfilled_at }).eq('id', order.id)
+  async function markPaid(order) {
+    const patch = { payment_status: 'paid' }
+    patchOrder(order.id, patch)
+    await supabase.from('shop_orders').update(patch).eq('id', order.id)
+  }
+
+  async function advanceStatus(order) {
+    const action = NEXT_ACTION[order.order_status]
+    if (!action) return
+    if (action.next === 'shipped') {
+      setShipForm({ carrier: '', trackingNumber: '', trackingUrl: '' })
+      setShipModal(order)
+      return
+    }
+    const patch = { order_status: action.next, [`${action.next}_at`]: new Date().toISOString() }
+    patchOrder(order.id, patch)
+    await supabase.from('shop_orders').update(patch).eq('id', order.id)
+  }
+
+  async function confirmShip() {
+    if (!shipModal) return
+    const patch = {
+      order_status: 'shipped',
+      shipped_at: new Date().toISOString(),
+      shipping_carrier: shipForm.carrier.trim() || null,
+      tracking_number: shipForm.trackingNumber.trim() || null,
+      tracking_url: shipForm.trackingUrl.trim() || null
+    }
+    patchOrder(shipModal.id, patch)
+    await supabase.from('shop_orders').update(patch).eq('id', shipModal.id)
+    setShipModal(null)
+  }
+
+  async function confirmCancel() {
+    if (!cancelModal) return
+    const patch = { order_status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: cancelReason.trim() || null }
+    patchOrder(cancelModal.id, patch)
+    await supabase.from('shop_orders').update(patch).eq('id', cancelModal.id)
+    setCancelModal(null)
+    setCancelReason('')
   }
 
   function toggleExpand(id) {
     setExpandedId(prev => prev === id ? null : id)
   }
 
-  const awaitingPayment = orders.filter(o => o.status !== 'confirmed').length
-  const awaitingFulfillment = orders.filter(o => o.status === 'confirmed' && !o.fulfilled).length
+  const paymentPending = orders.filter(o => o.payment_status === 'pending').length
+  const toShip = orders.filter(o => o.payment_status === 'paid' && (o.order_status === 'confirmed' || o.order_status === 'packed')).length
 
   const filtered = orders.filter(o => {
     if (search.trim()) {
@@ -69,9 +156,8 @@ export default function ShopOrders({ onBack }) {
       const matches = o.customer_name?.toLowerCase().includes(q) || o.phone?.includes(q) || o.id?.toLowerCase().includes(q)
       if (!matches) return false
     }
-    if (filter === 'awaiting_payment') return o.status !== 'confirmed'
-    if (filter === 'awaiting_fulfillment') return o.status === 'confirmed' && !o.fulfilled
-    if (filter === 'fulfilled') return o.fulfilled
+    if (filter === 'payment_pending') return o.payment_status === 'pending'
+    if (filter !== 'all') return o.order_status === filter
     return true
   })
 
@@ -93,11 +179,11 @@ export default function ShopOrders({ onBack }) {
             <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Orders</div>
           </div>
           <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
-            <div className="text-lg font-bold text-amber-700 dark:text-warning">{awaitingPayment}</div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Awaiting payment</div>
+            <div className="text-lg font-bold text-amber-700 dark:text-warning">{paymentPending}</div>
+            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Payment pending</div>
           </div>
           <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
-            <div className="text-lg font-bold text-tertiary">{awaitingFulfillment}</div>
+            <div className="text-lg font-bold text-tertiary">{toShip}</div>
             <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">To ship</div>
           </div>
         </div>
@@ -109,7 +195,7 @@ export default function ShopOrders({ onBack }) {
           onChange={e => setSearch(e.target.value)}
         />
 
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-1 px-1 scrollbar-hide">
           {FILTERS.map(f => (
             <button
               key={f.key}
@@ -131,26 +217,28 @@ export default function ShopOrders({ onBack }) {
           <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg">
             {filtered.map(order => {
               const isExpanded = expandedId === order.id
-              const isPaid = order.status === 'confirmed'
+              const action = order.order_status !== 'cancelled' ? NEXT_ACTION[order.order_status] : null
+              const canCancel = order.order_status !== 'cancelled' && order.order_status !== 'delivered'
+              const cancelled = order.order_status === 'cancelled'
               return (
-                <div key={order.id}>
-                  <div className="px-4 py-3 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(order.id)}
-                      className="flex-1 min-w-0 text-left"
-                    >
+                <div key={order.id} className={cancelled ? 'opacity-60' : ''}>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(order.id)}
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left"
+                  >
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm text-primary font-medium truncate">{order.customer_name}</p>
-                        {order.fulfilled && <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10 px-1.5 py-0.5 rounded">Fulfilled</span>}
+                        <PaymentBadge status={order.payment_status} />
                       </div>
                       <p className="text-xs text-muted mt-0.5">{order.phone} &middot; ₹{order.amount} &middot; {fmtDate(order.created_at)}</p>
-                    </button>
-                    <div className="flex flex-col items-center gap-1 shrink-0">
-                      <Toggle on={isPaid} onClick={() => togglePaid(order)} />
-                      <span className="text-[9px] text-muted uppercase tracking-wide">{isPaid ? 'Paid' : 'Unpaid'}</span>
+                      <div className="mt-1.5">
+                        <StatusStepper status={order.order_status} />
+                      </div>
                     </div>
-                  </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`shrink-0 text-muted transition-transform ${isExpanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
 
                   {isExpanded && (
                     <div className="px-4 pb-4 space-y-3 bg-bg/40">
@@ -170,9 +258,44 @@ export default function ShopOrders({ onBack }) {
                         <p className="mt-1"><span className="text-muted">Order ID:</span> {order.id}</p>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-border pt-2.5">
-                        <span className="text-xs font-medium text-primary">Mark as fulfilled</span>
-                        <Toggle on={order.fulfilled} onClick={() => toggleFulfilled(order)} activeClass="bg-interactive" />
+                      {(order.shipping_carrier || order.tracking_number) && (
+                        <div className="text-xs text-secondary border-t border-border pt-2.5">
+                          <p><span className="text-muted">Carrier:</span> {order.shipping_carrier || '—'}</p>
+                          {order.tracking_number && (
+                            <p className="mt-1">
+                              <span className="text-muted">Tracking:</span>{' '}
+                              {order.tracking_url ? <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-interactive underline">{order.tracking_number}</a> : order.tracking_number}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {cancelled && (
+                        <div className="text-xs text-error border-t border-border pt-2.5">
+                          <p>Cancelled {order.cancelled_at ? fmtDateTime(order.cancelled_at) : ''}</p>
+                          {order.cancellation_reason && <p className="mt-1 text-secondary">Reason: {order.cancellation_reason}</p>}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                        {order.payment_status === 'pending' && (
+                          <button onClick={() => markPaid(order)} className="text-xs font-semibold px-3 py-1.5 rounded-full bg-interactive text-inverse active:scale-[.98] transition">
+                            Mark as paid
+                          </button>
+                        )}
+                        {order.payment_status !== 'pending' && action && (
+                          <button onClick={() => advanceStatus(order)} className="text-xs font-semibold px-3 py-1.5 rounded-full bg-interactive text-inverse active:scale-[.98] transition">
+                            {action.label}
+                          </button>
+                        )}
+                        {order.payment_status === 'pending' && (
+                          <span className="text-[11px] text-muted">Mark paid to start processing</span>
+                        )}
+                        {canCancel && (
+                          <button onClick={() => { setCancelModal(order); setCancelReason('') }} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/20 active:bg-error-subtle transition">
+                            Cancel order
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -182,6 +305,52 @@ export default function ShopOrders({ onBack }) {
           </div>
         )}
       </div>
+
+      {/* Ship modal */}
+      {shipModal && (
+        <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setShipModal(null)}>
+          <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-primary">Ship order</p>
+            <p className="text-xs text-muted">{shipModal.customer_name} &middot; {shipModal.address}, {shipModal.city}</p>
+            <div>
+              <label className="text-xs font-semibold text-primary">Carrier</label>
+              <input className="input mt-1" value={shipForm.carrier} onChange={e => setShipForm(f => ({ ...f, carrier: e.target.value }))} placeholder="e.g. Delhivery, India Post" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-primary">Tracking number</label>
+              <input className="input mt-1" value={shipForm.trackingNumber} onChange={e => setShipForm(f => ({ ...f, trackingNumber: e.target.value }))} placeholder="Optional" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-primary">Tracking link</label>
+              <input className="input mt-1" value={shipForm.trackingUrl} onChange={e => setShipForm(f => ({ ...f, trackingUrl: e.target.value }))} placeholder="Optional" />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setShipModal(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Cancel</button>
+              <button onClick={confirmShip} className="flex-1 py-2.5 rounded-full bg-interactive text-inverse text-sm font-medium active:scale-[.98] transition">Mark shipped</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel modal */}
+      {cancelModal && (
+        <div className="fixed inset-0 bg-black/30 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setCancelModal(null)}>
+          <div className="bg-surface rounded-2xl w-full max-w-sm p-5 space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-semibold text-primary">Cancel {cancelModal.customer_name}'s order?</p>
+            <textarea
+              className="w-full bg-bg border-0 rounded-xl p-3 text-sm text-primary resize-none focus:ring-1 focus:ring-primary/20 focus:outline-none"
+              rows={3}
+              placeholder="Reason (optional)"
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+            />
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setCancelModal(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Back</button>
+              <button onClick={confirmCancel} className="flex-1 py-2.5 rounded-full bg-tertiary text-white text-sm font-medium active:scale-[.98] transition">Cancel order</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

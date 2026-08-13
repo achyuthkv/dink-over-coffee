@@ -139,6 +139,43 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
   )
 }
 
+function ManageMenu({ open, onClose, items, onLogout }) {
+  if (!open) return null
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute right-0 top-11 z-50 w-64 bg-surface rounded-2xl border border-border shadow-lg overflow-hidden">
+        <div className="py-1.5">
+          {items.map(item => (
+            <button
+              key={item.label}
+              onClick={() => { item.onClick(); onClose() }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-primary active:bg-bg transition"
+            >
+              <span className="w-7 h-7 rounded-full bg-interactive/10 text-interactive flex items-center justify-center shrink-0">{item.icon}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-medium truncate">{item.label}</span>
+                {item.hint && <span className="block text-[11px] text-muted truncate">{item.hint}</span>}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="border-t border-border py-1.5">
+          <button
+            onClick={() => { onLogout(); onClose() }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm text-muted active:bg-bg transition"
+          >
+            <span className="w-7 h-7 rounded-full bg-bg flex items-center justify-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </span>
+            <span className="font-medium">Log out</span>
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, onDuplicate, onToggleActive, onDelete, onExport }) {
   const [expanded, setExpanded] = useState(false)
   const total = Number(session.max_slots || 0)
@@ -246,6 +283,7 @@ export default function Dashboard() {
   const [showVenues, setShowVenues] = useState(false)
   const [showAllSessions, setShowAllSessions] = useState(false)
   const [showShopOrders, setShowShopOrders] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSessions() {
     setLoading(true)
@@ -425,29 +463,47 @@ export default function Dashboard() {
       <div className="max-w-xl mx-auto px-5 py-6">
 
         {/* Toolbar */}
-        <div className="flex items-center justify-end gap-2 mb-4">
+        <div className="flex items-center justify-end gap-2 mb-4 relative">
           <ThemeToggle />
-          <button onClick={() => setShowFinances(true)} title="Finances" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-secondary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Manage"
+            aria-expanded={menuOpen}
+            className={`w-9 h-9 flex items-center justify-center rounded-full border transition ${menuOpen ? 'border-interactive text-interactive bg-interactive/5' : 'border-border text-primary active:bg-bg'}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
           </button>
-          <button onClick={() => setShowWaivers(true)} title="Waivers" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          </button>
-          <button onClick={() => setShowVenues(true)} title="Venues" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          </button>
-          <button onClick={() => setShowUpi(true)} title="Payment methods" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          </button>
-          <button onClick={() => setShowShopOrders(true)} title="Shop orders" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          </button>
-          <button onClick={() => setShowAllSessions(true)} title="All sessions" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          </button>
-          <button onClick={handleLogout} title="Logout" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          </button>
+          <ManageMenu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onLogout={handleLogout}
+            items={[
+              {
+                label: 'Shop Orders', hint: 'View, ship, and manage orders', onClick: () => setShowShopOrders(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              },
+              {
+                label: 'All Sessions', hint: 'Every session, past and upcoming', onClick: () => setShowAllSessions(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              },
+              {
+                label: 'Finances', hint: 'Revenue and expenses', onClick: () => setShowFinances(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              },
+              {
+                label: 'Payment Methods', hint: 'UPI accounts for checkout', onClick: () => setShowUpi(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              },
+              {
+                label: 'Waivers', hint: 'Signed liability waivers', onClick: () => setShowWaivers(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              },
+              {
+                label: 'Venues', hint: 'Court locations', onClick: () => setShowVenues(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              }
+            ]}
+          />
         </div>
 
         {/* Date strip */}
