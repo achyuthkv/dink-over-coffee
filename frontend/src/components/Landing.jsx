@@ -60,14 +60,14 @@ export default function Landing() {
               Bangalore's pickleball community. Sessions every week in Jayanagar. All levels. No partner needed. Just show up.
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link to="/events" className="glow-interactive inline-flex items-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition">
+            <div className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <Link to="/events" className="glow-interactive inline-flex items-center justify-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition w-full sm:w-auto">
                 Book a Session
               </Link>
-              <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80">
+              <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80 w-full sm:w-auto">
                 Join Community
               </a>
-              <Link to="/shop" className="glass inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80">
+              <Link to="/shop" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80 w-full sm:w-auto">
                 Shop Merch
               </Link>
             </div>
