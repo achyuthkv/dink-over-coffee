@@ -43,7 +43,7 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **upi_accounts** — `id, label, upi_id, qr_image_url`
 - **session_upis** — `session_id, upi_account_id, sort_order` (join table for per-session UPI display)
 - **waivers** — `id, phone, name, signature, signed_at`
-- **products** — `id, name, description, price, image_url, sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet.
+- **products** — `id, name, description, price, mrp (numeric, nullable), image_url, sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet. `mrp` is optional — when set above `price`, the shop shows it struck through next to the discounted price with a computed `% off` badge; leave it null (or equal to `price`) for no discount.
 - **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Razorpay payment is in flight.
 - **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, items (jsonb), created_at`, plus two independent state machines:
   - `payment_status` (`pending|paid|refunded`) — `pending` means the buyer chose to pay manually via UPI (no Razorpay key configured) or hasn't paid yet; `paid` means Razorpay verified the payment, or an organizer marked a manual order as paid in `/admin`.
@@ -149,6 +149,10 @@ Organizers sign in with Supabase Auth to manage sessions, view/promote waitliste
 - **Mark as paid** when `payment_status` is `pending`.
 - A single primary button that advances `order_status` to the next stage (its label changes with the stage — *Confirm order* / *Mark as packed* / *Ship order* / *Mark as delivered*); advancing past `paid` is required before the pipeline can progress. *Ship order* opens a small form to capture carrier, tracking number, and tracking link before transitioning.
 - **Cancel order** (available until shipped) opens a reason prompt and sets `order_status: cancelled`.
+
+**Auto-lock & biometric unlock** (`/admin` → Manage → Security): a Supabase session, once signed in, otherwise keeps refreshing itself indefinitely in the browser — this adds a UI-level lock on top of that so an unattended device isn't enough. `useAppLock` (`frontend/src/lib/useAppLock.js`) locks the screen after 10 minutes of inactivity, or immediately if the app was backgrounded (tab hidden / phone locked / app switched away from) for 2+ minutes — the more common "away" case on mobile than idle-with-tab-open. If it's been backgrounded for 24+ hours it signs out fully instead of just locking. Locking doesn't touch the underlying Supabase session or component state — it renders a full-screen `LockScreen` on top of the still-mounted `Dashboard` until unlocked.
+
+Unlocking supports Face ID / Touch ID / Android biometrics via the browser's WebAuthn API (`frontend/src/lib/webauthnLock.js`), opted into per device from the Security screen, with password sign-in always available as a fallback (and as the only option until biometric unlock is enabled, or on devices/browsers without a platform authenticator). This is a **local device gate, not a Supabase-verified passkey login** — there's no server verifying the WebAuthn signature, so it's a convenience/security layer confirming "the device owner is physically present" rather than a new authentication method. True passkey-based Supabase sign-in would be a separate, larger feature.
 
 ## Privacy
 

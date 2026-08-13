@@ -46,8 +46,8 @@ describe('shop handler', () => {
     it('lists active products with available stock net of active holds', async () => {
       mockSupabase.__queueResponses('products', [
         { data: [
-          { id: 'p1', name: 'Tee', description: 'Cotton tee', price: 500, image_url: null, sizes: ['S', 'M', 'L'], stock: 10, category: 'apparel', active: true },
-          { id: 'p2', name: 'Cap', description: null, price: 300, image_url: null, sizes: null, stock: null, category: 'apparel', active: true },
+          { id: 'p1', name: 'Tee', description: 'Cotton tee', price: 500, mrp: null, image_url: null, sizes: ['S', 'M', 'L'], stock: 10, category: 'apparel', active: true },
+          { id: 'p2', name: 'Cap', description: null, price: 300, mrp: null, image_url: null, sizes: null, stock: null, category: 'apparel', active: true },
         ], error: null },
       ]);
       mockSupabase.__queueResponses('shop_holds', [
@@ -63,6 +63,26 @@ describe('shop handler', () => {
       expect(res._json.products).toHaveLength(2);
       expect(res._json.products[0].stock).toBe(7);
       expect(res._json.products[1].stock).toBeNull();
+    });
+
+    it('computes discountPercent when mrp is above price, and hides it otherwise', async () => {
+      mockSupabase.__queueResponses('products', [
+        { data: [
+          { id: 'p1', name: 'Tee', description: null, price: 699, mrp: 999, image_url: null, sizes: null, stock: null, category: 'apparel', active: true },
+          { id: 'p2', name: 'Cap', description: null, price: 449, mrp: 449, image_url: null, sizes: null, stock: null, category: 'apparel', active: true },
+          { id: 'p3', name: 'Stickers', description: null, price: 99, mrp: null, image_url: null, sizes: null, stock: null, category: 'misc', active: true },
+        ], error: null },
+      ]);
+      mockSupabase.__queueResponses('shop_holds', [{ data: [], error: null }]);
+
+      const req = createMockReq({ body: { action: 'products' } });
+      const res = createMockRes();
+      await handler(req, res);
+
+      expect(res._status).toBe(200);
+      expect(res._json.products[0]).toMatchObject({ price: 699, mrp: 999, discountPercent: 30 });
+      expect(res._json.products[1]).toMatchObject({ price: 449, mrp: null, discountPercent: null });
+      expect(res._json.products[2]).toMatchObject({ price: 99, mrp: null, discountPercent: null });
     });
   });
 

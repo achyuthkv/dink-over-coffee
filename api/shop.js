@@ -43,16 +43,24 @@ async function listProducts(req, res) {
   const ids = (products || []).map(p => p.id);
   const reserved = await getReservedQuantities(ids);
 
-  const result = (products || []).map(p => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    price: Number(p.price),
-    imageUrl: p.image_url,
-    sizes: p.sizes || null,
-    category: p.category,
-    stock: p.stock === null || p.stock === undefined ? null : Math.max(0, Number(p.stock) - (reserved[p.id] || 0))
-  }));
+  const result = (products || []).map(p => {
+    const price = Number(p.price);
+    const mrp = p.mrp === null || p.mrp === undefined ? null : Number(p.mrp);
+    const hasDiscount = mrp !== null && mrp > price;
+
+    return {
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price,
+      mrp: hasDiscount ? mrp : null,
+      discountPercent: hasDiscount ? Math.round(((mrp - price) / mrp) * 100) : null,
+      imageUrl: p.image_url,
+      sizes: p.sizes || null,
+      category: p.category,
+      stock: p.stock === null || p.stock === undefined ? null : Math.max(0, Number(p.stock) - (reserved[p.id] || 0))
+    };
+  });
 
   return res.status(200).json({ ok: true, products: result });
 }
