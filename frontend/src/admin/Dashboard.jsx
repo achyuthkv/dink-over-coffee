@@ -6,6 +6,7 @@ import UpiAccounts from './UpiAccounts.jsx'
 import Waivers from './Waivers.jsx'
 import Finances from './Finances.jsx'
 import Venues from './Venues.jsx'
+import ShopOrders from './ShopOrders.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -244,6 +245,7 @@ export default function Dashboard() {
   const [showFinances, setShowFinances] = useState(false)
   const [showVenues, setShowVenues] = useState(false)
   const [showAllSessions, setShowAllSessions] = useState(false)
+  const [showShopOrders, setShowShopOrders] = useState(false)
 
   async function loadSessions() {
     setLoading(true)
@@ -371,6 +373,10 @@ export default function Dashboard() {
     return <UpiAccounts onBack={() => setShowUpi(false)} />
   }
 
+  if (showShopOrders) {
+    return <ShopOrders onBack={() => setShowShopOrders(false)} />
+  }
+
   if (viewPlayers) {
     return <PlayerList session={viewPlayers} onBack={() => setViewPlayers(null)} />
   }
@@ -432,6 +438,9 @@ export default function Dashboard() {
           </button>
           <button onClick={() => setShowUpi(true)} title="Payment methods" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </button>
+          <button onClick={() => setShowShopOrders(true)} title="Shop orders" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           </button>
           <button onClick={() => setShowAllSessions(true)} title="All sessions" className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>

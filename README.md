@@ -45,7 +45,7 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **waivers** — `id, phone, name, signature, signed_at`
 - **products** — `id, name, description, price, image_url, sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet.
 - **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Razorpay payment is in flight.
-- **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, status (pending|confirmed), items (jsonb), created_at`. `pending` means the buyer chose to pay manually via UPI (no Razorpay key configured); `confirmed` means Razorpay verified the payment.
+- **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, status (pending|confirmed), fulfilled (boolean), fulfilled_at, items (jsonb), created_at`. `status: pending` means the buyer chose to pay manually via UPI (no Razorpay key configured); `confirmed` means Razorpay verified the payment, or an organizer marked a manual order as paid in `/admin`. `fulfilled` is tracked independently — an organizer marks it once the order has shipped/been handed over.
 
 Optional: a Postgres function `atomic_register(p_session_id, p_name, p_phone, p_email, p_skill, p_amount, p_status, p_dupr_id, p_partner_name, p_partner_phone, p_partner_dupr_id, p_needs_partner)` for a fully atomic insert-and-capacity-check. If it doesn't exist, `api/_lib/atomicRegister.js` falls back to an insert-then-verify approach automatically.
 
@@ -141,7 +141,9 @@ A single screen for browsing merchandise and checking out — no login or persis
 
 ## Admin (`/admin`)
 
-Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, and see basic finances. `promote` is the only admin API route so far — it requires an `Authorization: Bearer <supabase access token>` header and moves a waitlisted player to confirmed.
+Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, see basic finances, and review shop orders. `promote` is the only admin API route so far — it requires an `Authorization: Bearer <supabase access token>` header and moves a waitlisted player to confirmed. Everything else in `/admin`, including shop orders, queries Supabase directly from the browser with the organizer's authenticated session — an `admin_all_<table>` RLS policy (`for all to authenticated using (true)`) grants that access per table, so these screens don't need their own API routes (keeping the Vercel function count down).
+
+**Shop Orders** (`/admin` → Shop Orders icon) lists every `shop_orders` row, newest first, with filters for *Awaiting payment*, *Awaiting fulfillment*, and *Fulfilled*. Expanding an order shows its line items, shipping address, and Razorpay/order IDs. Two independent toggles per order: **Paid** flips `status` between `pending` and `confirmed` (for reconciling manual UPI payments — Razorpay-confirmed orders are already `confirmed` on insert), and **Fulfilled** flips the `fulfilled` boolean (and stamps `fulfilled_at`) once the order has shipped.
 
 ## Privacy
 
