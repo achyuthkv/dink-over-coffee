@@ -20,9 +20,9 @@ frontend/          Vite + React + Tailwind app (public booking flow + /admin)
     admin/          Organizer dashboard (sessions, players, venues, UPI accounts, waivers, finances)
     api.js          Thin fetch wrapper around the /api/* endpoints
     supabase.js     Browser Supabase client (anon key)
-api/                Vercel serverless functions — one file per route
-  _lib/             Shared server helpers (supabase client, slot counting, atomic register, Razorpay, rate limiting, email)
-  dev-server.js     Minimal local HTTP server that mounts api/*.js for `npm run dev:api`
+api/                Vercel serverless functions — one file per route (Vercel's Hobby plan caps the function count, so routes are consolidated with an `action` field where it makes sense, e.g. `waiver.js`, `shop.js`)
+  _lib/             Shared server helpers (supabase client, slot counting, atomic register, Razorpay, rate limiting, email) — underscore prefix excludes these from Vercel's function count
+  _dev-server.js    Minimal local HTTP server that mounts api/*.js for `npm run dev:api` — underscore-prefixed so it isn't deployed as its own function
 apps-script/        Legacy/unused Apps Script prototype — not part of the current stack
 tests/              Vitest tests for the api/ handlers
 vercel.json         Vercel build + routing config
@@ -65,7 +65,7 @@ Enable Supabase Auth (email/password) and create organizer accounts — `/admin`
 
 Create two files (both gitignored) and fill in real values — set the same keys as Vercel environment variables in prod.
 
-`.env.local` at the repo root (read by `api/dev-server.js` locally, and by the deployed `api/*.js` functions):
+`.env.local` at the repo root (read by `api/_dev-server.js` locally, and by the deployed `api/*.js` functions):
 
 ```
 SUPABASE_URL=
@@ -129,15 +129,15 @@ Both paths re-verify capacity after insert and roll back on over-subscription, s
 
 ## Shop (`/shop`)
 
-A single screen for browsing merchandise and checking out — no login or persistent cart. Products are fetched fresh on load; picking a size and quantity per product adds it to an in-memory order list (cleared on refresh, nothing written to the DB until checkout).
+A single screen for browsing merchandise and checking out — no login or persistent cart. Products are fetched fresh on load; picking a size and quantity per product adds it to an in-memory order list (cleared on refresh, nothing written to the DB until checkout). All shop routes live behind one Vercel function, `api/shop.js`, dispatched by an `action` field in the request body (`products` / `create-order` / `confirm-payment` / `order`) to stay within the Hobby plan's function-count limit.
 
 **Razorpay configured:**
 1. Buyer picks items, fills shipping details, taps **Pay & checkout**.
-2. Frontend calls `shop-create-order` — the API re-prices every item server-side, checks stock (accounting for other in-flight holds), creates a Razorpay order, and writes a **shop_holds** row with a 5-minute TTL.
-3. On successful payment, frontend calls `shop-confirm-payment`, which verifies the signature, inserts a **shop_orders** row (`status: confirmed`), decrements product stock, and emails a confirmation if Resend is configured.
+2. Frontend calls `shop` with `action: 'create-order'` — the API re-prices every item server-side, checks stock (accounting for other in-flight holds), creates a Razorpay order, and writes a **shop_holds** row with a 5-minute TTL.
+3. On successful payment, frontend calls `shop` with `action: 'confirm-payment'`, which verifies the signature, inserts a **shop_orders** row (`status: confirmed`), decrements product stock, and emails a confirmation if Resend is configured.
 
 **No Razorpay key:**
-1. Frontend calls `shop-order` directly — the order is inserted as `status: pending`, stock is decremented, and the response includes UPI accounts so the buyer can pay manually. The organizer reconciles payment and ships once received.
+1. Frontend calls `shop` with `action: 'order'` directly — the order is inserted as `status: pending`, stock is decremented, and the response includes UPI accounts so the buyer can pay manually. The organizer reconciles payment and ships once received.
 
 ## Admin (`/admin`)
 
