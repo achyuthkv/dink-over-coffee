@@ -55,7 +55,7 @@ async function listProducts(req, res) {
       price,
       mrp: hasDiscount ? mrp : null,
       discountPercent: hasDiscount ? Math.round(((mrp - price) / mrp) * 100) : null,
-      imageUrl: p.image_url,
+      images: p.images || [],
       sizes: p.sizes || null,
       category: p.category,
       stock: p.stock === null || p.stock === undefined ? null : Math.max(0, Number(p.stock) - (reserved[p.id] || 0))
