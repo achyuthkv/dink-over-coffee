@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:api": "node api/dev-server.js",
+    "dev:api": "node api/_dev-server.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
