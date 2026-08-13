@@ -1,22 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
+import { loadRazorpay } from '../lib/loadRazorpay.js'
 import SessionCard from './SessionCard.jsx'
 import WaiverConsent from './WaiverConsent.jsx'
-
-let razorpayPromise = null
-function loadRazorpay() {
-  if (window.Razorpay) return Promise.resolve()
-  if (razorpayPromise) return razorpayPromise
-  razorpayPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.onload = resolve
-    script.onerror = () => reject(new Error('Failed to load Razorpay'))
-    document.head.appendChild(script)
-  })
-  return razorpayPromise
-}
 
 const ALL_SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']

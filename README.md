@@ -43,6 +43,9 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **upi_accounts** — `id, label, upi_id, qr_image_url`
 - **session_upis** — `session_id, upi_account_id, sort_order` (join table for per-session UPI display)
 - **waivers** — `id, phone, name, signature, signed_at`
+- **products** — `id, name, description, price, image_url, sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet.
+- **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Razorpay payment is in flight.
+- **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, status (pending|confirmed), items (jsonb), created_at`. `pending` means the buyer chose to pay manually via UPI (no Razorpay key configured); `confirmed` means Razorpay verified the payment.
 
 Optional: a Postgres function `atomic_register(p_session_id, p_name, p_phone, p_email, p_skill, p_amount, p_status, p_dupr_id, p_partner_name, p_partner_phone, p_partner_dupr_id, p_needs_partner)` for a fully atomic insert-and-capacity-check. If it doesn't exist, `api/_lib/atomicRegister.js` falls back to an insert-then-verify approach automatically.
 
@@ -123,6 +126,18 @@ Tests live in `tests/` and cover the `api/` handlers (`register`, `waitlist`, `p
 1. Frontend calls `register` (or `waitlist` once slots are full) directly — no hold/payment step. Availability and duplicate-registration checks happen server-side, and `atomicRegister` guards against races before the row is committed.
 
 Both paths re-verify capacity after insert and roll back on over-subscription, so concurrent submissions can't oversell a session.
+
+## Shop (`/shop`)
+
+A single screen for browsing merchandise and checking out — no login or persistent cart. Products are fetched fresh on load; picking a size and quantity per product adds it to an in-memory order list (cleared on refresh, nothing written to the DB until checkout).
+
+**Razorpay configured:**
+1. Buyer picks items, fills shipping details, taps **Pay & checkout**.
+2. Frontend calls `shop-create-order` — the API re-prices every item server-side, checks stock (accounting for other in-flight holds), creates a Razorpay order, and writes a **shop_holds** row with a 5-minute TTL.
+3. On successful payment, frontend calls `shop-confirm-payment`, which verifies the signature, inserts a **shop_orders** row (`status: confirmed`), decrements product stock, and emails a confirmation if Resend is configured.
+
+**No Razorpay key:**
+1. Frontend calls `shop-order` directly — the order is inserted as `status: pending`, stock is decremented, and the response includes UPI accounts so the buyer can pay manually. The organizer reconciles payment and ships once received.
 
 ## Admin (`/admin`)
 

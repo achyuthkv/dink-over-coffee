@@ -37,6 +37,7 @@ export default function Landing() {
             <Logo className="h-12 w-auto" />
           </Link>
           <div className="flex items-center gap-3">
+            <Link to="/shop" className="text-primary text-sm font-medium hover:text-interactive transition hidden sm:block">Shop</Link>
             <a href="https://www.instagram.com/dinkovercoffee" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-full border border-border/40 text-muted hover:text-primary hover:border-border transition" title="Instagram">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             </a>
@@ -66,6 +67,9 @@ export default function Landing() {
               <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80">
                 Join Community
               </a>
+              <Link to="/shop" className="glass inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80">
+                Shop Merch
+              </Link>
             </div>
           </div>
 

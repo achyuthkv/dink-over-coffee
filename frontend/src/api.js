@@ -21,7 +21,11 @@ export const api = {
   confirmPayment: (payload) => call('confirm-payment', payload),
   sessionHistory: () => call('session-history'),
   checkWaiver: (phone) => call('waiver', { action: 'check', phone }),
-  signWaiver: (phone, name, signature) => call('waiver', { action: 'sign', phone, name, signature })
+  signWaiver: (phone, name, signature) => call('waiver', { action: 'sign', phone, name, signature }),
+  listProducts: () => call('products'),
+  shopCreateOrder: (items, customer) => call('shop-create-order', { items, customer }),
+  shopConfirmPayment: (payload) => call('shop-confirm-payment', payload),
+  shopPlaceOrder: (items, customer) => call('shop-order', { items, customer })
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
