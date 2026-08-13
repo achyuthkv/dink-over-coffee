@@ -215,7 +215,17 @@ export default function ShopTab() {
                   </div>
                   <p className="text-text text-sm font-semibold mt-2 truncate">{product.name}</p>
                   {product.description && <p className="text-muted text-xs mt-0.5 line-clamp-2">{product.description}</p>}
-                  <p className="text-primary text-sm font-bold mt-1">₹{product.price}</p>
+                  {product.mrp ? (
+                    <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
+                      <span className="text-primary text-sm font-bold">₹{product.price}</span>
+                      <span className="text-muted text-xs line-through">₹{product.mrp}</span>
+                      <span className="text-[10px] font-bold text-green-700 dark:text-secondary bg-green-100 dark:bg-secondary/10 px-1.5 py-0.5 rounded">
+                        {product.discountPercent}% off
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-primary text-sm font-bold mt-1">₹{product.price}</p>
+                  )}
 
                   {product.sizes?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
