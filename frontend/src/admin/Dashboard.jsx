@@ -7,6 +7,7 @@ import Waivers from './Waivers.jsx'
 import Finances from './Finances.jsx'
 import Venues from './Venues.jsx'
 import ShopOrders from './ShopOrders.jsx'
+import Security from './Security.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -283,6 +284,7 @@ export default function Dashboard() {
   const [showVenues, setShowVenues] = useState(false)
   const [showAllSessions, setShowAllSessions] = useState(false)
   const [showShopOrders, setShowShopOrders] = useState(false)
+  const [showSecurity, setShowSecurity] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSessions() {
@@ -415,6 +417,10 @@ export default function Dashboard() {
     return <ShopOrders onBack={() => setShowShopOrders(false)} />
   }
 
+  if (showSecurity) {
+    return <Security onBack={() => setShowSecurity(false)} />
+  }
+
   if (viewPlayers) {
     return <PlayerList session={viewPlayers} onBack={() => setViewPlayers(null)} />
   }
@@ -501,6 +507,10 @@ export default function Dashboard() {
               {
                 label: 'Venues', hint: 'Court locations', onClick: () => setShowVenues(true),
                 icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              },
+              {
+                label: 'Security', hint: 'Auto-lock and biometric unlock', onClick: () => setShowSecurity(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               }
             ]}
           />
