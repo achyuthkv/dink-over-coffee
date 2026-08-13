@@ -205,7 +205,7 @@ export default function ShopTab() {
               const sel = selectionFor(product)
               const outOfStock = product.stock !== null && product.stock <= 0
               return (
-                <div key={product.id} className="card p-3">
+                <div key={product.id} className="card p-3 last:odd:col-span-full md:last:odd:col-span-1">
                   <div className="aspect-square rounded-2xl bg-surface-alt overflow-hidden grid place-items-center">
                     {product.imageUrl ? (
                       <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
