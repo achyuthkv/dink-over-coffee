@@ -1,6 +1,52 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
 import { loadRazorpay } from '../lib/loadRazorpay.js'
+
+function ProductImageCarousel({ images, name }) {
+  const [index, setIndex] = useState(0)
+  const scrollRef = useRef(null)
+
+  function handleScroll() {
+    const el = scrollRef.current
+    if (!el || el.clientWidth === 0) return
+    setIndex(Math.round(el.scrollLeft / el.clientWidth))
+  }
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="aspect-square rounded-2xl bg-surface-alt overflow-hidden grid place-items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      </div>
+    )
+  }
+
+  if (images.length === 1) {
+    return (
+      <div className="aspect-square rounded-2xl bg-surface-alt overflow-hidden">
+        <img src={images[0]} alt={name} className="w-full h-full object-cover" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="aspect-square rounded-2xl bg-surface-alt overflow-x-auto flex snap-x snap-mandatory scrollbar-hide"
+      >
+        {images.map((src, i) => (
+          <img key={i} src={src} alt={`${name} ${i + 1}`} className="w-full h-full object-cover shrink-0 snap-center" />
+        ))}
+      </div>
+      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-black/30 px-1.5 py-1">
+        {images.map((_, i) => (
+          <span key={i} className={`w-1.5 h-1.5 rounded-full transition ${i === index ? 'bg-white' : 'bg-white/40'}`} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function ShopTab() {
   const [products, setProducts] = useState([])
@@ -206,13 +252,7 @@ export default function ShopTab() {
               const outOfStock = product.stock !== null && product.stock <= 0
               return (
                 <div key={product.id} className="card p-3 last:odd:col-span-full md:last:odd:col-span-1">
-                  <div className="aspect-square rounded-2xl bg-surface-alt overflow-hidden grid place-items-center">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                    )}
-                  </div>
+                  <ProductImageCarousel images={product.images} name={product.name} />
                   <p className="text-text text-sm font-semibold mt-2 truncate">{product.name}</p>
                   {product.description && <p className="text-muted text-xs mt-0.5 line-clamp-2">{product.description}</p>}
                   {product.mrp ? (
