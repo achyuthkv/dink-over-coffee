@@ -185,7 +185,9 @@ async function confirmPayment(req, res) {
       currency: 'INR',
       razorpay_order_id,
       razorpay_payment_id,
-      status: 'confirmed',
+      payment_status: 'paid',
+      order_status: 'confirmed',
+      confirmed_at: new Date().toISOString(),
       items: hold.items
     })
     .select('id')
@@ -229,7 +231,8 @@ async function placeManualOrder(req, res) {
       pincode: customer.pincode.trim(),
       amount,
       currency: 'INR',
-      status: 'pending',
+      payment_status: 'pending',
+      order_status: 'placed',
       items: orderItems
     })
     .select('id')
