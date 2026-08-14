@@ -51,7 +51,15 @@ function MatchRow({ match, teamsById, onScore }) {
   )
 }
 
-function StandingsTable({ standings, courtsById, highlightTop }) {
+function WithdrawnBadge() {
+  return (
+    <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
+      Withdrawn
+    </span>
+  )
+}
+
+function StandingsTable({ standings, courtsById, highlightTop, withdrawnPlayerIds }) {
   if (standings.length === 0) return null
   return (
     <div className="rounded-xl border border-border overflow-hidden mb-3">
@@ -71,7 +79,10 @@ function StandingsTable({ standings, courtsById, highlightTop }) {
           {standings.map((row, i) => (
             <tr key={row.team.id} className={`border-t border-border ${highlightTop && i < highlightTop ? 'bg-interactive/5' : ''}`}>
               <td className="px-3 py-2 text-muted">{i + 1}</td>
-              <td className="px-3 py-2 text-primary font-medium">{row.team.name}</td>
+              <td className="px-3 py-2 text-primary font-medium">
+                {row.team.name}
+                {withdrawnPlayerIds?.has(row.team.source_player_id) && <WithdrawnBadge />}
+              </td>
               {courtsById && <td className="px-2 py-2 text-secondary">{courtsById.get(row.team.court_id)?.name || '—'}</td>}
               <td className="px-2 py-2 text-center text-secondary">{row.played}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.wins}</td>
@@ -90,6 +101,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   const [courts, setCourts] = useState([])
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
+  const [withdrawnPlayerIds, setWithdrawnPlayerIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
 
   const [newCourtName, setNewCourtName] = useState('')
@@ -108,12 +120,44 @@ export default function TournamentDetail({ tournamentId, onBack }) {
     ])
     setTournament(t.data)
     setCourts(c.data || [])
-    setTeams(tm.data || [])
+    const teamRows = tm.data || []
+    setTeams(teamRows)
     setMatches(m.data || [])
+
+    const sourceIds = teamRows.map(row => row.source_player_id).filter(Boolean)
+    if (sourceIds.length > 0) {
+      const { data: withdrawn } = await supabase.from('players').select('id').eq('status', 'withdrew').in('id', sourceIds)
+      setWithdrawnPlayerIds(new Set((withdrawn || []).map(p => p.id)))
+    } else {
+      setWithdrawnPlayerIds(new Set())
+    }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [tournamentId])
+
+  // Teams are auto-synced from the linked session's confirmed doubles
+  // registrations (new registration -> new team, via a DB trigger); these
+  // subscriptions keep this screen live as that happens or as a
+  // registration is withdrawn, without needing a manual refresh.
+  useEffect(() => {
+    if (!tournamentId) return
+    const channel = supabase
+      .channel(`admin-tournament-${tournamentId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_teams', filter: `tournament_id=eq.${tournamentId}` }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches', filter: `tournament_id=eq.${tournamentId}` }, load)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [tournamentId])
+
+  useEffect(() => {
+    if (!tournament?.session_id) return
+    const channel = supabase
+      .channel(`admin-tournament-players-${tournament.session_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${tournament.session_id}` }, load)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [tournament?.session_id])
 
   const teamsById = new Map(teams.map(t => [t.id, t]))
   const courtsById = new Map(courts.map(c => [c.id, c]))
@@ -157,10 +201,17 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   async function generateFixtures(courtId) {
     const courtTeamIds = teams.filter(t => t.court_id === courtId).map(t => t.id)
     if (courtTeamIds.length < 2) return
-    const pairs = generateRoundRobinPairs(courtTeamIds)
+    const courtMatches = matches.filter(m => m.court_id === courtId && m.stage === 'round_robin')
+    const existingPairKeys = new Set(courtMatches.map(m => [m.team_a_id, m.team_b_id].sort().join('|')))
+    // Regenerating the full order every time (rather than just appending a
+    // new team at the end) keeps the no-back-to-back guarantee intact when
+    // a team is auto-synced onto a court that already has fixtures --
+    // already-played pairs are filtered back out, so their scores are untouched.
+    const pairs = generateRoundRobinPairs(courtTeamIds).filter(([a, b]) => !existingPairKeys.has([a, b].sort().join('|')))
+    if (pairs.length === 0) return
     const rows = pairs.map(([a, b], i) => ({
       tournament_id: tournamentId, court_id: courtId, stage: 'round_robin',
-      match_number: i, team_a_id: a, team_b_id: b
+      match_number: courtMatches.length + i, team_a_id: a, team_b_id: b
     }))
     await supabase.from('tournament_matches').insert(rows)
     load()
@@ -266,7 +317,10 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                   <div className="space-y-1.5 mb-2">
                     {courtTeams.map(t => (
                       <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                        <span className="text-sm text-primary">{t.name}</span>
+                        <span className="text-sm text-primary">
+                          {t.name}
+                          {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
+                        </span>
                         <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
                       </div>
                     ))}
@@ -280,7 +334,10 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                 <div className="space-y-1.5 mb-2">
                   {teams.filter(t => !t.court_id).map(t => (
                     <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                      <span className="text-sm text-primary">{t.name}</span>
+                      <span className="text-sm text-primary">
+                        {t.name}
+                        {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
+                      </span>
                       <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
                     </div>
                   ))}
@@ -317,21 +374,22 @@ export default function TournamentDetail({ tournamentId, onBack }) {
           const courtTeams = teams.filter(t => t.court_id === c.id)
           const courtMatches = roundRobinMatches.filter(m => m.court_id === c.id)
           const standings = computeStandings(courtTeams, courtMatches)
+          const totalPairs = courtTeams.length * (courtTeams.length - 1) / 2
+          const missingPairs = totalPairs - courtMatches.length
           return (
             <section key={c.id} className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-sm font-bold text-primary">{c.name} — Round Robin</h2>
-                {courtMatches.length === 0 && (
+                {missingPairs > 0 && courtTeams.length >= 2 && (
                   <button
                     onClick={() => generateFixtures(c.id)}
-                    disabled={courtTeams.length < 2}
-                    className="text-xs font-semibold text-interactive disabled:opacity-40"
+                    className="text-xs font-semibold text-interactive"
                   >
-                    Generate fixtures
+                    {courtMatches.length === 0 ? 'Generate fixtures' : `Add ${missingPairs} new fixture${missingPairs === 1 ? '' : 's'}`}
                   </button>
                 )}
               </div>
-              {courtMatches.length > 0 && <StandingsTable standings={standings} />}
+              {courtMatches.length > 0 && <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />}
               <div className="space-y-2">
                 {courtMatches.map(m => (
                   <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />
@@ -349,7 +407,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
           <section className="mb-6">
             <h2 className="text-sm font-bold text-primary mb-1">Overall Standings</h2>
             <p className="text-[11px] text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks below.</p>
-            <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} />
+            <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} withdrawnPlayerIds={withdrawnPlayerIds} />
           </section>
         )}
 
