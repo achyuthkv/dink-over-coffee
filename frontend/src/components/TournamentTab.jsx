@@ -17,7 +17,7 @@ function MatchRow({ match, teamsById }) {
   )
 }
 
-function StandingsTable({ standings }) {
+function StandingsTable({ standings, courtsById }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <table className="w-full text-xs">
@@ -25,6 +25,7 @@ function StandingsTable({ standings }) {
           <tr className="bg-surface-alt text-muted">
             <th className="text-left font-semibold px-3 py-2">#</th>
             <th className="text-left font-semibold px-3 py-2">Team</th>
+            {courtsById && <th className="text-left font-semibold px-2 py-2">Court</th>}
             <th className="text-center font-semibold px-2 py-2">P</th>
             <th className="text-center font-semibold px-2 py-2">W</th>
             <th className="text-center font-semibold px-2 py-2">L</th>
@@ -36,6 +37,7 @@ function StandingsTable({ standings }) {
             <tr key={row.team.id} className="border-t border-border">
               <td className="px-3 py-2 text-muted">{i + 1}</td>
               <td className="px-3 py-2 text-primary font-medium">{row.team.name}</td>
+              {courtsById && <td className="px-2 py-2 text-secondary">{courtsById.get(row.team.court_id)?.name || '—'}</td>}
               <td className="px-2 py-2 text-center text-secondary">{row.played}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.wins}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.losses}</td>
@@ -97,11 +99,15 @@ export default function TournamentTab() {
   if (notFound) return <div className="card text-center text-secondary text-sm">No tournament right now. Check back soon.</div>
 
   const teamsById = new Map(teams.map(t => [t.id, t]))
+  const courtsById = new Map(courts.map(c => [c.id, c]))
   const roundRobinMatches = matches.filter(m => m.stage === 'round_robin')
   const semiMatches = matches.filter(m => m.stage === 'semifinal')
   const finalMatches = matches.filter(m => m.stage === 'final')
   const finalWinnerId = finalMatches.find(m => m.winner_team_id)?.winner_team_id
   const champion = finalWinnerId ? teamsById.get(finalWinnerId) : null
+  // Standings are shown as one combined ranking across every court, not
+  // per-court — courts are just round-robin pools, not separate divisions.
+  const overallStandings = computeStandings(teams, roundRobinMatches)
 
   return (
     <div className="space-y-5">
@@ -127,21 +133,20 @@ export default function TournamentTab() {
         </div>
       )}
 
+      {overallStandings.length > 0 && (
+        <section className="card">
+          <h3 className="text-text font-bold text-sm mb-2">Standings</h3>
+          <StandingsTable standings={overallStandings} courtsById={courtsById} />
+        </section>
+      )}
+
       {courts.map(c => {
-        const courtTeams = teams.filter(t => t.court_id === c.id)
         const courtMatches = roundRobinMatches.filter(m => m.court_id === c.id)
-        if (courtTeams.length === 0) return null
-        const standings = computeStandings(courtTeams, courtMatches)
+        if (courtMatches.length === 0) return null
         return (
           <section key={c.id} className="card">
-            <h3 className="text-text font-bold text-sm mb-2">{c.name}</h3>
-            <StandingsTable standings={standings} />
-            {courtMatches.length > 0 && (
-              <div className="mt-3">
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Fixtures</p>
-                {courtMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} />)}
-              </div>
-            )}
+            <h3 className="text-text font-bold text-sm mb-2">{c.name} — Fixtures</h3>
+            {courtMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} />)}
           </section>
         )
       })}
