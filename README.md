@@ -40,8 +40,8 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **players** — `id, session_id, name, phone, email, skill, dupr_id, partner_name, partner_phone, partner_dupr_id, needs_partner, amount, razorpay_payment_id, razorpay_order_id, status (confirmed|waitlisted), created_at`
 - **holds** — `id, session_id, razorpay_order_id, expires_at, status (active|consumed), slots`
 - **venues** — `id, name, address, google_maps_url`
-- **upi_accounts** — `id, label, upi_id, qr_image_url`
-- **session_upis** — `session_id, upi_account_id, sort_order` (join table for per-session UPI display)
+- **upi_accounts** — `id, label, upi_id, qr_image_url`. RLS-locked to `authenticated` only (organizer, via `/admin` → Manage → Payment Methods) — no anon policy at all, since public pages never query it directly; they get UPI details through server-side API routes using the service role key instead.
+- **session_upis** — `session_id, upi_account_id, sort_order` (join table for per-session UPI display). Same RLS lockdown as `upi_accounts`, for the same reason.
 - **waivers** — `id, phone, name, signature, signed_at`
 - **products** — `id, name, description, price, mrp (numeric, nullable), images (text[], nullable), sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet. `mrp` is optional — when set above `price`, the shop shows it struck through next to the discounted price with a computed `% off` badge; leave it null (or equal to `price`) for no discount. `images` holds one or more URLs (e.g. `{https://.../front.jpg,https://.../back.jpg}`); with more than one, the shop shows a swipeable carousel with dot indicators — with zero or one, it's a plain image (or the placeholder icon).
 - **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Razorpay payment is in flight.
