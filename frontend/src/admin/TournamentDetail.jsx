@@ -51,7 +51,7 @@ function MatchRow({ match, teamsById, onScore }) {
   )
 }
 
-function StandingsTable({ standings }) {
+function StandingsTable({ standings, courtsById, highlightTop }) {
   if (standings.length === 0) return null
   return (
     <div className="rounded-xl border border-border overflow-hidden mb-3">
@@ -60,6 +60,7 @@ function StandingsTable({ standings }) {
           <tr className="bg-bg text-muted">
             <th className="text-left font-semibold px-3 py-2">#</th>
             <th className="text-left font-semibold px-3 py-2">Team</th>
+            {courtsById && <th className="text-left font-semibold px-2 py-2">Court</th>}
             <th className="text-center font-semibold px-2 py-2">P</th>
             <th className="text-center font-semibold px-2 py-2">W</th>
             <th className="text-center font-semibold px-2 py-2">L</th>
@@ -68,9 +69,10 @@ function StandingsTable({ standings }) {
         </thead>
         <tbody>
           {standings.map((row, i) => (
-            <tr key={row.team.id} className="border-t border-border">
+            <tr key={row.team.id} className={`border-t border-border ${highlightTop && i < highlightTop ? 'bg-interactive/5' : ''}`}>
               <td className="px-3 py-2 text-muted">{i + 1}</td>
               <td className="px-3 py-2 text-primary font-medium">{row.team.name}</td>
+              {courtsById && <td className="px-2 py-2 text-secondary">{courtsById.get(row.team.court_id)?.name || '—'}</td>}
               <td className="px-2 py-2 text-center text-secondary">{row.played}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.wins}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.losses}</td>
@@ -114,6 +116,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   useEffect(() => { load() }, [tournamentId])
 
   const teamsById = new Map(teams.map(t => [t.id, t]))
+  const courtsById = new Map(courts.map(c => [c.id, c]))
 
   async function setStatus(status) {
     await supabase.from('tournaments').update({ status }).eq('id', tournamentId)
@@ -191,6 +194,12 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   const semiMatches = matches.filter(m => m.stage === 'semifinal')
   const finalMatches = matches.filter(m => m.stage === 'final')
   const champion = finalMatches.find(m => m.winner_team_id) ? teamsById.get(finalMatches.find(m => m.winner_team_id).winner_team_id) : null
+  // Combined across every court -- with uneven team counts per court (e.g.
+  // 5/5/4), per-court standings alone can't tell you who the overall top 4
+  // are without a manual judgment call. This is a reference for picking
+  // semifinalists, not an enforced cutoff -- the team pickers below still
+  // allow any team.
+  const overallStandings = computeStandings(teams, roundRobinMatches)
 
   return (
     <div className="min-h-screen bg-pattern">
@@ -334,6 +343,15 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             </section>
           )
         })}
+
+        {/* Overall standings across every court -- use this to pick who advances */}
+        {overallStandings.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-sm font-bold text-primary mb-1">Overall Standings</h2>
+            <p className="text-[11px] text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks below.</p>
+            <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} />
+          </section>
+        )}
 
         {/* Knockout stage */}
         <section className="mb-6">
