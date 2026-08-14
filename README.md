@@ -48,6 +48,10 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, items (jsonb), created_at`, plus two independent state machines:
   - `payment_status` (`pending|paid|refunded`) — `pending` means the buyer chose to pay manually via UPI (no Razorpay key configured) or hasn't paid yet; `paid` means Razorpay verified the payment, or an organizer marked a manual order as paid in `/admin`.
   - `order_status` (`placed|confirmed|packed|shipped|delivered|cancelled`) — the fulfillment pipeline, advanced by an organizer in `/admin`, with a timestamp column per stage (`confirmed_at`, `packed_at`, `shipped_at`, `delivered_at`, `cancelled_at`) plus `cancellation_reason`, `shipping_carrier`, `tracking_number`, `tracking_url`.
+- **tournaments** — `id, name, description, status (setup|active|completed), created_at`. Generic — not tied to any one event's team/court count. `setup` is hidden from the public `/tournament` page (organizers can stage teams and fixtures before anything's visible); `active` and `completed` are public. `/tournament` shows whichever `active` tournament is newest, falling back to the newest `completed` one so results linger after an event ends.
+- **tournament_courts** — `id, tournament_id, name, sort_order, created_at`. A "court" is both the physical court and the round-robin pool of teams playing on it.
+- **tournament_teams** — `id, tournament_id, court_id (nullable), name, player1_name, player2_name, created_at`.
+- **tournament_matches** — `id, tournament_id, court_id (nullable — null for semifinal/final), stage (round_robin|semifinal|final), match_number, team_a_id, team_b_id, team_a_score, team_b_score, winner_team_id, status (scheduled|completed), created_at`.
 
 Optional: a Postgres function `atomic_register(p_session_id, p_name, p_phone, p_email, p_skill, p_amount, p_status, p_dupr_id, p_partner_name, p_partner_phone, p_partner_dupr_id, p_needs_partner)` for a fully atomic insert-and-capacity-check. If it doesn't exist, `api/_lib/atomicRegister.js` falls back to an insert-then-verify approach automatically.
 
@@ -141,9 +145,23 @@ A single screen for browsing merchandise and checking out — no login or persis
 **No Razorpay key:**
 1. Frontend calls `shop` with `action: 'order'` directly — the order is inserted as `payment_status: pending`, `order_status: placed`, stock is decremented, and the response includes UPI accounts so the buyer can pay manually. The organizer reconciles payment and ships once received.
 
+## Tournaments (`/tournament`)
+
+A generic round-robin-into-knockout tournament engine, not hardcoded to any one event's shape — a tournament can have any number of courts and teams per court. Like sessions/shop, there's no login: fixtures and standings are public, real-time (Supabase Realtime on `tournament_matches`/`tournament_teams`/`tournaments`), all writes go through `/admin` with the organizer's authenticated session (no new API routes needed, same `admin_all_<table>` RLS pattern as the rest of `/admin`).
+
+**Flow:**
+1. Organizer creates a tournament (`/admin` → Manage → Tournaments), adds courts (e.g. "Court 1/2/3"), and adds teams to each court.
+2. **Generate fixtures** per court builds every pairing once (`generateRoundRobinPairs` in `frontend/src/lib/tournament.js` — N teams → N×(N-1)/2 matches) as `stage: round_robin` rows.
+3. Scores are entered per match (single game score; higher score wins) as they're played, in any order — nothing about the fixture list gates when a match can be scored.
+4. **Standings** (`computeStandings`, same lib) are derived live from completed matches — wins, then point differential, then points scored, the standard round-robin tiebreak order. There's no separate standings table to keep in sync; it's always a pure function of the match results.
+5. Once round robin wraps, the organizer looks at the standings and manually creates semifinal (and later, final) matches by picking any two teams — deliberately not an auto-advancement formula (e.g. "winner of each court + best runner-up"), so the same engine works whether the next tournament has 3 courts advancing 4 teams, or 4 courts, or a different shape entirely.
+6. Once the final is scored, its winner is shown as tournament champion, both in `/admin` and on the public page.
+
+A tournament in `setup` status is invisible on `/tournament` (organizers can stage teams/fixtures before publishing); flip it to `active` when it should go live, and to `completed` when it's over. `/tournament` shows the newest `active` tournament, or falls back to the newest `completed` one so results stay visible after the event.
+
 ## Admin (`/admin`)
 
-Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, see basic finances, and manage shop orders — reached via the **Manage** menu (hamburger icon next to the theme toggle) rather than a row of icon buttons, so each destination has a visible label instead of relying on hover tooltips. `promote` is the only admin API route so far — it requires an `Authorization: Bearer <supabase access token>` header and moves a waitlisted player to confirmed. Everything else in `/admin`, including shop orders, queries Supabase directly from the browser with the organizer's authenticated session — an `admin_all_<table>` RLS policy (`for all to authenticated using (true)`) grants that access per table, so these screens don't need their own API routes (keeping the Vercel function count down).
+Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, see basic finances, manage shop orders, and run tournaments — reached via the **Manage** menu (hamburger icon next to the theme toggle) rather than a row of icon buttons, so each destination has a visible label instead of relying on hover tooltips. `promote` is the only admin API route so far — it requires an `Authorization: Bearer <supabase access token>` header and moves a waitlisted player to confirmed. Everything else in `/admin`, including shop orders, queries Supabase directly from the browser with the organizer's authenticated session — an `admin_all_<table>` RLS policy (`for all to authenticated using (true)`) grants that access per table, so these screens don't need their own API routes (keeping the Vercel function count down).
 
 **Shop Orders** (`/admin` → Manage → Shop Orders) lists every `shop_orders` row, newest first, with a stats row (total / payment pending / to ship) and filter chips across both `payment_status` and `order_status`. Each order shows a status stepper (Placed → Confirmed → Packed → Shipped → Delivered, or a red Cancelled state) and a payment badge. Expanding an order reveals its line items, shipping address, and IDs, plus contextual actions:
 - **Mark as paid** when `payment_status` is `pending`.

@@ -8,6 +8,7 @@ import Finances from './Finances.jsx'
 import Venues from './Venues.jsx'
 import ShopOrders from './ShopOrders.jsx'
 import Security from './Security.jsx'
+import Tournaments from './Tournaments.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -285,6 +286,7 @@ export default function Dashboard() {
   const [showAllSessions, setShowAllSessions] = useState(false)
   const [showShopOrders, setShowShopOrders] = useState(false)
   const [showSecurity, setShowSecurity] = useState(false)
+  const [showTournaments, setShowTournaments] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSessions() {
@@ -421,6 +423,10 @@ export default function Dashboard() {
     return <Security onBack={() => setShowSecurity(false)} />
   }
 
+  if (showTournaments) {
+    return <Tournaments onBack={() => setShowTournaments(false)} />
+  }
+
   if (viewPlayers) {
     return <PlayerList session={viewPlayers} onBack={() => setViewPlayers(null)} />
   }
@@ -487,6 +493,10 @@ export default function Dashboard() {
               {
                 label: 'Shop Orders', hint: 'View, ship, and manage orders', onClick: () => setShowShopOrders(true),
                 icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              },
+              {
+                label: 'Tournaments', hint: 'Courts, fixtures, scoring, standings', onClick: () => setShowTournaments(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
               },
               {
                 label: 'All Sessions', hint: 'Every session, past and upcoming', onClick: () => setShowAllSessions(true),
