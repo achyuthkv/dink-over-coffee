@@ -18,6 +18,43 @@ describe('generateRoundRobinPairs', () => {
     expect(generateRoundRobinPairs(['a'])).toEqual([]);
     expect(generateRoundRobinPairs([])).toEqual([]);
   });
+
+  function countBackToBack(pairs) {
+    let n = 0;
+    for (let k = 1; k < pairs.length; k++) {
+      const [a, b] = pairs[k];
+      const [c, d] = pairs[k - 1];
+      if (a === c || a === d || b === c || b === d) n++;
+    }
+    return n;
+  }
+
+  it('avoids scheduling the same team in consecutive matches for realistic team counts', () => {
+    for (let n = 5; n <= 16; n++) {
+      const teamIds = Array.from({ length: n }, (_, i) => `t${i}`);
+      const pairs = generateRoundRobinPairs(teamIds);
+      expect(countBackToBack(pairs)).toBe(0);
+    }
+  });
+
+  it('minimizes (but cannot always eliminate) back-to-back matches for tiny team counts', () => {
+    // With only 3 or 4 teams, at least 2 consecutive repeats are mathematically unavoidable.
+    expect(countBackToBack(generateRoundRobinPairs(['a', 'b', 'c']))).toBeLessThanOrEqual(2);
+    expect(countBackToBack(generateRoundRobinPairs(['a', 'b', 'c', 'd']))).toBeLessThanOrEqual(2);
+  });
+
+  it('is deterministic for a given team list', () => {
+    const teamIds = Array.from({ length: 9 }, (_, i) => `t${i}`);
+    expect(generateRoundRobinPairs(teamIds)).toEqual(generateRoundRobinPairs(teamIds));
+  });
+
+  it('still produces every unique pairing exactly once for larger fields', () => {
+    const teamIds = Array.from({ length: 9 }, (_, i) => `t${i}`);
+    const pairs = generateRoundRobinPairs(teamIds);
+    expect(pairs).toHaveLength(36); // 9*8/2
+    const keys = pairs.map(([x, y]) => [x, y].sort().join('-'));
+    expect(new Set(keys).size).toBe(36);
+  });
 });
 
 describe('computeStandings', () => {
