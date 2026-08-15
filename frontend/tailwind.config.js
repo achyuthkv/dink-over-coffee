@@ -86,6 +86,15 @@ export default {
         // brand font, then a plain system stack.
         display: ['-apple-system', 'BlinkMacSystemFont', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
       },
+      fontSize: {
+        // Fills the gap below Tailwind's own xs (12px) -- these two steps
+        // were already in use everywhere as one-off text-[11px]/text-[10px]/
+        // text-[9px] brackets for the same "eyebrow label" and "fine print"
+        // roles; naming them turns that ad hoc range into two real,
+        // reusable steps.
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+        '3xs': ['0.625rem', { lineHeight: '0.875rem' }]
+      },
       transitionTimingFunction: {
         // Approximates UIKit/SwiftUI's default spring curve -- a touch of
         // overshoot on release rather than a linear stop, for small

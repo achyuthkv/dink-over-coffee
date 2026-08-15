@@ -259,6 +259,18 @@ body {
   .pill {
     @apply inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-primary;
   }
+  .card-compact {
+    @apply rounded-2xl bg-surface border border-border;
+  }
+  .badge-success {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-success;
+  }
+  .badge-error {
+    @apply inline-flex items-center gap-1 rounded-full bg-error-subtle px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-error;
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 rounded-full bg-warning-subtle px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-warning-muted;
+  }
 }
 
 @layer utilities {
