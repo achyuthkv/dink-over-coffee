@@ -33,7 +33,7 @@ export default function Landing() {
         <div className="mesh-blob mesh-blob-3" />
 
         {/* Nav */}
-        <nav className="relative z-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-6 flex items-center justify-between">
+        <nav className="relative z-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-[calc(env(safe-area-inset-top)+1.5rem)] flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <Logo className="h-12 w-auto" />
           </Link>

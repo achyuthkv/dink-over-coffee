@@ -327,7 +327,7 @@ export default function Finances({ onBack }) {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-xl mx-auto px-5 py-6">
+      <div className="max-w-xl mx-auto px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
 
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">

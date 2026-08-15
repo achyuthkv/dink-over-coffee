@@ -7,7 +7,7 @@ export default function Terms() {
     <div className="min-h-screen bg-bg-alt flex flex-col">
 
       {/* Nav */}
-      <nav className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-5 flex items-center justify-between">
+      <nav className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-[calc(env(safe-area-inset-top)+1.25rem)] flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
           <Logo className="h-12 w-auto" />
         </Link>

@@ -57,7 +57,7 @@ export default function Venues({ onBack }) {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-xl mx-auto px-5 py-6">
+      <div className="max-w-xl mx-auto px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
