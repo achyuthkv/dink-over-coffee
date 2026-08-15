@@ -261,6 +261,15 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   const [addingKo, setAddingKo] = useState(false)
   const [scoringCourtId, setScoringCourtId] = useState(null)
   const [scoringKnockout, setScoringKnockout] = useState(false)
+  const [sessions, setSessions] = useState([])
+  const [linkedSession, setLinkedSession] = useState(null)
+  const [selectedSessionId, setSelectedSessionId] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState('')
+  const [duprDate, setDuprDate] = useState('')
+  const [duprScoreType, setDuprScoreType] = useState('RALLY')
+  const [exportingDupr, setExportingDupr] = useState(false)
+  const [duprMessage, setDuprMessage] = useState('')
 
   async function load() {
     setLoading(true)
@@ -311,11 +320,53 @@ export default function TournamentDetail({ tournamentId, onBack }) {
     return () => { supabase.removeChannel(channel) }
   }, [tournament?.session_id])
 
+  useEffect(() => {
+    supabase.from('sessions').select('id, date, title, venue').order('date', { ascending: false }).limit(60)
+      .then(({ data }) => setSessions(data || []))
+  }, [])
+
+  useEffect(() => {
+    if (!tournament?.session_id) { setLinkedSession(null); return }
+    supabase.from('sessions').select('id, date, title, venue').eq('id', tournament.session_id).maybeSingle()
+      .then(({ data }) => setLinkedSession(data))
+  }, [tournament?.session_id])
+
+  // Seed the DUPR export date once, from the linked session if there is
+  // one -- doesn't fight further edits since it only fires while empty.
+  useEffect(() => {
+    if (duprDate || !tournament) return
+    setDuprDate(linkedSession?.date || new Date().toISOString().slice(0, 10))
+  }, [tournament, linkedSession, duprDate])
+
   const teamsById = new Map(teams.map(t => [t.id, t]))
   const courtsById = new Map(courts.map(c => [c.id, c]))
 
   async function setStatus(status) {
     await supabase.from('tournaments').update({ status }).eq('id', tournamentId)
+    load()
+  }
+
+  async function linkSession() {
+    if (!selectedSessionId) return
+    await supabase.from('tournaments').update({ session_id: selectedSessionId }).eq('id', tournamentId)
+    setSelectedSessionId('')
+    setSyncMessage('')
+    load()
+  }
+
+  async function unlinkSession() {
+    await supabase.from('tournaments').update({ session_id: null }).eq('id', tournamentId)
+    setSyncMessage('')
+    load()
+  }
+
+  async function syncTeams() {
+    setSyncing(true)
+    setSyncMessage('')
+    const { data, error } = await supabase.rpc('bulk_sync_tournament_teams', { p_tournament_id: tournamentId })
+    setSyncing(false)
+    if (error) { setSyncMessage('Sync failed — try again.'); return }
+    setSyncMessage(data > 0 ? `Synced ${data} new team${data === 1 ? '' : 's'}.` : 'Already up to date — no new teams to add.')
     load()
   }
 
@@ -375,6 +426,69 @@ export default function TournamentDetail({ tournamentId, onBack }) {
       team_a_score: scoreA, team_b_score: scoreB, winner_team_id, status: 'completed'
     }).eq('id', match.id)
     load()
+  }
+
+  // DUPR's bulk match-upload CSV: header + one row per completed match, no
+  // DUPR-side "division" concept -- event doubles as tournament + bracket
+  // name. Player DUPR IDs come from `players` (dupr_id/partner_dupr_id) via
+  // a synced team's source_player_id; teams added by hand in /admin have
+  // no such link, so those cells are left blank for the organizer to fill
+  // in before uploading.
+  async function exportForDupr() {
+    const completedMatches = matches.filter(m => m.status === 'completed')
+    if (completedMatches.length === 0) return
+    setExportingDupr(true)
+    setDuprMessage('')
+
+    const sourceIds = teams.map(t => t.source_player_id).filter(Boolean)
+    let duprById = new Map()
+    if (sourceIds.length > 0) {
+      const { data } = await supabase.from('players').select('id, dupr_id, partner_dupr_id').in('id', sourceIds)
+      duprById = new Map((data || []).map(p => [p.id, p]))
+    }
+
+    function teamDuprIds(team) {
+      const p = team?.source_player_id ? duprById.get(team.source_player_id) : null
+      return [p?.dupr_id || '', p?.partner_dupr_id || '']
+    }
+
+    let missingDupr = 0
+    const rows = completedMatches.map(m => {
+      const teamA = teamsById.get(m.team_a_id)
+      const teamB = teamsById.get(m.team_b_id)
+      const matchType = (teamA?.player2_name || teamB?.player2_name) ? 'D' : 'S'
+      const court = courtsById.get(m.court_id)
+      const eventName = m.stage === 'round_robin'
+        ? `${tournament.name} — ${court?.name || 'Round Robin'}`
+        : `${tournament.name} — ${m.stage === 'semifinal' ? 'Semifinal' : 'Final'}`
+      const [aDupr1, aDupr2] = teamDuprIds(teamA)
+      const [bDupr1, bDupr2] = teamDuprIds(teamB)
+      if (!aDupr1 || !bDupr1) missingDupr++
+      return [
+        matchType, duprScoreType, eventName, duprDate,
+        teamA?.player1_name || teamA?.name || '', aDupr1,
+        teamA?.player2_name || '', aDupr2,
+        teamB?.player1_name || teamB?.name || '', bDupr1,
+        teamB?.player2_name || '', bDupr2,
+        m.team_a_score, m.team_b_score, '', '', '', '', '', '', '', ''
+      ]
+    })
+
+    const header = ['matchType', 'scoreType', 'event', 'date', 'playerA1', 'playerA1DuprId', 'playerA2', 'playerA2DuprId', 'playerB1', 'playerB1DuprId', 'playerB2', 'playerB2DuprId', 'teamAGame1', 'teamBGame1', 'teamAGame2', 'teamBGame2', 'teamAGame3', 'teamBGame3', 'teamAGame4', 'teamBGame4', 'teamAGame5', 'teamBGame5']
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const csv = [header, ...rows].map(r => r.map(escape).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${tournament.name.replace(/[^a-z0-9]+/gi, '_')}_dupr_matches.csv`
+    a.click()
+
+    setExportingDupr(false)
+    setDuprMessage(
+      missingDupr > 0
+        ? `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. ${missingDupr} ${missingDupr === 1 ? 'is' : 'are'} missing a player DUPR ID — fill those in before uploading to DUPR.`
+        : `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}.`
+    )
   }
 
   async function addKnockoutMatch() {
@@ -449,18 +563,42 @@ export default function TournamentDetail({ tournamentId, onBack }) {
           </div>
         )}
 
-        {/* Status */}
-        <div className="flex items-center gap-2 mb-6">
-          {STATUS_FLOW.map(s => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition ${tournament.status === s ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
-            >
-              {STATUS_LABEL[s]}
-            </button>
-          ))}
-        </div>
+        {/* Session -- linking one auto-syncs its confirmed doubles registrations as teams */}
+        <section className="mb-6">
+          <h2 className="text-sm font-bold text-primary mb-2">Session</h2>
+          {linkedSession ? (
+            <div className="bg-surface rounded-xl border border-border px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-primary font-medium truncate">{linkedSession.title || linkedSession.id}</p>
+                  <p className="text-[11px] text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
+                </div>
+                <button onClick={unlinkSession} className="shrink-0 text-[11px] font-medium text-tertiary">Unlink</button>
+              </div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                <button
+                  onClick={syncTeams}
+                  disabled={syncing}
+                  className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40"
+                >
+                  {syncing ? 'Syncing…' : 'Sync teams from session'}
+                </button>
+                {syncMessage && <span className="text-[11px] text-muted">{syncMessage}</span>}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-surface rounded-xl border border-dashed border-border px-3 py-3 space-y-2">
+              <p className="text-xs text-muted">Link a session to auto-populate teams from its confirmed doubles registrations, placed on whichever court has room.</p>
+              <div className="flex gap-2">
+                <select className="input" value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)}>
+                  <option value="">Select a session…</option>
+                  {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
+                </select>
+                <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Link</button>
+              </div>
+            </div>
+          )}
+        </section>
 
         {/* Courts */}
         <section className="mb-6">
@@ -595,6 +733,25 @@ export default function TournamentDetail({ tournamentId, onBack }) {
           )
         })}
 
+        {/* Status -- go live once fixtures are ready so players can follow along on /tournament */}
+        <section className="mb-6">
+          <h2 className="text-sm font-bold text-primary mb-2">{tournament.status === 'setup' ? 'Ready to go live?' : 'Status'}</h2>
+          {tournament.status === 'setup' && (
+            <p className="text-[11px] text-muted mb-2">Publish once fixtures are generated so players can follow standings and scores on the Live tab.</p>
+          )}
+          <div className="flex items-center gap-2">
+            {STATUS_FLOW.map(s => (
+              <button
+                key={s}
+                onClick={() => setStatus(s)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition ${tournament.status === s ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
+              >
+                {STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Overall standings across every court -- use this to pick who advances */}
         {overallStandings.length > 0 && (
           <section className="mb-6">
@@ -649,6 +806,28 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               <span className="text-sm font-semibold text-interactive">+ Create Semifinal / Final Match</span>
             </button>
           )}
+        </section>
+
+        {/* Export completed match results in DUPR's bulk-upload CSV format */}
+        <section className="mb-6">
+          <h2 className="text-sm font-bold text-primary mb-2">Export for DUPR</h2>
+          <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
+              <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
+                <option value="RALLY">Rally scoring</option>
+                <option value="SIDEOUT">Side-out scoring</option>
+              </select>
+            </div>
+            <button
+              onClick={exportForDupr}
+              disabled={exportingDupr || matches.filter(m => m.status === 'completed').length === 0}
+              className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-95 transition disabled:opacity-40"
+            >
+              {exportingDupr ? 'Exporting…' : 'Export completed matches (.csv)'}
+            </button>
+            {duprMessage && <p className="text-[11px] text-muted">{duprMessage}</p>}
+          </div>
         </section>
       </div>
     </div>

@@ -17,6 +17,27 @@ function MatchRow({ match, teamsById }) {
   )
 }
 
+function CourtFixtures({ court, matches, teamsById }) {
+  const [open, setOpen] = useState(false)
+  const playedCount = matches.filter(m => m.status === 'completed').length
+  return (
+    <section className="card">
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between gap-3">
+        <span className="text-text font-bold text-sm">{court.name} — Fixtures</span>
+        <span className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-muted">{playedCount}/{matches.length} played</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2">
+          {matches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} />)}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function StandingsTable({ standings, courtsById }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
@@ -71,11 +92,10 @@ export default function TournamentTab() {
 
   async function load() {
     setLoading(true)
-    let { data: current } = await supabase.from('tournaments').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
-    if (!current) {
-      const { data: completed } = await supabase.from('tournaments').select('*').eq('status', 'completed').order('created_at', { ascending: false }).limit(1).maybeSingle()
-      current = completed
-    }
+    // Only ever shows a live tournament -- once an organizer marks it
+    // completed, it disappears from this tab entirely rather than lingering
+    // as a read-only result page.
+    const { data: current } = await supabase.from('tournaments').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
     setTournament(current)
     if (current) await loadTournamentData(current.id)
     else setNotFound(true)
@@ -114,14 +134,9 @@ export default function TournamentTab() {
       <section>
         <div className="flex items-center gap-2">
           <h2 className="text-text font-bold md:text-lg">{tournament.name}</h2>
-          {tournament.status === 'active' && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> Live
-            </span>
-          )}
-          {tournament.status === 'completed' && (
-            <span className="text-[10px] font-bold uppercase tracking-wide text-muted bg-bg px-2 py-0.5 rounded-full">Completed</span>
-          )}
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" /> Live
+          </span>
         </div>
         {tournament.description && <p className="text-secondary text-sm mt-1">{tournament.description}</p>}
       </section>
@@ -143,12 +158,7 @@ export default function TournamentTab() {
       {courts.map(c => {
         const courtMatches = roundRobinMatches.filter(m => m.court_id === c.id)
         if (courtMatches.length === 0) return null
-        return (
-          <section key={c.id} className="card">
-            <h3 className="text-text font-bold text-sm mb-2">{c.name} — Fixtures</h3>
-            {courtMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} />)}
-          </section>
-        )
+        return <CourtFixtures key={c.id} court={c} matches={courtMatches} teamsById={teamsById} />
       })}
 
       {(semiMatches.length > 0 || finalMatches.length > 0) && (
