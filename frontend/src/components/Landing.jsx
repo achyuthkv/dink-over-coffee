@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import ThemeToggle from './ThemeToggle.jsx'
 import Logo from './Logo.jsx'
 import ActivityHeatmap from './ActivityHeatmap.jsx'
+import NavTabs from './NavTabs.jsx'
 
 function fmtDate(d) {
   if (!d) return ''
@@ -36,9 +37,9 @@ export default function Landing() {
           <Link to="/" className="flex items-center gap-2.5">
             <Logo className="h-12 w-auto" />
           </Link>
-          <div className="flex items-center gap-3">
-            <Link to="/shop" className="text-primary text-sm font-medium hover:text-interactive transition hidden sm:block">Shop</Link>
-            <a href="https://www.instagram.com/dinkovercoffee" target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-full border border-border/40 text-muted hover:text-primary hover:border-border transition" title="Instagram">
+          <div className="flex items-center gap-2.5">
+            <NavTabs />
+            <a href="https://www.instagram.com/dinkovercoffee" target="_blank" rel="noopener noreferrer" className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full border border-border/40 text-muted hover:text-primary hover:border-border transition" title="Instagram">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             </a>
             <ThemeToggle />
