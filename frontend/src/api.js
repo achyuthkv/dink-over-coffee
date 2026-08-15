@@ -1,9 +1,11 @@
 const API_BASE = '/api'
 
-async function call(endpoint, payload = {}) {
+async function call(endpoint, payload = {}, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
   const res = await fetch(`${API_BASE}/${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload)
   })
   const data = await res.json().catch(() => null)
@@ -25,7 +27,8 @@ export const api = {
   listProducts: () => call('shop', { action: 'products' }),
   shopCreateOrder: (items, customer) => call('shop', { action: 'create-order', items, customer }),
   shopConfirmPayment: (payload) => call('shop', { action: 'confirm-payment', ...payload }),
-  shopPlaceOrder: (items, customer) => call('shop', { action: 'order', items, customer })
+  shopPlaceOrder: (items, customer) => call('shop', { action: 'order', items, customer }),
+  tournamentSyncTeams: (tournamentId, token) => call('tournament', { action: 'sync-teams', tournamentId }, token)
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
