@@ -205,7 +205,7 @@ export default function PlayerList({ session, onBack }) {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div className="flex-1 min-w-0">
-            <div className="text-primary font-bold text-[15px] truncate">{session.title || session.venue}</div>
+            <div className="text-primary font-bold text-base truncate">{session.title || session.venue}</div>
             <div className="text-muted text-xs">{session.date} · {session.time}</div>
           </div>
           <button onClick={() => setEmailModal(true)} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-secondary active:bg-surface transition" title="Email players">

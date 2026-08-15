@@ -35,7 +35,7 @@ function PageLayout({ children }) {
             </div>
             <p className="text-muted text-xs">Play. Connect. Belong.</p>
           </div>
-          <div className="flex items-center justify-center gap-3 mt-3 text-muted text-[11px]">
+          <div className="flex items-center justify-center gap-3 mt-3 text-muted text-2xs">
             <Link to="/terms" className="hover:text-primary transition">Guidelines</Link>
             <span>·</span>
             <Link to="/privacy" className="hover:text-primary transition">Privacy</Link>

@@ -270,7 +270,7 @@ export default function Terms() {
 
         {/* Closing note */}
         <section className="text-center py-8 border-t border-border">
-          <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-3">A note from the community curators</p>
+          <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-3">A note from the community curators</p>
           <p className="text-primary text-base md:text-lg font-bold leading-snug">
             Dink Over Coffee is more than just a sports group — it is a community built around good games, good people, and good coffee.
           </p>
