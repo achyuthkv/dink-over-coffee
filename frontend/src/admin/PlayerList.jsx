@@ -170,8 +170,8 @@ export default function PlayerList({ session, onBack }) {
     return (
       <div className="flex items-baseline gap-2 min-w-0">
         <span className="text-sm text-primary font-medium truncate">{name}</span>
-        {showDupr && duprId && <span className="text-[11px] text-muted font-mono shrink-0">{duprId}</span>}
-        {phone && <span className="text-[11px] text-muted shrink-0">{phone}</span>}
+        {showDupr && duprId && <span className="text-2xs text-muted font-mono shrink-0">{duprId}</span>}
+        {phone && <span className="text-2xs text-muted shrink-0">{phone}</span>}
       </div>
     )
   }
@@ -218,17 +218,17 @@ export default function PlayerList({ session, onBack }) {
 
         {/* Stats */}
         <div className="flex gap-2 mb-6">
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
             <div className="text-lg font-bold text-primary">{confirmed.length}<span className="text-muted font-normal text-sm">/{totalSlots}</span></div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Registered</div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Registered</div>
           </div>
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
-            <div className="text-lg font-bold text-green-700 dark:text-secondary">{paidCount}<span className="text-muted font-normal text-sm">/{confirmed.length}</span></div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Paid</div>
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
+            <div className="text-lg font-bold text-success">{paidCount}<span className="text-muted font-normal text-sm">/{confirmed.length}</span></div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Paid</div>
           </div>
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
             <div className="text-lg font-bold text-tertiary">{remaining}</div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Remaining</div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Remaining</div>
           </div>
         </div>
 
@@ -243,8 +243,8 @@ export default function PlayerList({ session, onBack }) {
                 <div key={g.skill}>
                   <div className="flex items-center gap-2 px-1 mb-2">
                     <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                    <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">{g.skill}</span>
-                    <span className="text-[11px] text-muted">({g.players.length})</span>
+                    <span className="text-2xs font-semibold text-muted uppercase tracking-wide">{g.skill}</span>
+                    <span className="text-2xs text-muted">({g.players.length})</span>
                   </div>
                   <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg">
                     {g.players.map(p => {
@@ -258,12 +258,12 @@ export default function PlayerList({ session, onBack }) {
                               className="flex-1 min-w-0 flex items-center gap-3 text-left"
                             >
                               <PlayerIdentity p={p} />
-                              {p.needs_partner && <span className="text-[10px] text-amber-700 dark:text-warning font-medium shrink-0">(needs partner)</span>}
+                              {p.needs_partner && <span className="text-3xs text-warning-muted font-medium shrink-0">(needs partner)</span>}
                             </button>
                             <button
                               type="button"
                               onClick={() => togglePaid(p)}
-                              className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${p.paid ? 'bg-green-600 dark:bg-secondary' : 'bg-border'}`}
+                              className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${p.paid ? 'bg-success' : 'bg-border'}`}
                             >
                               <span className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${p.paid ? 'translate-x-[18px]' : ''}`} />
                             </button>
@@ -290,9 +290,9 @@ export default function PlayerList({ session, onBack }) {
             {waitlisted.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 px-1 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-warning" />
-                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Waitlist</span>
-                  <span className="text-[11px] text-muted">({waitlisted.length})</span>
+                  <span className="w-2 h-2 rounded-full bg-warning-muted" />
+                  <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Waitlist</span>
+                  <span className="text-2xs text-muted">({waitlisted.length})</span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg">
                   {[...waitlisted].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map((p, idx) => {
@@ -300,7 +300,7 @@ export default function PlayerList({ session, onBack }) {
                       return (
                         <div key={p.id}>
                           <div className="px-4 py-3 flex items-center gap-3">
-                            <span className="text-[11px] text-muted font-medium shrink-0">#{idx + 1}</span>
+                            <span className="text-2xs text-muted font-medium shrink-0">#{idx + 1}</span>
                             <button
                               type="button"
                               onClick={() => toggleExpand(p.id)}
@@ -308,18 +308,18 @@ export default function PlayerList({ session, onBack }) {
                             >
                               <PlayerIdentity p={p} />
                               <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${skillDot(p.skill)}`} />
-                              <span className="text-[11px] text-muted">{p.skill}</span>
+                              <span className="text-2xs text-muted">{p.skill}</span>
                             </button>
                             <button
                               onClick={() => promote(p)}
-                              className="shrink-0 text-xs text-green-700 dark:text-secondary font-semibold px-3 py-1.5 rounded-full border border-green-200 dark:border-secondary/20 active:bg-green-50 dark:active:bg-secondary/5 transition"
+                              className="shrink-0 text-xs text-success font-semibold px-3 py-1.5 rounded-full border border-success/20 active:bg-success/5 transition"
                             >
                               Promote
                             </button>
                           </div>
                           {isExpanded && (
                             <div className="px-4 pb-3 flex items-center gap-2">
-                              {p.phone && <span className="text-[11px] text-muted">{p.phone}</span>}
+                              {p.phone && <span className="text-2xs text-muted">{p.phone}</span>}
                               <button
                                 onClick={() => remove(p)}
                                 className="text-xs text-tertiary font-medium px-3 py-1.5 rounded-full border border-tertiary/20 active:bg-error-subtle transition"
@@ -340,8 +340,8 @@ export default function PlayerList({ session, onBack }) {
               <div>
                 <div className="flex items-center gap-2 px-1 mb-2">
                   <span className="w-2 h-2 rounded-full bg-muted" />
-                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Withdrew</span>
-                  <span className="text-[11px] text-muted">({withdrew.length})</span>
+                  <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Withdrew</span>
+                  <span className="text-2xs text-muted">({withdrew.length})</span>
                 </div>
                 <div className="rounded-xl overflow-hidden border border-border bg-surface divide-y divide-bg opacity-60">
                   {withdrew.map(p => (
@@ -413,7 +413,7 @@ export default function PlayerList({ session, onBack }) {
                 value={emailBody}
                 onChange={e => setEmailBody(e.target.value)}
               />
-              {emailResult && <p className={`text-xs ${emailResult.includes('sent') ? 'text-green-700 dark:text-secondary' : 'text-error'}`}>{emailResult}</p>}
+              {emailResult && <p className={`text-xs ${emailResult.includes('sent') ? 'text-success' : 'text-error'}`}>{emailResult}</p>}
               <button
                 onClick={sendEmail}
                 disabled={emailSending || !emailBody.trim()}

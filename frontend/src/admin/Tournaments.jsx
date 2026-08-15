@@ -5,7 +5,7 @@ import TournamentDetail from './TournamentDetail.jsx'
 const STATUS_LABEL = { setup: 'Setup', active: 'Active', completed: 'Completed' }
 const STATUS_STYLE = {
   setup: 'text-muted bg-bg',
-  active: 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10',
+  active: 'text-success bg-brand-100',
   completed: 'text-primary bg-interactive/10'
 }
 
@@ -71,13 +71,13 @@ export default function Tournaments({ onBack }) {
               <button
                 key={t.id}
                 onClick={() => setSelected(t.id)}
-                className="w-full text-left bg-surface rounded-xl border border-border px-4 py-3 flex items-center justify-between gap-3 active:bg-bg transition"
+                className="w-full text-left card-compact px-4 py-3 flex items-center justify-between gap-3 active:bg-bg transition"
               >
                 <div className="min-w-0">
                   <div className="text-sm text-primary font-semibold truncate">{t.name}</div>
-                  {t.description && <div className="text-[11px] text-muted mt-0.5 truncate">{t.description}</div>}
+                  {t.description && <div className="text-2xs text-muted mt-0.5 truncate">{t.description}</div>}
                 </div>
-                <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
+                <span className={`shrink-0 text-3xs font-bold uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
               </button>
             ))}
 
@@ -86,7 +86,7 @@ export default function Tournaments({ onBack }) {
             )}
 
             {creating ? (
-              <div className="bg-surface rounded-xl border border-border px-4 py-3 space-y-3">
+              <div className="card-compact px-4 py-3 space-y-3">
                 <input className="input" placeholder="Tournament name" value={name} onChange={e => setName(e.target.value)} autoFocus />
                 <input className="input" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
                 <div>
@@ -94,10 +94,10 @@ export default function Tournaments({ onBack }) {
                     <option value="">No linked session (link one later)</option>
                     {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
                   </select>
-                  <p className="text-[11px] text-muted mt-1">Linking a session auto-populates teams from its confirmed doubles registrations.</p>
+                  <p className="text-2xs text-muted mt-1">Linking a session auto-populates teams from its confirmed doubles registrations.</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={createTournament} disabled={saving || !name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-50">
+                  <button onClick={createTournament} disabled={saving || !name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-50">
                     {saving ? 'Creating...' : 'Create'}
                   </button>
                   <button onClick={() => { setCreating(false); setName(''); setDescription(''); setSessionId('') }} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>

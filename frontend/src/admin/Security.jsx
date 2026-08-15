@@ -41,17 +41,17 @@ export default function Security({ onBack }) {
           <h1 className="text-primary font-bold text-lg">Security</h1>
         </div>
 
-        <div className="bg-surface rounded-2xl border border-border p-5">
+        <div className="card p-5">
           <p className="text-sm font-semibold text-primary">Auto-lock</p>
           <p className="text-xs text-muted mt-1.5 leading-relaxed">
             This admin area locks itself after 10 minutes of inactivity, or immediately if you return after being away from the app for 2+ minutes. You'll need to unlock it to continue — your session stays signed in, this just re-verifies it's you.
           </p>
         </div>
 
-        <div className="bg-surface rounded-2xl border border-border p-5 mt-4">
+        <div className="card p-5 mt-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-primary">Biometric unlock</p>
-            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${enabled ? 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10' : 'text-muted bg-bg'}`}>
+            <span className={`text-3xs font-bold uppercase tracking-wide px-2 py-0.5 rounded ${enabled ? 'text-success bg-brand-100' : 'text-muted bg-bg'}`}>
               {enabled ? 'On' : 'Off'}
             </span>
           </div>

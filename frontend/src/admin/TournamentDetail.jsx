@@ -51,7 +51,7 @@ function MatchRow({ match, teamsById, onScore }) {
         <button
           onClick={save}
           disabled={!canSave || saving}
-          className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-3 py-2 rounded-full active:scale-95 transition disabled:opacity-40"
+          className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-3 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40"
         >
           {saving ? '…' : completed ? 'Update' : 'Save'}
         </button>
@@ -106,7 +106,7 @@ function ScoreCard({ match, teamsById, onScore, onSaved }) {
   }
 
   return (
-    <div className="bg-surface rounded-2xl border border-border p-5">
+    <div className="card-compact p-5">
       <div className="grid grid-cols-2 gap-2">
         <div className="text-center min-w-0">
           <p className={`text-sm font-semibold truncate mb-3 ${match.winner_team_id === teamA?.id ? 'text-primary' : 'text-secondary'}`}>{teamA?.name || 'TBD'}</p>
@@ -120,7 +120,7 @@ function ScoreCard({ match, teamsById, onScore, onSaved }) {
       <button
         onClick={save}
         disabled={!canSave || saving}
-        className="w-full mt-5 text-sm font-bold text-inverse bg-interactive px-4 py-3.5 rounded-full active:scale-95 transition disabled:opacity-40"
+        className="w-full mt-5 text-sm font-bold text-inverse bg-interactive px-4 py-3.5 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40"
       >
         {saving ? 'Saving…' : completed ? 'Update Score' : 'Save & Next'}
       </button>
@@ -159,14 +159,14 @@ function ScoreMode({ title, matches, teamsById, onScore, onExit, standings }) {
           <>
             {reviewId && (
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Match {currentIndex + 1} of {matches.length}</span>
-                <button onClick={() => setReviewId(null)} className="text-[11px] font-semibold text-interactive">Back to next match</button>
+                <span className="text-2xs font-semibold text-muted uppercase tracking-wide">Match {currentIndex + 1} of {matches.length}</span>
+                <button onClick={() => setReviewId(null)} className="text-2xs font-semibold text-interactive">Back to next match</button>
               </div>
             )}
             <ScoreCard key={current.id} match={current} teamsById={teamsById} onScore={onScore} onSaved={() => setReviewId(null)} />
           </>
         ) : (
-          <div className="bg-surface rounded-2xl border border-border p-8 text-center">
+          <div className="card-compact p-8 text-center">
             <p className="text-2xl mb-1">🎉</p>
             <p className="text-primary font-bold">All matches scored</p>
             <p className="text-muted text-sm mt-1">Tap a match below to review or correct a score.</p>
@@ -174,7 +174,7 @@ function ScoreMode({ title, matches, teamsById, onScore, onExit, standings }) {
         )}
 
         <div className="mt-6">
-          <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">All matches</p>
+          <p className="text-2xs font-semibold text-muted uppercase tracking-wide mb-2">All matches</p>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5">
             {matches.map(m => {
               const a = teamsById.get(m.team_a_id)
@@ -187,7 +187,7 @@ function ScoreMode({ title, matches, teamsById, onScore, onExit, standings }) {
                   onClick={() => setReviewId(m.id)}
                   className={`shrink-0 text-left rounded-xl border px-3 py-2 min-w-[140px] transition ${isCurrent ? 'border-interactive bg-interactive/5' : 'border-border bg-surface'}`}
                 >
-                  <p className="text-[11px] text-secondary truncate">{a?.name || 'TBD'} <span className="text-muted">vs</span> {b?.name || 'TBD'}</p>
+                  <p className="text-2xs text-secondary truncate">{a?.name || 'TBD'} <span className="text-muted">vs</span> {b?.name || 'TBD'}</p>
                   <p className={`text-xs font-semibold mt-0.5 ${done ? 'text-primary' : 'text-muted'}`}>
                     {done ? `${m.team_a_score} – ${m.team_b_score}` : 'Not played'}
                   </p>
@@ -230,7 +230,7 @@ function StatusBadge({ status, onChange }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-10 z-50 w-40 bg-surface rounded-xl border border-border shadow-lg overflow-hidden py-1">
+          <div className="dropdown-in absolute right-0 top-10 z-50 w-40 card-compact shadow-lg overflow-hidden py-1">
             {STATUS_FLOW.map(s => (
               <button
                 key={s}
@@ -250,7 +250,7 @@ function StatusBadge({ status, onChange }) {
 
 function WithdrawnBadge() {
   return (
-    <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
+    <span className="inline-flex items-center text-3xs font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
       Withdrawn
     </span>
   )
@@ -620,7 +620,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
 
         {champion && (
           <div className="rounded-2xl bg-interactive/10 border border-interactive/20 px-4 py-3 mb-4 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-interactive">Champion</p>
+            <p className="text-3xs font-bold uppercase tracking-wide text-interactive">Champion</p>
             <p className="text-primary font-bold text-lg mt-0.5">{champion.name}</p>
           </div>
         )}
@@ -647,23 +647,23 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             <section className="mb-6">
               <h2 className="text-sm font-bold text-primary mb-2">Session</h2>
               {linkedSession ? (
-                <div className="bg-surface rounded-xl border border-border px-3 py-3">
+                <div className="card-compact px-3 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-primary font-medium truncate">{linkedSession.title || linkedSession.id}</p>
-                      <p className="text-[11px] text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
+                      <p className="text-2xs text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
                     </div>
-                    <button onClick={unlinkSession} className="shrink-0 text-[11px] font-medium text-tertiary">Unlink</button>
+                    <button onClick={unlinkSession} className="shrink-0 text-2xs font-medium text-tertiary">Unlink</button>
                   </div>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <button
                       onClick={syncTeams}
                       disabled={syncing}
-                      className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40"
+                      className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40"
                     >
                       {syncing ? 'Syncing…' : 'Sync teams from session'}
                     </button>
-                    {syncMessage && <span className="text-[11px] text-muted">{syncMessage}</span>}
+                    {syncMessage && <span className="text-2xs text-muted">{syncMessage}</span>}
                   </div>
                 </div>
               ) : (
@@ -674,7 +674,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                       <option value="">Select a session…</option>
                       {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
                     </select>
-                    <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Link</button>
+                    <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Link</button>
                   </div>
                 </div>
               )}
@@ -687,12 +687,12 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                 {courts.map(c => {
                   const courtMatchCount = roundRobinMatches.filter(m => m.court_id === c.id).length
                   return (
-                    <div key={c.id} className="flex items-center justify-between bg-surface rounded-xl border border-border px-3 py-2">
+                    <div key={c.id} className="flex items-center justify-between card-compact px-3 py-2">
                       <span className="text-sm text-primary font-medium">{c.name}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-muted">{teams.filter(t => t.court_id === c.id).length} teams</span>
+                        <span className="text-2xs text-muted">{teams.filter(t => t.court_id === c.id).length} teams</span>
                         {courtMatchCount > 0 && (
-                          <button onClick={() => setScoringCourtId(c.id)} className="text-[11px] font-semibold text-interactive bg-interactive/10 px-2.5 py-1 rounded-full active:scale-95 transition">
+                          <button onClick={() => setScoringCourtId(c.id)} className="text-2xs font-semibold text-interactive bg-interactive/10 px-2.5 py-1 rounded-full active:scale-[.98] transition ease-spring">
                             Score
                           </button>
                         )}
@@ -705,7 +705,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                 })}
                 <div className="flex gap-2">
                   <input className="input" placeholder="Court name (e.g. Court 1)" value={newCourtName} onChange={e => setNewCourtName(e.target.value)} />
-                  <button onClick={addCourt} disabled={!newCourtName.trim()} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add</button>
+                  <button onClick={addCourt} disabled={!newCourtName.trim()} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Add</button>
                 </div>
               </div>
             </section>
@@ -719,7 +719,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                   if (courtTeams.length === 0) return null
                   return (
                     <div key={c.id}>
-                      <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">{c.name}</p>
+                      <p className="text-3xs font-semibold text-muted uppercase tracking-wide mb-1">{c.name}</p>
                       <div className="space-y-1.5 mb-2">
                         {courtTeams.map(t => (
                           <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
@@ -736,7 +736,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                 })}
                 {teams.filter(t => !t.court_id).length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Unassigned</p>
+                    <p className="text-3xs font-semibold text-muted uppercase tracking-wide mb-1">Unassigned</p>
                     <div className="space-y-1.5 mb-2">
                       {teams.filter(t => !t.court_id).map(t => (
                         <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
@@ -752,7 +752,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                 )}
 
                 {addingTeam ? (
-                  <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+                  <div className="card-compact px-3 py-3 space-y-2">
                     <input className="input" placeholder="Team name" value={teamForm.name} onChange={e => setTeamForm(f => ({ ...f, name: e.target.value }))} autoFocus />
                     <div className="grid grid-cols-2 gap-2">
                       <input className="input" placeholder="Player 1" value={teamForm.player1_name} onChange={e => setTeamForm(f => ({ ...f, player1_name: e.target.value }))} />
@@ -763,7 +763,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                       {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <div className="flex gap-2">
-                      <button onClick={addTeam} disabled={!teamForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add Team</button>
+                      <button onClick={addTeam} disabled={!teamForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Add Team</button>
                       <button onClick={() => setAddingTeam(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
                     </div>
                   </div>
@@ -823,7 +823,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
         {activeTab === 'standings' && (
           overallStandings.length > 0 ? (
             <section className="mb-6">
-              <p className="text-[11px] text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks in the Knockout tab.</p>
+              <p className="text-2xs text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks in the Knockout tab.</p>
               <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} withdrawnPlayerIds={withdrawnPlayerIds} />
             </section>
           ) : (
@@ -841,19 +841,19 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             </div>
             {semiMatches.length > 0 && (
               <div className="space-y-2 mb-2">
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Semifinals</p>
+                <p className="text-3xs font-semibold text-muted uppercase tracking-wide">Semifinals</p>
                 {semiMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
               </div>
             )}
             {finalMatches.length > 0 && (
               <div className="space-y-2 mb-2">
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Final</p>
+                <p className="text-3xs font-semibold text-muted uppercase tracking-wide">Final</p>
                 {finalMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
               </div>
             )}
 
             {addingKo ? (
-              <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+              <div className="card-compact px-3 py-3 space-y-2">
                 <select className="input" value={koForm.stage} onChange={e => setKoForm(f => ({ ...f, stage: e.target.value }))}>
                   <option value="semifinal">Semifinal</option>
                   <option value="final">Final</option>
@@ -867,7 +867,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
                 <div className="flex gap-2">
-                  <button onClick={addKnockoutMatch} disabled={!koForm.teamA || !koForm.teamB || koForm.teamA === koForm.teamB} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Create Match</button>
+                  <button onClick={addKnockoutMatch} disabled={!koForm.teamA || !koForm.teamB || koForm.teamA === koForm.teamB} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Create Match</button>
                   <button onClick={() => setAddingKo(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
                 </div>
               </div>
@@ -881,8 +881,8 @@ export default function TournamentDetail({ tournamentId, onBack }) {
 
         {activeTab === 'export' && (
           <section className="mb-6">
-            <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
-              <p className="text-[11px] text-muted">Covers the whole tournament — every completed round robin, semifinal, and final match, not round robin alone.</p>
+            <div className="card-compact px-3 py-3 space-y-2">
+              <p className="text-2xs text-muted">Covers the whole tournament — every completed round robin, semifinal, and final match, not round robin alone.</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
                 <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
@@ -893,11 +893,11 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               <button
                 onClick={exportForDupr}
                 disabled={exportingDupr || matches.filter(m => m.status === 'completed').length === 0}
-                className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-95 transition disabled:opacity-40"
+                className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40"
               >
                 {exportingDupr ? 'Exporting…' : 'Export all completed matches (.csv)'}
               </button>
-              {duprMessage && <p className="text-[11px] text-muted">{duprMessage}</p>}
+              {duprMessage && <p className="text-2xs text-muted">{duprMessage}</p>}
             </div>
           </section>
         )}

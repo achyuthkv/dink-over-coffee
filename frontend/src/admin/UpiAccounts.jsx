@@ -84,7 +84,7 @@ export default function UpiAccounts({ onBack }) {
         </div>
 
         <form onSubmit={handleSave} className="card space-y-3 mb-5">
-          <h2 className="text-text font-bold text-sm">{editing ? 'Edit UPI' : 'Add UPI account'}</h2>
+          <h2 className="text-primary font-bold text-sm">{editing ? 'Edit UPI' : 'Add UPI account'}</h2>
           <div>
             <label className="text-xs font-semibold text-primary">Label</label>
             <input className="input mt-1" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="e.g. Primary, Harshitha" required />
@@ -99,9 +99,9 @@ export default function UpiAccounts({ onBack }) {
               <div className="mt-2 flex items-start gap-3">
                 <img src={form.qr_image_url} alt="QR preview" className="w-20 h-20 rounded-lg object-contain border border-border shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-secondary font-medium truncate">Uploaded</p>
-                  <p className="text-[10px] text-muted truncate mt-0.5">{form.qr_image_url.split('/').pop()}</p>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, qr_image_url: '' }))} className="mt-2 text-[11px] text-tertiary font-medium">Remove</button>
+                  <p className="text-2xs text-secondary font-medium truncate">Uploaded</p>
+                  <p className="text-3xs text-muted truncate mt-0.5">{form.qr_image_url.split('/').pop()}</p>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, qr_image_url: '' }))} className="mt-2 text-2xs text-tertiary font-medium">Remove</button>
                 </div>
               </div>
             ) : (
