@@ -17,13 +17,13 @@ function CancellationPolicy() {
       <div
         role="button"
         onClick={e => { e.stopPropagation(); setOpen(!open) }}
-        className="flex items-center gap-1.5 text-muted text-[11px] font-medium hover:text-primary transition w-full cursor-pointer"
+        className="flex items-center gap-1.5 text-muted text-2xs font-medium hover:text-primary transition w-full cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`transition-transform ${open ? 'rotate-90' : ''}`}><polyline points="9 18 15 12 9 6"/></svg>
         Cancellation Policy
       </div>
       {open && (
-        <div className="mt-2 text-muted text-[11px] leading-relaxed space-y-1.5 pl-4">
+        <div className="mt-2 text-muted text-2xs leading-relaxed space-y-1.5 pl-4">
           <p>Refund is subject to a replacement taking up your slot.</p>
           <p>Once a replacement is confirmed, the refund will be processed.</p>
           <p>If no replacement is found, the amount may not be refundable.</p>
@@ -71,19 +71,19 @@ export default function SessionCard({ session, onSelect, selected }) {
       type="button"
       onClick={() => !disabled && onSelect(session)}
       disabled={disabled}
-      className={`card text-left w-full transition ${selected ? 'ring-2 ring-secondary' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.99]'}`}
+      className={`card text-left w-full transition ease-spring ${selected ? 'ring-2 ring-secondary' : ''} ${disabled ? 'opacity-60' : 'active:scale-[.98]'}`}
     >
       <div className="flex items-center gap-2">
-        <span className="text-secondary-dark text-[11px] font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
-        {session.event_type === 'dupr' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
-        {session.event_type === 'dupr_doubles' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Doubles</span>}
-        {session.event_type === 'dupr_teams' && <span className="text-[9px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Teams</span>}
-        {session.event_type === 'non_pickleball' && <span className="text-[9px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-1.5 py-0.5 rounded">Event</span>}
+        <span className="text-secondary-dark text-2xs font-semibold uppercase tracking-wide">{fmtDate(session.date)} · {session.time}</span>
+        {session.event_type === 'dupr' && <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR</span>}
+        {session.event_type === 'dupr_doubles' && <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Doubles</span>}
+        {session.event_type === 'dupr_teams' && <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded">DUPR Teams</span>}
+        {session.event_type === 'non_pickleball' && <span className="text-3xs font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-1.5 py-0.5 rounded">Event</span>}
       </div>
-      {session.title && <div className="text-text font-bold text-base mt-1">{session.title}</div>}
+      {session.title && <div className="text-primary font-bold text-base mt-1">{session.title}</div>}
       <div className="flex items-baseline justify-between gap-3 mt-1">
         <div className="text-primary text-sm">{session.venue}</div>
-        <div className="text-text text-sm font-bold whitespace-nowrap">{Number(session.price) === 0 ? <span className="text-secondary">Free</span> : session.event_type === 'dupr_teams' ? <>₹{session.price} <span className="text-secondary font-normal text-xs">per team</span></> : <>₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></>}</div>
+        <div className="text-primary text-sm font-bold whitespace-nowrap">{Number(session.price) === 0 ? <span className="text-secondary">Free</span> : session.event_type === 'dupr_teams' ? <>₹{session.price} <span className="text-secondary font-normal text-xs">per team</span></> : <>₹{session.price} <span className="text-secondary font-normal text-xs">per person</span></>}</div>
       </div>
       {session.description && <p className="text-secondary text-xs mt-2 leading-relaxed">{session.description}</p>}
 
@@ -102,7 +102,7 @@ export default function SessionCard({ session, onSelect, selected }) {
               />
             </div>
             {beginnerRemaining <= 0 && beginnerWaitlistMax > 0 && beginnerWaitlistCount < beginnerWaitlistMax && (
-              <div className="mt-1 text-[11px] text-warning-muted font-medium">
+              <div className="mt-1 text-2xs text-warning-muted font-medium">
                 Waitlist: {beginnerWaitlistMax - beginnerWaitlistCount} spot{beginnerWaitlistMax - beginnerWaitlistCount === 1 ? '' : 's'}
               </div>
             )}
@@ -120,7 +120,7 @@ export default function SessionCard({ session, onSelect, selected }) {
               />
             </div>
             {otherRemaining <= 0 && waitlistMax > 0 && otherWaitlistCount < waitlistMax && (
-              <div className="mt-1 text-[11px] text-warning-muted font-medium">
+              <div className="mt-1 text-2xs text-warning-muted font-medium">
                 Waitlist: {waitlistMax - otherWaitlistCount} spot{waitlistMax - otherWaitlistCount === 1 ? '' : 's'}
               </div>
             )}
