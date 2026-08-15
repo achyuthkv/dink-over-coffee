@@ -210,6 +210,44 @@ function ScoreMode({ title, matches, teamsById, onScore, onExit, standings }) {
   )
 }
 
+const STATUS_DOT = { setup: 'bg-muted', active: 'bg-interactive', completed: 'bg-secondary' }
+
+// A compact status indicator + change-menu, styled deliberately unlike the
+// tab bar (single small pill with a caret, not a row of buttons) so it
+// doesn't read as a second row of tabs sitting on top of the real one.
+function StatusBadge({ status, onChange }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-xs font-semibold text-secondary bg-surface border border-border rounded-full pl-2.5 pr-2 py-1.5 active:bg-bg transition"
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]} ${status === 'active' ? 'animate-pulse' : ''}`} />
+        {STATUS_LABEL[status]}
+        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-10 z-50 w-40 bg-surface rounded-xl border border-border shadow-lg overflow-hidden py-1">
+            {STATUS_FLOW.map(s => (
+              <button
+                key={s}
+                onClick={() => { onChange(s); setOpen(false) }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition ${status === s ? 'text-interactive font-semibold bg-interactive/5' : 'text-secondary active:bg-bg'}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[s]}`} />
+                {STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function WithdrawnBadge() {
   return (
     <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
@@ -577,6 +615,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <h1 className="text-primary font-bold text-lg truncate flex-1">{tournament.name}</h1>
+          <StatusBadge status={tournament.status} onChange={setStatus} />
         </div>
 
         {champion && (
@@ -585,21 +624,6 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             <p className="text-primary font-bold text-lg mt-0.5">{champion.name}</p>
           </div>
         )}
-
-        {/* Status -- always visible regardless of tab, since going live is a
-            one-tap action players are waiting on, not something to hunt for */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-[11px] text-muted shrink-0">{tournament.status === 'setup' ? 'Not live yet:' : 'Status:'}</span>
-          {STATUS_FLOW.map(s => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition ${tournament.status === s ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
-            >
-              {STATUS_LABEL[s]}
-            </button>
-          ))}
-        </div>
 
         {/* Tabs -- each section used to be stacked on one long page, so
             saving anything meant scrolling back down past everything above
