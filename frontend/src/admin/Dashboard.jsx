@@ -91,7 +91,7 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
         <h1 className="text-primary font-bold text-lg">Schedule</h1>
         <div className="flex items-center gap-1">
           {!isCurrentMonth && (
-            <button onClick={goToToday} className="text-[11px] text-interactive font-medium px-2 py-1 rounded-full active:opacity-70 transition mr-1">
+            <button onClick={goToToday} className="text-2xs text-interactive font-medium px-2 py-1 rounded-full active:opacity-70 transition mr-1">
               Today
             </button>
           )}
@@ -115,13 +115,13 @@ function DateStrip({ selectedDate, onSelect, sessionDates }) {
               key={ds}
               ref={isSelected ? selectedRef : null}
               onClick={() => onSelect(ds)}
-              className={`flex flex-col items-center shrink-0 w-[52px] py-2 rounded-xl transition
+              className={`flex flex-col items-center shrink-0 w-[52px] py-2 rounded-xl transition ease-spring
                 ${isSelected ? 'bg-interactive text-inverse' : 'text-primary'}
                 ${!isSelected && isToday ? 'border-2 border-interactive' : !isSelected ? 'border border-border' : ''}
-                active:scale-95
+                active:scale-[.98]
               `}
             >
-              <span className={`text-[10px] font-semibold tracking-wide ${isSelected ? 'text-inverse/70' : 'text-muted'}`}>
+              <span className={`text-3xs font-semibold tracking-wide ${isSelected ? 'text-inverse/70' : 'text-muted'}`}>
                 {dayNames[d.getDay()]}
               </span>
               <span className={`text-lg font-bold mt-0.5`}>
@@ -146,7 +146,7 @@ function ManageMenu({ open, onClose, items, onLogout }) {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-11 z-50 w-64 bg-surface rounded-2xl border border-border shadow-lg overflow-hidden">
+      <div className="dropdown-in absolute right-0 top-11 z-50 w-64 card-compact shadow-lg overflow-hidden">
         <div className="py-1.5">
           {items.map(item => (
             <button
@@ -157,7 +157,7 @@ function ManageMenu({ open, onClose, items, onLogout }) {
               <span className="w-7 h-7 rounded-full bg-interactive/10 text-interactive flex items-center justify-center shrink-0">{item.icon}</span>
               <span className="flex-1 min-w-0">
                 <span className="block font-medium truncate">{item.label}</span>
-                {item.hint && <span className="block text-[11px] text-muted truncate">{item.hint}</span>}
+                {item.hint && <span className="block text-2xs text-muted truncate">{item.hint}</span>}
               </span>
             </button>
           ))}
@@ -183,7 +183,7 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
   const total = Number(session.max_slots || 0)
 
   return (
-    <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+    <div className="card-compact overflow-hidden">
       <button
         type="button"
         onClick={() => onViewPlayers(session)}
@@ -196,29 +196,29 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
           </div>
           <div className="text-right shrink-0 ml-3">
             <div className="text-primary font-bold text-base">{playerCount}<span className="text-muted font-normal">/{total}</span></div>
-            <div className="text-[10px] text-muted uppercase tracking-wide">Players</div>
+            <div className="text-3xs text-muted uppercase tracking-wide">Players</div>
           </div>
         </div>
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {session.venue && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary bg-bg border border-border px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 text-2xs font-medium text-primary bg-bg border border-border px-2.5 py-1 rounded-full">
               {session.venue}
             </span>
           )}
           {session.event_type === 'dupr' && (
-            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR</span>
+            <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR</span>
           )}
           {session.event_type === 'dupr_doubles' && (
-            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
+            <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Doubles</span>
           )}
           {session.event_type === 'dupr_teams' && (
-            <span className="text-[10px] font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Teams</span>
+            <span className="text-3xs font-bold uppercase tracking-wide text-tertiary bg-tertiary/10 px-2 py-1 rounded-full">DUPR Teams</span>
           )}
           {session.event_type === 'non_pickleball' && (
-            <span className="text-[10px] font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-2 py-1 rounded-full">Event</span>
+            <span className="text-3xs font-bold uppercase tracking-wide text-interactive bg-interactive/10 px-2 py-1 rounded-full">Event</span>
           )}
           {paidCount != null && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full ${paidCount === playerCount ? 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10' : 'text-amber-800 bg-amber-100 dark:text-warning dark:bg-warning/10'}`}>
+            <span className={paidCount === playerCount ? 'badge-success' : 'badge-warning'}>
               {paidCount}/{playerCount} paid
             </span>
           )}
@@ -226,13 +226,13 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
       </button>
 
       <div className="border-t border-border px-5 py-3 flex items-center justify-between">
-        <span className={`text-[11px] font-medium ${session.active ? 'text-green-700 dark:text-secondary' : 'text-muted'}`}>
+        <span className={`text-2xs font-medium ${session.active ? 'text-success' : 'text-muted'}`}>
           {session.active ? 'Active' : 'Inactive'}
         </span>
         <button
           type="button"
           onClick={() => setExpanded(v => !v)}
-          className="text-[11px] text-muted font-medium flex items-center gap-1 active:opacity-70 transition"
+          className="text-2xs text-muted font-medium flex items-center gap-1 active:opacity-70 transition"
         >
           Actions
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`transition-transform ${expanded ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
@@ -242,11 +242,11 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
       {expanded && (
         <div className="border-t border-border px-5 py-3 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted font-mono select-all">{session.id}</span>
+            <span className="text-3xs text-muted font-mono select-all">{session.id}</span>
             <button
               type="button"
               onClick={() => { navigator.clipboard.writeText(session.id); }}
-              className="text-[10px] text-interactive font-medium active:opacity-70"
+              className="text-3xs text-interactive font-medium active:opacity-70"
             >
               Copy ID
             </button>
@@ -258,7 +258,7 @@ function SessionCard({ session, playerCount, paidCount, onViewPlayers, onEdit, o
             <button onClick={() => onToggleActive(session)} className="text-xs font-medium text-primary px-3 py-1.5 rounded-full border border-border active:bg-bg transition">
               {session.active ? 'Deactivate' : 'Activate'}
             </button>
-            <button onClick={() => onDelete(session)} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/30 active:bg-error-subtle transition">Delete</button>
+            <button onClick={() => onDelete(session)} className="text-xs font-medium text-error px-3 py-1.5 rounded-full border border-error/30 active:bg-error-subtle transition">Delete</button>
           </div>
         </div>
       )}
@@ -535,15 +535,15 @@ export default function Dashboard() {
           <>
             {/* Active sessions header */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Active Sessions</span>
+              <span className="text-2xs font-semibold text-muted uppercase tracking-wider">Active Sessions</span>
               {activeDaySessions.length > 0 && (
-                <span className="text-[11px] font-medium text-interactive">{activeDaySessions.length} Active Today</span>
+                <span className="text-2xs font-medium text-interactive">{activeDaySessions.length} Active Today</span>
               )}
             </div>
 
             {/* Session cards */}
             {daySessions.length === 0 && (
-              <div className="bg-surface rounded-2xl border border-border px-5 py-10 text-center">
+              <div className="card-compact px-5 py-10 text-center">
                 <p className="text-muted text-sm mb-3">No sessions on this day</p>
                 <button onClick={handleNew} className="text-sm font-semibold text-interactive active:opacity-70 transition">
                   + Create session
@@ -574,8 +574,8 @@ export default function Dashboard() {
             {inactiveDaySessions.length > 0 && (
               <>
                 <div className="flex items-center justify-between mt-6 mb-3">
-                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Inactive</span>
-                  <span className="text-[11px] text-muted">{inactiveDaySessions.length}</span>
+                  <span className="text-2xs font-semibold text-muted uppercase tracking-wider">Inactive</span>
+                  <span className="text-2xs text-muted">{inactiveDaySessions.length}</span>
                 </div>
                 <div className="space-y-3 opacity-60">
                   {inactiveDaySessions.map(s => {
@@ -604,7 +604,7 @@ export default function Dashboard() {
               <div className="fixed bottom-6 right-6">
                 <button
                   onClick={handleNew}
-                  className="w-14 h-14 rounded-full bg-interactive text-inverse shadow-lg flex items-center justify-center active:scale-95 transition"
+                  className="w-14 h-14 rounded-full bg-interactive text-inverse shadow-lg flex items-center justify-center active:scale-[.98] transition ease-spring"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
@@ -621,14 +621,14 @@ export default function Dashboard() {
                 Remove <strong>{deleteConfirm.title || deleteConfirm.id}</strong>?
               </p>
               {deletePlayerCount > 0 && (
-                <p className="text-xs text-amber-700 dark:text-warning-muted text-center font-medium">
+                <p className="text-xs text-warning-muted text-center font-medium">
                   This session has {deletePlayerCount} registered player{deletePlayerCount === 1 ? '' : 's'}.
                 </p>
               )}
               <p className="text-xs text-muted text-center">Session will be deactivated. Player data is preserved.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-full border border-border text-sm font-medium text-muted active:bg-bg transition">Cancel</button>
-                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-tertiary text-white text-sm font-medium active:scale-[.98] transition">Deactivate</button>
+                <button onClick={confirmDelete} className="flex-1 py-2.5 rounded-full bg-error text-inverse text-sm font-medium active:scale-[.98] transition ease-spring">Deactivate</button>
               </div>
             </div>
           </div>
