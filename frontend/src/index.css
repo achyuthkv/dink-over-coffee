@@ -112,8 +112,15 @@
   --color-skill-advanced: 158 248 212;
 }
 
-html { scroll-behavior: smooth; }
-html, body, #root { height: 100%; }
+html {
+  scroll-behavior: smooth;
+  /* dvh accounts for mobile Safari's collapsible address bar; without it,
+     height:100% resolves to the large viewport (bar hidden) even while the
+     bar is showing, leaving a sliver of unwanted scroll on short pages. */
+  height: 100vh;
+  height: 100dvh;
+}
+body, #root { height: 100%; }
 input[type="time"], input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
