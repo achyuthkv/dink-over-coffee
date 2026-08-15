@@ -6,6 +6,14 @@ import { generateRoundRobinPairs, computeStandings } from '../lib/tournament.js'
 const STATUS_FLOW = ['setup', 'active', 'completed']
 const STATUS_LABEL = { setup: 'Setup', active: 'Active', completed: 'Completed' }
 
+const DETAIL_TABS = [
+  { id: 'setup', label: 'Details' },
+  { id: 'fixtures', label: 'Fixtures' },
+  { id: 'standings', label: 'Standings' },
+  { id: 'knockout', label: 'Knockout' },
+  { id: 'export', label: 'Export' }
+]
+
 function MatchRow({ match, teamsById, onScore }) {
   const teamA = teamsById.get(match.team_a_id)
   const teamB = teamsById.get(match.team_b_id)
@@ -202,6 +210,44 @@ function ScoreMode({ title, matches, teamsById, onScore, onExit, standings }) {
   )
 }
 
+const STATUS_DOT = { setup: 'bg-muted', active: 'bg-interactive', completed: 'bg-secondary' }
+
+// A compact status indicator + change-menu, styled deliberately unlike the
+// tab bar (single small pill with a caret, not a row of buttons) so it
+// doesn't read as a second row of tabs sitting on top of the real one.
+function StatusBadge({ status, onChange }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative shrink-0">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-xs font-semibold text-secondary bg-surface border border-border rounded-full pl-2.5 pr-2 py-1.5 active:bg-bg transition"
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]} ${status === 'active' ? 'animate-pulse' : ''}`} />
+        {STATUS_LABEL[status]}
+        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-10 z-50 w-40 bg-surface rounded-xl border border-border shadow-lg overflow-hidden py-1">
+            {STATUS_FLOW.map(s => (
+              <button
+                key={s}
+                onClick={() => { onChange(s); setOpen(false) }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition ${status === s ? 'text-interactive font-semibold bg-interactive/5' : 'text-secondary active:bg-bg'}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[s]}`} />
+                {STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function WithdrawnBadge() {
   return (
     <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
@@ -271,6 +317,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   const [duprScoreType, setDuprScoreType] = useState('RALLY')
   const [exportingDupr, setExportingDupr] = useState(false)
   const [duprMessage, setDuprMessage] = useState('')
+  const [activeTab, setActiveTab] = useState('setup')
 
   async function load() {
     setLoading(true)
@@ -338,6 +385,10 @@ export default function TournamentDetail({ tournamentId, onBack }) {
     if (duprDate || !tournament) return
     setDuprDate(linkedSession?.date || new Date().toISOString().slice(0, 10))
   }, [tournament, linkedSession, duprDate])
+
+  // Switching tabs starts each section at the top rather than wherever the
+  // previous tab happened to leave the scroll position.
+  useEffect(() => { window.scrollTo(0, 0) }, [activeTab])
 
   const teamsById = new Map(teams.map(t => [t.id, t]))
   const courtsById = new Map(courts.map(c => [c.id, c]))
@@ -564,6 +615,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <h1 className="text-primary font-bold text-lg truncate flex-1">{tournament.name}</h1>
+          <StatusBadge status={tournament.status} onChange={setStatus} />
         </div>
 
         {champion && (
@@ -573,273 +625,282 @@ export default function TournamentDetail({ tournamentId, onBack }) {
           </div>
         )}
 
-        {/* Session -- linking one auto-syncs its confirmed doubles registrations as teams */}
-        <section className="mb-6">
-          <h2 className="text-sm font-bold text-primary mb-2">Session</h2>
-          {linkedSession ? (
-            <div className="bg-surface rounded-xl border border-border px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm text-primary font-medium truncate">{linkedSession.title || linkedSession.id}</p>
-                  <p className="text-[11px] text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
-                </div>
-                <button onClick={unlinkSession} className="shrink-0 text-[11px] font-medium text-tertiary">Unlink</button>
-              </div>
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                <button
-                  onClick={syncTeams}
-                  disabled={syncing}
-                  className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40"
-                >
-                  {syncing ? 'Syncing…' : 'Sync teams from session'}
-                </button>
-                {syncMessage && <span className="text-[11px] text-muted">{syncMessage}</span>}
-              </div>
-            </div>
-          ) : (
-            <div className="bg-surface rounded-xl border border-dashed border-border px-3 py-3 space-y-2">
-              <p className="text-xs text-muted">Link a session to auto-populate teams from its confirmed doubles registrations, placed on whichever court has room.</p>
-              <div className="flex gap-2">
-                <select className="input" value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)}>
-                  <option value="">Select a session…</option>
-                  {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
-                </select>
-                <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Link</button>
-              </div>
-            </div>
-          )}
-        </section>
+        {/* Tabs -- each section used to be stacked on one long page, so
+            saving anything meant scrolling back down past everything above
+            it to get back to what you were doing. Now each is its own short
+            view and switching tabs jumps to the top of it. */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5 mb-5">
+          {DETAIL_TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`shrink-0 text-xs font-semibold px-3.5 py-2 rounded-full border transition ${activeTab === t.id ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Courts */}
-        <section className="mb-6">
-          <h2 className="text-sm font-bold text-primary mb-2">Courts</h2>
-          <div className="space-y-2">
-            {courts.map(c => {
-              const courtMatchCount = roundRobinMatches.filter(m => m.court_id === c.id).length
-              return (
-                <div key={c.id} className="flex items-center justify-between bg-surface rounded-xl border border-border px-3 py-2">
-                  <span className="text-sm text-primary font-medium">{c.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted">{teams.filter(t => t.court_id === c.id).length} teams</span>
-                    {courtMatchCount > 0 && (
-                      <button onClick={() => setScoringCourtId(c.id)} className="text-[11px] font-semibold text-interactive bg-interactive/10 px-2.5 py-1 rounded-full active:scale-95 transition">
-                        Score
-                      </button>
-                    )}
-                    <button onClick={() => deleteCourt(c.id)} className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full border border-tertiary/30 text-tertiary active:bg-error-subtle transition">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-            <div className="flex gap-2">
-              <input className="input" placeholder="Court name (e.g. Court 1)" value={newCourtName} onChange={e => setNewCourtName(e.target.value)} />
-              <button onClick={addCourt} disabled={!newCourtName.trim()} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add</button>
-            </div>
-          </div>
-        </section>
-
-        {/* Teams */}
-        <section className="mb-6">
-          <h2 className="text-sm font-bold text-primary mb-2">Teams ({teams.length})</h2>
-          <div className="space-y-2">
-            {courts.map(c => {
-              const courtTeams = teams.filter(t => t.court_id === c.id)
-              if (courtTeams.length === 0) return null
-              return (
-                <div key={c.id}>
-                  <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">{c.name}</p>
-                  <div className="space-y-1.5 mb-2">
-                    {courtTeams.map(t => (
-                      <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                        <span className="text-sm text-primary">
-                          {t.name}
-                          {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
-                        </span>
-                        <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-            {teams.filter(t => !t.court_id).length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Unassigned</p>
-                <div className="space-y-1.5 mb-2">
-                  {teams.filter(t => !t.court_id).map(t => (
-                    <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                      <span className="text-sm text-primary">
-                        {t.name}
-                        {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
-                      </span>
-                      <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
+        {activeTab === 'setup' && (
+          <>
+            {/* Session -- linking one auto-syncs its confirmed doubles registrations as teams */}
+            <section className="mb-6">
+              <h2 className="text-sm font-bold text-primary mb-2">Session</h2>
+              {linkedSession ? (
+                <div className="bg-surface rounded-xl border border-border px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-primary font-medium truncate">{linkedSession.title || linkedSession.id}</p>
+                      <p className="text-[11px] text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {addingTeam ? (
-              <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
-                <input className="input" placeholder="Team name" value={teamForm.name} onChange={e => setTeamForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                <div className="grid grid-cols-2 gap-2">
-                  <input className="input" placeholder="Player 1" value={teamForm.player1_name} onChange={e => setTeamForm(f => ({ ...f, player1_name: e.target.value }))} />
-                  <input className="input" placeholder="Player 2 (optional)" value={teamForm.player2_name} onChange={e => setTeamForm(f => ({ ...f, player2_name: e.target.value }))} />
-                </div>
-                <select className="input" value={teamForm.court_id} onChange={e => setTeamForm(f => ({ ...f, court_id: e.target.value }))}>
-                  <option value="">No court yet</option>
-                  {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <div className="flex gap-2">
-                  <button onClick={addTeam} disabled={!teamForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add Team</button>
-                  <button onClick={() => setAddingTeam(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setAddingTeam(true)} className="w-full bg-surface rounded-xl border border-dashed border-border px-4 py-3 text-center active:bg-bg transition">
-                <span className="text-sm font-semibold text-interactive">+ Add Team</span>
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* Round robin per court */}
-        {courts.map(c => {
-          const courtTeams = teams.filter(t => t.court_id === c.id)
-          const courtMatches = roundRobinMatches.filter(m => m.court_id === c.id)
-          const standings = computeStandings(courtTeams, courtMatches)
-          const totalPairs = courtTeams.length * (courtTeams.length - 1) / 2
-          const missingPairs = totalPairs - courtMatches.length
-          return (
-            <section key={c.id} className="mb-6">
-              <div className="flex items-center justify-between mb-2 gap-2">
-                <h2 className="text-sm font-bold text-primary">{c.name} — Round Robin</h2>
-                <div className="flex items-center gap-3 shrink-0">
-                  {courtMatches.length > 0 && (
-                    <button onClick={() => setScoringCourtId(c.id)} className="text-xs font-semibold text-interactive">Score →</button>
-                  )}
-                  {missingPairs > 0 && courtTeams.length >= 2 && (
+                    <button onClick={unlinkSession} className="shrink-0 text-[11px] font-medium text-tertiary">Unlink</button>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <button
-                      onClick={() => generateFixtures(c.id)}
-                      className="text-xs font-semibold text-interactive"
+                      onClick={syncTeams}
+                      disabled={syncing}
+                      className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40"
                     >
-                      {courtMatches.length === 0 ? 'Generate fixtures' : `Add ${missingPairs} new fixture${missingPairs === 1 ? '' : 's'}`}
+                      {syncing ? 'Syncing…' : 'Sync teams from session'}
                     </button>
-                  )}
+                    {syncMessage && <span className="text-[11px] text-muted">{syncMessage}</span>}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-surface rounded-xl border border-dashed border-border px-3 py-3 space-y-2">
+                  <p className="text-xs text-muted">Link a session to auto-populate teams from its confirmed doubles registrations, placed on whichever court has room.</p>
+                  <div className="flex gap-2">
+                    <select className="input" value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)}>
+                      <option value="">Select a session…</option>
+                      {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
+                    </select>
+                    <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Link</button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Courts */}
+            <section className="mb-6">
+              <h2 className="text-sm font-bold text-primary mb-2">Courts</h2>
+              <div className="space-y-2">
+                {courts.map(c => {
+                  const courtMatchCount = roundRobinMatches.filter(m => m.court_id === c.id).length
+                  return (
+                    <div key={c.id} className="flex items-center justify-between bg-surface rounded-xl border border-border px-3 py-2">
+                      <span className="text-sm text-primary font-medium">{c.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-muted">{teams.filter(t => t.court_id === c.id).length} teams</span>
+                        {courtMatchCount > 0 && (
+                          <button onClick={() => setScoringCourtId(c.id)} className="text-[11px] font-semibold text-interactive bg-interactive/10 px-2.5 py-1 rounded-full active:scale-95 transition">
+                            Score
+                          </button>
+                        )}
+                        <button onClick={() => deleteCourt(c.id)} className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full border border-tertiary/30 text-tertiary active:bg-error-subtle transition">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="flex gap-2">
+                  <input className="input" placeholder="Court name (e.g. Court 1)" value={newCourtName} onChange={e => setNewCourtName(e.target.value)} />
+                  <button onClick={addCourt} disabled={!newCourtName.trim()} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add</button>
                 </div>
               </div>
-              {courtMatches.length > 0 && <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />}
+            </section>
+
+            {/* Teams */}
+            <section className="mb-6">
+              <h2 className="text-sm font-bold text-primary mb-2">Teams ({teams.length})</h2>
               <div className="space-y-2">
-                {courtMatches.map(m => (
-                  <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />
-                ))}
-                {courtMatches.length === 0 && (
-                  <p className="text-xs text-muted">{courtTeams.length < 2 ? 'Add at least 2 teams to this court first.' : 'No fixtures yet — generate them above.'}</p>
+                {courts.map(c => {
+                  const courtTeams = teams.filter(t => t.court_id === c.id)
+                  if (courtTeams.length === 0) return null
+                  return (
+                    <div key={c.id}>
+                      <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">{c.name}</p>
+                      <div className="space-y-1.5 mb-2">
+                        {courtTeams.map(t => (
+                          <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
+                            <span className="text-sm text-primary">
+                              {t.name}
+                              {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
+                            </span>
+                            <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+                {teams.filter(t => !t.court_id).length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Unassigned</p>
+                    <div className="space-y-1.5 mb-2">
+                      {teams.filter(t => !t.court_id).map(t => (
+                        <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
+                          <span className="text-sm text-primary">
+                            {t.name}
+                            {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
+                          </span>
+                          <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {addingTeam ? (
+                  <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+                    <input className="input" placeholder="Team name" value={teamForm.name} onChange={e => setTeamForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input className="input" placeholder="Player 1" value={teamForm.player1_name} onChange={e => setTeamForm(f => ({ ...f, player1_name: e.target.value }))} />
+                      <input className="input" placeholder="Player 2 (optional)" value={teamForm.player2_name} onChange={e => setTeamForm(f => ({ ...f, player2_name: e.target.value }))} />
+                    </div>
+                    <select className="input" value={teamForm.court_id} onChange={e => setTeamForm(f => ({ ...f, court_id: e.target.value }))}>
+                      <option value="">No court yet</option>
+                      {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <div className="flex gap-2">
+                      <button onClick={addTeam} disabled={!teamForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Add Team</button>
+                      <button onClick={() => setAddingTeam(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setAddingTeam(true)} className="w-full bg-surface rounded-xl border border-dashed border-border px-4 py-3 text-center active:bg-bg transition">
+                    <span className="text-sm font-semibold text-interactive">+ Add Team</span>
+                  </button>
                 )}
               </div>
             </section>
+          </>
+        )}
+
+        {activeTab === 'fixtures' && (
+          courts.length === 0 ? (
+            <p className="text-sm text-muted text-center py-10">Add courts in the Setup tab first.</p>
+          ) : (
+            courts.map(c => {
+              const courtTeams = teams.filter(t => t.court_id === c.id)
+              const courtMatches = roundRobinMatches.filter(m => m.court_id === c.id)
+              const standings = computeStandings(courtTeams, courtMatches)
+              const totalPairs = courtTeams.length * (courtTeams.length - 1) / 2
+              const missingPairs = totalPairs - courtMatches.length
+              return (
+                <section key={c.id} className="mb-6">
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <h2 className="text-sm font-bold text-primary">{c.name} — Round Robin</h2>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {courtMatches.length > 0 && (
+                        <button onClick={() => setScoringCourtId(c.id)} className="text-xs font-semibold text-interactive">Score →</button>
+                      )}
+                      {missingPairs > 0 && courtTeams.length >= 2 && (
+                        <button
+                          onClick={() => generateFixtures(c.id)}
+                          className="text-xs font-semibold text-interactive"
+                        >
+                          {courtMatches.length === 0 ? 'Generate fixtures' : `Add ${missingPairs} new fixture${missingPairs === 1 ? '' : 's'}`}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {courtMatches.length > 0 && <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />}
+                  <div className="space-y-2">
+                    {courtMatches.map(m => (
+                      <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />
+                    ))}
+                    {courtMatches.length === 0 && (
+                      <p className="text-xs text-muted">{courtTeams.length < 2 ? 'Add at least 2 teams to this court first.' : 'No fixtures yet — generate them above.'}</p>
+                    )}
+                  </div>
+                </section>
+              )
+            })
           )
-        })}
+        )}
 
-        {/* Status -- go live once fixtures are ready so players can follow along on /tournament */}
-        <section className="mb-6">
-          <h2 className="text-sm font-bold text-primary mb-2">{tournament.status === 'setup' ? 'Ready to go live?' : 'Status'}</h2>
-          {tournament.status === 'setup' && (
-            <p className="text-[11px] text-muted mb-2">Publish once fixtures are generated so players can follow standings and scores on the Live tab.</p>
-          )}
-          <div className="flex items-center gap-2">
-            {STATUS_FLOW.map(s => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition ${tournament.status === s ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
-              >
-                {STATUS_LABEL[s]}
-              </button>
-            ))}
-          </div>
-        </section>
+        {activeTab === 'standings' && (
+          overallStandings.length > 0 ? (
+            <section className="mb-6">
+              <p className="text-[11px] text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks in the Knockout tab.</p>
+              <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} withdrawnPlayerIds={withdrawnPlayerIds} />
+            </section>
+          ) : (
+            <p className="text-sm text-muted text-center py-10">No completed matches yet.</p>
+          )
+        )}
 
-        {/* Overall standings across every court -- use this to pick who advances */}
-        {overallStandings.length > 0 && (
+        {activeTab === 'knockout' && (
           <section className="mb-6">
-            <h2 className="text-sm font-bold text-primary mb-1">Overall Standings</h2>
-            <p className="text-[11px] text-muted mb-2">Combined across all courts, ranked by wins then point differential. Top 4 highlighted as a reference for semifinal picks below.</p>
-            <StandingsTable standings={overallStandings} courtsById={courtsById} highlightTop={4} withdrawnPlayerIds={withdrawnPlayerIds} />
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <h2 className="text-sm font-bold text-primary">Semifinals &amp; Final</h2>
+              {(semiMatches.length > 0 || finalMatches.length > 0) && (
+                <button onClick={() => setScoringKnockout(true)} className="text-xs font-semibold text-interactive shrink-0">Score →</button>
+              )}
+            </div>
+            {semiMatches.length > 0 && (
+              <div className="space-y-2 mb-2">
+                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Semifinals</p>
+                {semiMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
+              </div>
+            )}
+            {finalMatches.length > 0 && (
+              <div className="space-y-2 mb-2">
+                <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Final</p>
+                {finalMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
+              </div>
+            )}
+
+            {addingKo ? (
+              <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+                <select className="input" value={koForm.stage} onChange={e => setKoForm(f => ({ ...f, stage: e.target.value }))}>
+                  <option value="semifinal">Semifinal</option>
+                  <option value="final">Final</option>
+                </select>
+                <select className="input" value={koForm.teamA} onChange={e => setKoForm(f => ({ ...f, teamA: e.target.value }))}>
+                  <option value="">Team A</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <select className="input" value={koForm.teamB} onChange={e => setKoForm(f => ({ ...f, teamB: e.target.value }))}>
+                  <option value="">Team B</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <div className="flex gap-2">
+                  <button onClick={addKnockoutMatch} disabled={!koForm.teamA || !koForm.teamB || koForm.teamA === koForm.teamB} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Create Match</button>
+                  <button onClick={() => setAddingKo(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setAddingKo(true)} className="w-full bg-surface rounded-xl border border-dashed border-border px-4 py-3 text-center active:bg-bg transition">
+                <span className="text-sm font-semibold text-interactive">+ Create Semifinal / Final Match</span>
+              </button>
+            )}
           </section>
         )}
 
-        {/* Knockout stage */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-2 gap-2">
-            <h2 className="text-sm font-bold text-primary">Semifinals &amp; Final</h2>
-            {(semiMatches.length > 0 || finalMatches.length > 0) && (
-              <button onClick={() => setScoringKnockout(true)} className="text-xs font-semibold text-interactive shrink-0">Score →</button>
-            )}
-          </div>
-          {semiMatches.length > 0 && (
-            <div className="space-y-2 mb-2">
-              <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Semifinals</p>
-              {semiMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
-            </div>
-          )}
-          {finalMatches.length > 0 && (
-            <div className="space-y-2 mb-2">
-              <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">Final</p>
-              {finalMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
-            </div>
-          )}
-
-          {addingKo ? (
+        {activeTab === 'export' && (
+          <section className="mb-6">
             <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
-              <select className="input" value={koForm.stage} onChange={e => setKoForm(f => ({ ...f, stage: e.target.value }))}>
-                <option value="semifinal">Semifinal</option>
-                <option value="final">Final</option>
-              </select>
-              <select className="input" value={koForm.teamA} onChange={e => setKoForm(f => ({ ...f, teamA: e.target.value }))}>
-                <option value="">Team A</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <select className="input" value={koForm.teamB} onChange={e => setKoForm(f => ({ ...f, teamB: e.target.value }))}>
-                <option value="">Team B</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <div className="flex gap-2">
-                <button onClick={addKnockoutMatch} disabled={!koForm.teamA || !koForm.teamB || koForm.teamA === koForm.teamB} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-95 transition disabled:opacity-40">Create Match</button>
-                <button onClick={() => setAddingKo(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
+              <p className="text-[11px] text-muted">Covers the whole tournament — every completed round robin, semifinal, and final match, not round robin alone.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
+                <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
+                  <option value="RALLY">Rally scoring</option>
+                  <option value="SIDEOUT">Side-out scoring</option>
+                </select>
               </div>
+              <button
+                onClick={exportForDupr}
+                disabled={exportingDupr || matches.filter(m => m.status === 'completed').length === 0}
+                className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-95 transition disabled:opacity-40"
+              >
+                {exportingDupr ? 'Exporting…' : 'Export all completed matches (.csv)'}
+              </button>
+              {duprMessage && <p className="text-[11px] text-muted">{duprMessage}</p>}
             </div>
-          ) : (
-            <button onClick={() => setAddingKo(true)} className="w-full bg-surface rounded-xl border border-dashed border-border px-4 py-3 text-center active:bg-bg transition">
-              <span className="text-sm font-semibold text-interactive">+ Create Semifinal / Final Match</span>
-            </button>
-          )}
-        </section>
-
-        {/* Export completed match results in DUPR's bulk-upload CSV format */}
-        <section className="mb-6">
-          <h2 className="text-sm font-bold text-primary mb-2">Export for DUPR</h2>
-          <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
-            <p className="text-[11px] text-muted">Covers the whole tournament — every completed round robin, semifinal, and final match, not round robin alone.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
-              <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
-                <option value="RALLY">Rally scoring</option>
-                <option value="SIDEOUT">Side-out scoring</option>
-              </select>
-            </div>
-            <button
-              onClick={exportForDupr}
-              disabled={exportingDupr || matches.filter(m => m.status === 'completed').length === 0}
-              className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-95 transition disabled:opacity-40"
-            >
-              {exportingDupr ? 'Exporting…' : 'Export all completed matches (.csv)'}
-            </button>
-            {duprMessage && <p className="text-[11px] text-muted">{duprMessage}</p>}
-          </div>
-        </section>
+          </section>
+        )}
       </div>
     </div>
   )
