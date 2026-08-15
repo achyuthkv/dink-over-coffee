@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
+import { api } from '../api.js'
 import { generateRoundRobinPairs, computeStandings } from '../lib/tournament.js'
 
 const STATUS_FLOW = ['setup', 'active', 'completed']
@@ -363,11 +364,16 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   async function syncTeams() {
     setSyncing(true)
     setSyncMessage('')
-    const { data, error } = await supabase.rpc('bulk_sync_tournament_teams', { p_tournament_id: tournamentId })
-    setSyncing(false)
-    if (error) { setSyncMessage('Sync failed — try again.'); return }
-    setSyncMessage(data > 0 ? `Synced ${data} new team${data === 1 ? '' : 's'}.` : 'Already up to date — no new teams to add.')
-    load()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const { created } = await api.tournamentSyncTeams(tournamentId, session?.access_token)
+      setSyncMessage(created > 0 ? `Synced ${created} new team${created === 1 ? '' : 's'}.` : 'Already up to date — no new teams to add.')
+      load()
+    } catch {
+      setSyncMessage('Sync failed — try again.')
+    } finally {
+      setSyncing(false)
+    }
   }
 
   async function addCourt() {
