@@ -483,11 +483,15 @@ export default function TournamentDetail({ tournamentId, onBack }) {
     a.download = `${tournament.name.replace(/[^a-z0-9]+/gi, '_')}_dupr_matches.csv`
     a.click()
 
+    const knockoutCount = completedMatches.filter(m => m.stage !== 'round_robin').length
+    const roundRobinCount = completedMatches.length - knockoutCount
+    const breakdown = `${roundRobinCount} round robin${knockoutCount > 0 ? `, ${knockoutCount} knockout` : ''}`
+
     setExportingDupr(false)
     setDuprMessage(
       missingDupr > 0
-        ? `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. ${missingDupr} ${missingDupr === 1 ? 'is' : 'are'} missing a player DUPR ID — fill those in before uploading to DUPR.`
-        : `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}.`
+        ? `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'} (${breakdown}). ${missingDupr} ${missingDupr === 1 ? 'is' : 'are'} missing a player DUPR ID — fill those in before uploading to DUPR.`
+        : `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'} (${breakdown}).`
     )
   }
 
@@ -812,6 +816,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
         <section className="mb-6">
           <h2 className="text-sm font-bold text-primary mb-2">Export for DUPR</h2>
           <div className="bg-surface rounded-xl border border-border px-3 py-3 space-y-2">
+            <p className="text-[11px] text-muted">Covers the whole tournament — every completed round robin, semifinal, and final match, not round robin alone.</p>
             <div className="grid grid-cols-2 gap-2">
               <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
               <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
@@ -824,7 +829,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               disabled={exportingDupr || matches.filter(m => m.status === 'completed').length === 0}
               className="w-full text-xs font-semibold text-inverse bg-interactive px-4 py-2.5 rounded-full active:scale-95 transition disabled:opacity-40"
             >
-              {exportingDupr ? 'Exporting…' : 'Export completed matches (.csv)'}
+              {exportingDupr ? 'Exporting…' : 'Export all completed matches (.csv)'}
             </button>
             {duprMessage && <p className="text-[11px] text-muted">{duprMessage}</p>}
           </div>
