@@ -38,13 +38,13 @@ const FILTERS = [
 
 function PaymentBadge({ status }) {
   const styles = {
-    paid: 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10',
-    pending: 'text-amber-800 bg-amber-100 dark:text-warning dark:bg-warning/10',
+    paid: 'text-success bg-brand-100',
+    pending: 'text-warning-muted bg-warning-subtle',
     refunded: 'text-muted bg-bg'
   }
   const label = { paid: 'Paid', pending: 'Payment pending', refunded: 'Refunded' }
   return (
-    <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${styles[status] || styles.pending}`}>
+    <span className={`inline-flex items-center text-3xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${styles[status] || styles.pending}`}>
       {label[status] || status}
     </span>
   )
@@ -163,7 +163,7 @@ export default function ShopOrders({ onBack }) {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-2xl mx-auto px-5 py-6">
+      <div className="max-w-2xl mx-auto px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -174,17 +174,17 @@ export default function ShopOrders({ onBack }) {
 
         {/* Stats */}
         <div className="flex gap-2 mb-5">
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
             <div className="text-lg font-bold text-primary">{orders.length}</div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Orders</div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Orders</div>
           </div>
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
-            <div className="text-lg font-bold text-amber-700 dark:text-warning">{paymentPending}</div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">Payment pending</div>
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
+            <div className="text-lg font-bold text-warning-muted">{paymentPending}</div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Payment pending</div>
           </div>
-          <div className="flex-1 bg-surface rounded-xl border border-border px-3 py-2.5 text-center">
+          <div className="flex-1 card-compact px-3 py-2.5 text-center">
             <div className="text-lg font-bold text-tertiary">{toShip}</div>
-            <div className="text-[10px] text-muted uppercase tracking-wide mt-0.5">To ship</div>
+            <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">To ship</div>
           </div>
         </div>
 
@@ -289,7 +289,7 @@ export default function ShopOrders({ onBack }) {
                           </button>
                         )}
                         {order.payment_status === 'pending' && (
-                          <span className="text-[11px] text-muted">Mark paid to start processing</span>
+                          <span className="text-2xs text-muted">Mark paid to start processing</span>
                         )}
                         {canCancel && (
                           <button onClick={() => { setCancelModal(order); setCancelReason('') }} className="text-xs font-medium text-tertiary px-3 py-1.5 rounded-full border border-tertiary/20 active:bg-error-subtle transition">

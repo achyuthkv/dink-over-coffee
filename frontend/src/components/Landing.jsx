@@ -32,17 +32,21 @@ export default function Landing() {
         <div className="mesh-blob mesh-blob-2" />
         <div className="mesh-blob mesh-blob-3" />
 
-        {/* Nav */}
-        <nav className="relative z-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
+        {/* Nav — wraps to a second row on narrow screens instead of
+            overflowing horizontally: logo + toggle stay on row 1, the tab
+            pill (the widest element) drops to its own centered row 2. */}
+        <nav className="relative z-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-[calc(env(safe-area-inset-top)+1.5rem)] flex flex-wrap items-center justify-between gap-3">
+          <Link to="/" className="order-1 flex items-center gap-2.5">
             <Logo className="h-12 w-auto" />
           </Link>
-          <div className="flex items-center gap-2.5">
-            <NavTabs />
+          <div className="order-2 sm:order-3 flex items-center gap-2.5">
             <a href="https://www.instagram.com/dinkovercoffee" target="_blank" rel="noopener noreferrer" className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full border border-border/40 text-muted hover:text-primary hover:border-border transition" title="Instagram">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             </a>
             <ThemeToggle />
+          </div>
+          <div className="order-3 sm:order-2 w-full sm:w-auto flex justify-center">
+            <NavTabs />
           </div>
         </nav>
 
@@ -62,13 +66,13 @@ export default function Landing() {
             </p>
 
             <div className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3">
-              <Link to="/events" className="glow-interactive inline-flex items-center justify-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition w-full sm:w-auto">
+              <Link to="/events" className="glow-interactive inline-flex items-center justify-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition ease-spring w-full sm:w-auto">
                 Book a Session
               </Link>
-              <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80 w-full sm:w-auto">
+              <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
                 Join Community
               </a>
-              <Link to="/shop" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:bg-surface/80 w-full sm:w-auto">
+              <Link to="/shop" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
                 Shop Merch
               </Link>
             </div>
@@ -78,16 +82,16 @@ export default function Landing() {
           <div className="mt-14 lg:mt-0 lg:w-[400px] shrink-0 space-y-4">
             {sessions.length > 0 && (
               <div>
-                <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-3 font-medium">Upcoming sessions</p>
+                <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-3 font-medium">Upcoming sessions</p>
                 <div className="space-y-2.5">
                   {sessions.slice(0, 5).map(s => {
                     const remaining = Math.max(0, s.maxSlots - s.takenSlots)
                     const full = remaining <= 0
                     return (
-                      <Link key={s.id} to={`/events?session=${s.id}`} className="glass flex items-center gap-3.5 rounded-2xl p-4 active:scale-[.99] transition hover:border-interactive/30">
+                      <Link key={s.id} to={`/events?session=${s.id}`} className="glass flex items-center gap-3.5 rounded-2xl p-4 active:scale-[.98] transition ease-spring hover:border-interactive/30">
                         <div className="w-11 h-11 rounded-xl bg-interactive/10 grid place-items-center shrink-0">
                           <div className="text-center leading-none">
-                            <p className="text-interactive text-[9px] font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                            <p className="text-interactive text-3xs font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
                             <p className="text-interactive text-sm font-bold">{new Date(s.date + 'T00:00:00').getDate()}</p>
                           </div>
                         </div>
@@ -99,7 +103,7 @@ export default function Landing() {
                           <p className={`text-xs font-semibold ${full ? 'text-error' : 'text-interactive'}`}>
                             {full ? 'Full' : `${remaining} left`}
                           </p>
-                          <p className="text-muted text-[10px]">{'₹'}{s.price}</p>
+                          <p className="text-muted text-3xs">{'₹'}{s.price}</p>
                         </div>
                       </Link>
                     )
@@ -114,7 +118,7 @@ export default function Landing() {
             )}
 
             <div className="glass rounded-2xl p-6">
-              <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-5 font-medium">How it works</p>
+              <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-5 font-medium">How it works</p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
                   { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>, label: 'Sign up' },
@@ -159,7 +163,7 @@ export default function Landing() {
       {/* The vibe */}
       <section className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-20 border-t border-border/30">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-muted text-[10px] uppercase tracking-[0.3em] mb-5 font-medium">The vibe</p>
+          <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-5 font-medium">The vibe</p>
           <p className="text-primary text-[clamp(1.4rem,3.5vw,2rem)] font-bold leading-snug">
             Strangers become doubles partners.
           </p>
@@ -176,10 +180,10 @@ export default function Landing() {
       <section className="relative px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-20 border-t border-border/30 text-center">
         <h2 className="text-primary text-xl md:text-2xl font-extrabold">Your next favourite weekend starts here.</h2>
         <div className="mt-7 flex items-center justify-center gap-3">
-          <Link to="/events" className="glow-interactive inline-flex items-center rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition">
+          <Link to="/events" className="glow-interactive inline-flex items-center rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition ease-spring">
             Book a Session
           </Link>
-          <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition hover:border-interactive/30">
+          <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:border-interactive/30">
             Join Community
           </a>
         </div>
@@ -201,7 +205,7 @@ export default function Landing() {
             </a>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-3 mt-4 text-muted text-[11px]">
+        <div className="flex items-center justify-center gap-3 mt-4 text-muted text-2xs">
           <Link to="/terms" className="hover:text-primary transition">Guidelines</Link>
           <span>·</span>
           <Link to="/privacy" className="hover:text-primary transition">Privacy</Link>

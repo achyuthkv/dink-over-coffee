@@ -245,10 +245,10 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-2xl bg-interactive px-5 py-3 text-base font-semibold text-inverse shadow-sm active:scale-[.98] transition disabled:opacity-50 disabled:active:scale-100;
+    @apply inline-flex items-center justify-center rounded-2xl bg-interactive px-5 py-3 text-base font-semibold text-inverse shadow-sm active:scale-[.98] transition ease-spring disabled:opacity-50 disabled:active:scale-100;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium text-primary active:bg-bg-alt transition;
+    @apply inline-flex items-center justify-center rounded-2xl border border-border px-4 py-2 text-sm font-medium text-primary active:bg-bg-alt transition ease-spring;
   }
   .card {
     @apply rounded-3xl bg-surface p-5 shadow-[0_1px_2px_rgba(0,63,46,0.06),0_8px_24px_-12px_rgba(0,63,46,0.12)] border border-border;
@@ -259,6 +259,18 @@ body {
   .pill {
     @apply inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-medium text-primary;
   }
+  .card-compact {
+    @apply rounded-2xl bg-surface border border-border;
+  }
+  .badge-success {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-success;
+  }
+  .badge-error {
+    @apply inline-flex items-center gap-1 rounded-full bg-error-subtle px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-error;
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 rounded-full bg-warning-subtle px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-warning-muted;
+  }
 }
 
 @layer utilities {
@@ -268,5 +280,20 @@ body {
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  .dropdown-in {
+    transform-origin: top right;
+    animation: dropdown-in 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

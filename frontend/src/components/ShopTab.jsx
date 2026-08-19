@@ -206,7 +206,7 @@ export default function ShopTab() {
     return (
       <div className="card text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-secondary/10 grid place-items-center text-secondary-dark text-2xl">✓</div>
-        <h2 className="mt-3 text-text text-xl font-extrabold">{success.pending ? 'Order received!' : 'Order confirmed!'}</h2>
+        <h2 className="mt-3 text-primary text-xl font-extrabold">{success.pending ? 'Order received!' : 'Order confirmed!'}</h2>
         <p className="mt-1 text-primary text-sm">Order #{String(success.orderId).slice(0, 8)} · ₹{success.amount}</p>
         <div className="mt-4 text-left space-y-1.5">
           {success.items.map((item, i) => (
@@ -227,7 +227,7 @@ export default function ShopTab() {
                 <p className="text-xs text-secondary mt-0.5">{acc.upi_id}</p>
               </div>
             ))}
-            <p className="text-[11px] text-secondary mt-2 text-center">We'll confirm and ship once payment is received.</p>
+            <p className="text-2xs text-secondary mt-2 text-center">We'll confirm and ship once payment is received.</p>
           </div>
         )}
 
@@ -239,7 +239,7 @@ export default function ShopTab() {
   return (
     <div className="space-y-5">
       <section>
-        <h2 className="text-text font-bold md:text-lg">Merchandise</h2>
+        <h2 className="text-primary font-bold md:text-lg">Merchandise</h2>
         {loading && <div className="mt-3 card text-center text-secondary text-sm">Loading products…</div>}
         {loadError && <div className="mt-3 card text-center text-error text-sm">{loadError}</div>}
         {!loading && !loadError && products.length === 0 && (
@@ -253,18 +253,18 @@ export default function ShopTab() {
               return (
                 <div key={product.id} className="card p-3 last:odd:col-span-full md:last:odd:col-span-1">
                   <ProductImageCarousel images={product.images} name={product.name} />
-                  <p className="text-text text-sm font-semibold mt-2 truncate">{product.name}</p>
+                  <p className="text-primary text-sm font-medium mt-2 truncate">{product.name}</p>
                   {product.description && <p className="text-muted text-xs mt-0.5 line-clamp-2">{product.description}</p>}
                   {product.mrp ? (
                     <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5 mt-1">
-                      <span className="text-primary text-sm font-bold">₹{product.price}</span>
+                      <span className="text-primary text-base font-extrabold">₹{product.price}</span>
                       <span className="text-muted text-xs line-through">₹{product.mrp}</span>
-                      <span className="text-[10px] font-bold text-green-700 dark:text-secondary bg-green-100 dark:bg-secondary/10 px-1.5 py-0.5 rounded">
+                      <span className="badge-success">
                         {product.discountPercent}% off
                       </span>
                     </div>
                   ) : (
-                    <p className="text-primary text-sm font-bold mt-1">₹{product.price}</p>
+                    <p className="text-primary text-base font-extrabold mt-1">₹{product.price}</p>
                   )}
 
                   {product.sizes?.length > 0 && (
@@ -274,7 +274,7 @@ export default function ShopTab() {
                           key={size}
                           type="button"
                           onClick={() => updateSelection(product.id, { size })}
-                          className={`rounded-lg border px-2 py-1 text-[11px] font-medium transition ${sel.size === size ? 'border-interactive bg-interactive/10 text-interactive' : 'border-border-muted text-secondary'}`}
+                          className={`rounded-lg border px-2 py-1 text-2xs font-medium transition ease-spring ${sel.size === size ? 'border-interactive bg-interactive/10 text-interactive' : 'border-border-muted text-secondary'}`}
                         >{size}</button>
                       ))}
                     </div>
@@ -292,7 +292,7 @@ export default function ShopTab() {
                     type="button"
                     onClick={() => addToOrder(product)}
                     disabled={outOfStock}
-                    className="w-full mt-2.5 rounded-xl bg-interactive text-inverse text-xs font-semibold py-2 disabled:opacity-50 active:scale-[.98] transition"
+                    className="w-full mt-2.5 rounded-xl bg-interactive text-inverse text-xs font-semibold py-2 disabled:opacity-50 active:scale-[.98] transition ease-spring"
                   >
                     {outOfStock ? 'Out of stock' : 'Add'}
                   </button>
@@ -305,7 +305,7 @@ export default function ShopTab() {
 
       {orderItems.length > 0 && (
         <section className="card">
-          <h2 className="text-text font-bold">Your order</h2>
+          <h2 className="text-primary font-bold">Your order</h2>
           <div className="mt-3 space-y-2.5">
             {orderItems.map((item, i) => (
               <div key={i} className="flex items-center justify-between gap-2">
@@ -323,15 +323,15 @@ export default function ShopTab() {
             ))}
           </div>
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <span className="text-sm font-bold text-text">Total</span>
-            <span className="text-sm font-bold text-text">₹{total}</span>
+            <span className="text-sm font-bold text-primary">Total</span>
+            <span className="text-sm font-bold text-primary">₹{total}</span>
           </div>
         </section>
       )}
 
       {orderItems.length > 0 && (
         <section className="card">
-          <h2 className="text-text font-bold">Shipping details</h2>
+          <h2 className="text-primary font-bold">Shipping details</h2>
           <div className="mt-3 space-y-3">
             <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
               <div>
@@ -368,7 +368,7 @@ export default function ShopTab() {
           <button className="w-full mt-4 btn-primary" onClick={handleCheckout} disabled={submitting}>
             {submitting ? 'Processing…' : (PAYMENTS_ENABLED ? `Pay ₹${total} & checkout` : `Place order · ₹${total}`)}
           </button>
-          {!PAYMENTS_ENABLED && <p className="text-[11px] text-secondary mt-2 text-center">We'll share UPI payment details after you place the order.</p>}
+          {!PAYMENTS_ENABLED && <p className="text-2xs text-secondary mt-2 text-center">We'll share UPI payment details after you place the order.</p>}
         </section>
       )}
 

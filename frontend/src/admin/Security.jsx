@@ -33,7 +33,7 @@ export default function Security({ onBack }) {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-xl mx-auto px-5 py-6">
+      <div className="max-w-xl mx-auto px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -41,17 +41,17 @@ export default function Security({ onBack }) {
           <h1 className="text-primary font-bold text-lg">Security</h1>
         </div>
 
-        <div className="bg-surface rounded-2xl border border-border p-5">
+        <div className="card p-5">
           <p className="text-sm font-semibold text-primary">Auto-lock</p>
           <p className="text-xs text-muted mt-1.5 leading-relaxed">
             This admin area locks itself after 10 minutes of inactivity, or immediately if you return after being away from the app for 2+ minutes. You'll need to unlock it to continue — your session stays signed in, this just re-verifies it's you.
           </p>
         </div>
 
-        <div className="bg-surface rounded-2xl border border-border p-5 mt-4">
+        <div className="card p-5 mt-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-primary">Biometric unlock</p>
-            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${enabled ? 'text-green-800 bg-green-100 dark:text-secondary dark:bg-secondary/10' : 'text-muted bg-bg'}`}>
+            <span className={`text-3xs font-bold uppercase tracking-wide px-2 py-0.5 rounded ${enabled ? 'text-success bg-brand-100' : 'text-muted bg-bg'}`}>
               {enabled ? 'On' : 'Off'}
             </span>
           </div>

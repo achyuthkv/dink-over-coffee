@@ -146,7 +146,7 @@ export default forwardRef(function WaiverConsent({ phone, name, onReady }, ref) 
 
   return (
     <div className="mt-4 pt-4 border-t border-border">
-      <h3 className="text-text font-bold text-sm">Disclaimer & Waiver</h3>
+      <h3 className="text-primary font-bold text-sm">Disclaimer & Waiver</h3>
       <div className="mt-2 bg-surface-alt rounded-lg px-3 py-3 max-h-36 overflow-y-auto border border-border">
         <p className="text-xs text-secondary leading-relaxed whitespace-pre-line">{WAIVER_TEXT}</p>
       </div>
@@ -166,7 +166,7 @@ export default forwardRef(function WaiverConsent({ phone, name, onReady }, ref) 
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs font-semibold text-primary">Signature</label>
             {hasSignature && (
-              <button type="button" onClick={clearSignature} className="text-[11px] text-secondary underline">Clear</button>
+              <button type="button" onClick={clearSignature} className="text-2xs text-secondary underline">Clear</button>
             )}
           </div>
           <canvas
@@ -180,7 +180,7 @@ export default forwardRef(function WaiverConsent({ phone, name, onReady }, ref) 
             onTouchMove={draw}
             onTouchEnd={stopDraw}
           />
-          <p className="text-[10px] text-muted mt-1">Draw your signature above</p>
+          <p className="text-3xs text-muted mt-1">Draw your signature above</p>
         </div>
       )}
     </div>

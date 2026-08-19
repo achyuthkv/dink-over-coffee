@@ -79,7 +79,27 @@ export default {
         'border-muted': withOpacity('--color-border-subtle')
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
+        // -apple-system/BlinkMacSystemFont render as native San Francisco on
+        // iOS/macOS -- ahead of the brand typeface so the majority-mobile,
+        // majority-Apple audience gets genuinely native-feeling text, not
+        // an approximation of it. Other platforms fall through to the
+        // brand font, then a plain system stack.
+        display: ['-apple-system', 'BlinkMacSystemFont', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif']
+      },
+      fontSize: {
+        // Fills the gap below Tailwind's own xs (12px) -- these two steps
+        // were already in use everywhere as one-off text-[11px]/text-[10px]/
+        // text-[9px] brackets for the same "eyebrow label" and "fine print"
+        // roles; naming them turns that ad hoc range into two real,
+        // reusable steps.
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+        '3xs': ['0.625rem', { lineHeight: '0.875rem' }]
+      },
+      transitionTimingFunction: {
+        // Approximates UIKit/SwiftUI's default spring curve -- a touch of
+        // overshoot on release rather than a linear stop, for small
+        // interactive elements (buttons, toggles, badges).
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
       }
     }
   },

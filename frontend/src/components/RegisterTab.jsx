@@ -304,7 +304,7 @@ export default function RegisterTab() {
     return (
       <div className="card text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-warning-subtle grid place-items-center text-warning-muted text-2xl">⏳</div>
-        <h2 className="mt-3 text-text text-xl font-extrabold">You're on the waitlist!</h2>
+        <h2 className="mt-3 text-primary text-xl font-extrabold">You're on the waitlist!</h2>
         <p className="mt-1 text-primary text-sm">
           Position #{waitlistSuccess.position} · {waitlistSuccess.session.venue} · {fmtShort(waitlistSuccess.session.date, waitlistSuccess.session.time)}
         </p>
@@ -333,7 +333,7 @@ export default function RegisterTab() {
     return (
       <div className="card text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-secondary/10 grid place-items-center text-secondary-dark text-2xl">✓</div>
-        <h2 className="mt-3 text-text text-xl font-extrabold">You're in!</h2>
+        <h2 className="mt-3 text-primary text-xl font-extrabold">You're in!</h2>
         <p className="mt-1 text-primary text-sm">
           {success.session.venue} · {fmtShort(success.session.date, success.session.time)}
         </p>
@@ -350,7 +350,7 @@ export default function RegisterTab() {
                     className={`shrink-0 rounded-xl border px-3 py-2 text-left transition ${i === qrIndex ? 'border-primary bg-bg' : 'border-border-muted'}`}
                   >
                     <p className="text-xs font-semibold text-primary">{acc.label}</p>
-                    <p className="text-[11px] text-muted mt-0.5">{acc.upi_id}</p>
+                    <p className="text-2xs text-muted mt-0.5">{acc.upi_id}</p>
                   </button>
                 ))}
               </div>
@@ -379,7 +379,7 @@ export default function RegisterTab() {
                 </a>
               ))}
             </div>
-            <p className="text-[11px] text-secondary mt-3">Opens your UPI app with amount pre-filled</p>
+            <p className="text-2xs text-secondary mt-3">Opens your UPI app with amount pre-filled</p>
           </div>
         )}
         <button className="text-sm text-secondary underline mt-4" onClick={() => { setSuccess(null); setQrIndex(0) }}>Book another</button>
@@ -392,7 +392,7 @@ export default function RegisterTab() {
       {/* Session picker — compact horizontal strip */}
       <section>
         <div className="flex items-center justify-between">
-          <h2 className="text-text font-bold md:text-lg">Pick a session</h2>
+          <h2 className="text-primary font-bold md:text-lg">Pick a session</h2>
           <button onClick={load} title="Refresh" className="w-8 h-8 flex items-center justify-center rounded-full text-secondary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
@@ -414,7 +414,7 @@ export default function RegisterTab() {
                   key={s.id}
                   type="button"
                   onClick={() => handleSelect(s)}
-                  className={`snap-start shrink-0 rounded-2xl border-2 px-4 py-3 text-left transition active:scale-[.98] ${
+                  className={`snap-start shrink-0 rounded-2xl border-2 px-4 py-3 text-left transition ease-spring active:scale-[.98] ${
                     isSelected
                       ? 'border-interactive bg-interactive/5'
                       : full
@@ -451,7 +451,7 @@ export default function RegisterTab() {
       {/* Who's playing */}
       {selected && players.length > 0 && (
         <section className="card">
-          <h2 className="text-text font-bold text-sm">{isNonPickleball ? "Who's going" : "Who's playing"}</h2>
+          <h2 className="text-primary font-bold text-sm">{isNonPickleball ? "Who's going" : "Who's playing"}</h2>
           {loadingPlayers ? (
             <p className="text-xs text-secondary mt-2">Loading…</p>
           ) : skillNotRequired ? (
@@ -472,7 +472,7 @@ export default function RegisterTab() {
                   <div key={skill}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                      <span className="text-[10px] font-semibold text-secondary uppercase tracking-wide">{skill} ({group.length})</span>
+                      <span className="text-3xs font-semibold text-secondary uppercase tracking-wide">{skill} ({group.length})</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {group.map((p, i) => (
@@ -488,7 +488,7 @@ export default function RegisterTab() {
           )}
           {players.filter(p => p.status === 'waitlisted').length > 0 && (
             <div className="mt-3 pt-2.5 border-t border-border">
-              <span className="text-[11px] font-semibold text-warning-muted uppercase">Waitlist</span>
+              <span className="text-2xs font-semibold text-warning-muted uppercase">Waitlist</span>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {players.filter(p => p.status === 'waitlisted').map((p, i) => (
                   <span key={i} className="inline-flex items-center rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-muted">
@@ -504,21 +504,21 @@ export default function RegisterTab() {
       {/* Registration form */}
       {selected && (
         <section ref={formRef} className="card">
-          <h2 className="text-text font-bold">Your details</h2>
+          <h2 className="text-primary font-bold">Your details</h2>
           <div className="mt-3 space-y-3">
             <div className="md:grid md:grid-cols-2 md:gap-3 space-y-3 md:space-y-0">
               <div>
                 <label className="text-xs font-semibold text-primary">Name <span className="text-error">*</span></label>
                 <input className="input mt-1" autoComplete="name" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Akhil K" required />
                 {form.name.length > 0 && form.name.trim().length < 2 && (
-                  <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
+                  <p className="text-2xs text-error mt-1">Name must be at least 2 characters</p>
                 )}
               </div>
               <div>
                 <label className="text-xs font-semibold text-primary">Phone <span className="text-error">*</span></label>
                 <input className="input mt-1" autoComplete="tel" inputMode="numeric" value={form.phone} onChange={e => update('phone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
                 {form.phone.length > 0 && form.phone.length < 10 && (
-                  <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
+                  <p className="text-2xs text-error mt-1">Enter a valid 10-digit phone number</p>
                 )}
               </div>
             </div>
@@ -526,7 +526,7 @@ export default function RegisterTab() {
               <label className="text-xs font-semibold text-primary">Email <span className="text-error">*</span></label>
               <input className="input mt-1" autoComplete="email" type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="you@example.com" required />
               {form.email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && (
-                <p className="text-[11px] text-error mt-1">Enter a valid email address</p>
+                <p className="text-2xs text-error mt-1">Enter a valid email address</p>
               )}
             </div>
             {!skillNotRequired && (
@@ -559,7 +559,7 @@ export default function RegisterTab() {
               <label className="text-xs font-semibold text-primary">DUPR ID <span className="text-error">*</span></label>
               <input className="input mt-1" value={form.duprId} onChange={e => update('duprId', e.target.value)} placeholder="e.g. 123456789" required />
               {(form.duprId || '').length > 0 && form.duprId.trim().length < 3 && (
-                <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
+                <p className="text-2xs text-error mt-1">Enter a valid DUPR ID</p>
               )}
             </div>
           )}
@@ -567,18 +567,18 @@ export default function RegisterTab() {
           {isDoubles && (
             <div className="mt-4 pt-4 border-t border-border">
               {isTeamsOnly ? (
-                <h3 className="text-text font-bold text-sm">Your partner's details</h3>
+                <h3 className="text-primary font-bold text-sm">Your partner's details</h3>
               ) : (
                 <>
-                  <h3 className="text-text font-bold text-sm">Do you have a partner?</h3>
+                  <h3 className="text-primary font-bold text-sm">Do you have a partner?</h3>
                   <div className="mt-2 flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="hasPartner" checked={hasPartner === true} onChange={() => setHasPartner(true)} className="accent-primary" />
-                      <span className="text-sm text-text">Yes</span>
+                      <span className="text-sm text-primary">Yes</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="hasPartner" checked={hasPartner === false} onChange={() => setHasPartner(false)} className="accent-primary" />
-                      <span className="text-sm text-text">No</span>
+                      <span className="text-sm text-primary">No</span>
                     </label>
                   </div>
                 </>
@@ -591,14 +591,14 @@ export default function RegisterTab() {
                       <label className="text-xs font-semibold text-primary">Partner name <span className="text-error">*</span></label>
                       <input className="input mt-1" value={form.partnerName} onChange={e => update('partnerName', e.target.value)} placeholder="Partner's name" required />
                       {form.partnerName.length > 0 && form.partnerName.trim().length < 2 && (
-                        <p className="text-[11px] text-error mt-1">Name must be at least 2 characters</p>
+                        <p className="text-2xs text-error mt-1">Name must be at least 2 characters</p>
                       )}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-primary">Partner phone <span className="text-error">*</span></label>
                       <input className="input mt-1" inputMode="numeric" value={form.partnerPhone} onChange={e => update('partnerPhone', e.target.value.replace(/[^0-9]/g, '').slice(0, 10))} placeholder="98xxxxxxxx" maxLength={10} required />
                       {form.partnerPhone.length > 0 && form.partnerPhone.length < 10 && (
-                        <p className="text-[11px] text-error mt-1">Enter a valid 10-digit phone number</p>
+                        <p className="text-2xs text-error mt-1">Enter a valid 10-digit phone number</p>
                       )}
                     </div>
                   </div>
@@ -606,7 +606,7 @@ export default function RegisterTab() {
                     <label className="text-xs font-semibold text-primary">Partner DUPR ID <span className="text-error">*</span></label>
                     <input className="input mt-1" value={form.partnerDuprId} onChange={e => update('partnerDuprId', e.target.value)} placeholder="e.g. 123456789" required />
                     {(form.partnerDuprId || '').length > 0 && form.partnerDuprId.trim().length < 3 && (
-                      <p className="text-[11px] text-error mt-1">Enter a valid DUPR ID</p>
+                      <p className="text-2xs text-error mt-1">Enter a valid DUPR ID</p>
                     )}
                   </div>
                 </div>
@@ -638,9 +638,9 @@ export default function RegisterTab() {
           >
             {submitting ? 'Processing…' : slotsFull && !waitlistAvailable ? 'Full' : waitlistAvailable ? 'Join Waitlist' : (PAYMENTS_ENABLED && Number(selected.price) > 0) ? `Pay ₹${isTeamsOnly ? selected.price : (isDoubles && effectiveHasPartner === true) ? selected.price * 2 : selected.price} & confirm` : 'Register'}
           </button>
-          {waitlistAvailable && <p className="text-[11px] text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
-          {slotsFull && !waitlistAvailable && <p className="text-[11px] text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
-          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && Number(selected.price) > 0 && <p className="text-[11px] text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {waitlistAvailable && <p className="text-2xs text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
+          {slotsFull && !waitlistAvailable && <p className="text-2xs text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
+          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && Number(selected.price) > 0 && <p className="text-2xs text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
         </section>
       )}
 

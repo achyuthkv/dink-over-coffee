@@ -104,7 +104,7 @@ export default function SessionForm({ session, onSave, onCancel }) {
     <div className="min-h-screen bg-pattern">
       <div className="max-w-md mx-auto px-5 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-text font-bold text-lg">{session?.id ? 'Edit' : 'New session'}</h1>
+          <h1 className="text-primary font-bold text-lg">{session?.id ? 'Edit' : 'New session'}</h1>
           <button onClick={onCancel} title="Cancel" className="w-10 h-10 flex items-center justify-center rounded-full border border-border-muted text-secondary active:bg-bg transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>

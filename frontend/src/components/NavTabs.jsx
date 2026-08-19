@@ -17,7 +17,7 @@ export default function NavTabs() {
             key={tab.to}
             to={tab.to}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ease-spring ${
               active ? 'bg-interactive text-inverse shadow-sm' : 'text-secondary hover:text-primary'
             }`}
           >

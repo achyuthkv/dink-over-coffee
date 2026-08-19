@@ -51,13 +51,13 @@ function MonthStrip({ selectedMonth, onSelect, sessionMonths }) {
               key={key}
               ref={isSelected ? selectedRef : null}
               onClick={() => onSelect(key)}
-              className={`flex flex-col items-center shrink-0 w-[56px] py-2.5 rounded-xl transition
+              className={`flex flex-col items-center shrink-0 w-[56px] py-2.5 rounded-xl transition ease-spring
                 ${isSelected ? 'bg-interactive text-inverse' : 'text-primary'}
                 ${!isSelected && isCurrent ? 'border-2 border-interactive' : !isSelected ? 'border border-border' : ''}
-                active:scale-95
+                active:scale-[.98]
               `}
             >
-              <span className={`text-[10px] font-semibold tracking-wide ${isSelected ? 'text-inverse/70' : 'text-muted'}`}>
+              <span className={`text-3xs font-semibold tracking-wide ${isSelected ? 'text-inverse/70' : 'text-muted'}`}>
                 {monthNames[m.month]}
               </span>
               <span className={`text-sm font-bold mt-0.5`}>
@@ -108,7 +108,7 @@ function ExpenseForm({ onSave, onCancel, sessions, selectedMonth, knownPeople, t
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-surface rounded-2xl border border-border p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="card-compact p-5 space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-primary">Add {type === 'event' ? 'Event' : 'Community'} Expense</span>
         <button type="button" onClick={onCancel} className="text-muted text-xs font-medium active:opacity-70">Cancel</button>
@@ -116,17 +116,17 @@ function ExpenseForm({ onSave, onCancel, sessions, selectedMonth, knownPeople, t
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[11px] text-muted font-medium block mb-1">Amount (₹)</label>
+          <label className="text-2xs text-muted font-medium block mb-1">Amount (₹)</label>
           <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" required className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm text-primary focus:border-interactive focus:outline-none" />
         </div>
         <div>
-          <label className="text-[11px] text-muted font-medium block mb-1">Date</label>
+          <label className="text-2xs text-muted font-medium block mb-1">Date</label>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm text-primary focus:border-interactive focus:outline-none" />
         </div>
       </div>
 
       <div>
-        <label className="text-[11px] text-muted font-medium block mb-1">Paid by</label>
+        <label className="text-2xs text-muted font-medium block mb-1">Paid by</label>
         {knownPeople.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {knownPeople.map(p => (
@@ -138,7 +138,7 @@ function ExpenseForm({ onSave, onCancel, sessions, selectedMonth, knownPeople, t
       </div>
 
       <div>
-        <label className="text-[11px] text-muted font-medium block mb-1">Category</label>
+        <label className="text-2xs text-muted font-medium block mb-1">Category</label>
         <div className="flex flex-wrap gap-1.5">
           {categories.map(c => (
             <button key={c} type="button" onClick={() => setCategory(c)} className={`text-xs font-medium px-3 py-1.5 rounded-full transition ${category === c ? 'bg-interactive text-inverse' : 'bg-bg border border-border text-primary'}`}>{c}</button>
@@ -147,13 +147,13 @@ function ExpenseForm({ onSave, onCancel, sessions, selectedMonth, knownPeople, t
       </div>
 
       <div>
-        <label className="text-[11px] text-muted font-medium block mb-1">Notes</label>
+        <label className="text-2xs text-muted font-medium block mb-1">Notes</label>
         <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g. 2 balls" className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm text-primary placeholder:text-muted/50 focus:border-interactive focus:outline-none" />
       </div>
 
       {type === 'event' && (
         <div>
-          <label className="text-[11px] text-muted font-medium block mb-1">Link to session</label>
+          <label className="text-2xs text-muted font-medium block mb-1">Link to session</label>
           <select value={sessionId} onChange={e => setSessionId(e.target.value)} className="w-full bg-bg border border-border rounded-xl px-3 py-2.5 text-sm text-primary focus:border-interactive focus:outline-none">
             <option value="">Select session...</option>
             {sessions.map(s => (
@@ -327,7 +327,7 @@ export default function Finances({ onBack }) {
 
   return (
     <div className="min-h-screen bg-pattern">
-      <div className="max-w-xl mx-auto px-5 py-6">
+      <div className="max-w-xl mx-auto px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
 
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
@@ -344,28 +344,28 @@ export default function Finances({ onBack }) {
 
             {/* Financial Overview — matching sheet layout */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-surface rounded-xl border border-border px-4 py-3 text-center">
-                <div className="text-[10px] text-muted uppercase tracking-wide font-semibold">Total Income</div>
-                <div className="text-xl font-bold text-green-700 dark:text-secondary mt-1">{fmtMoney(stats.monthIncome)}</div>
-                <div className="text-[10px] text-muted mt-0.5">from {monthSessions.length} sessions</div>
+              <div className="card-compact px-4 py-3 text-center">
+                <div className="text-3xs text-muted uppercase tracking-wide font-semibold">Total Income</div>
+                <div className="text-xl font-bold text-success mt-1">{fmtMoney(stats.monthIncome)}</div>
+                <div className="text-3xs text-muted mt-0.5">from {monthSessions.length} sessions</div>
               </div>
-              <div className="bg-surface rounded-xl border border-border px-4 py-3 text-center">
-                <div className="text-[10px] text-muted uppercase tracking-wide font-semibold">Total Expenditure</div>
-                <div className="text-xl font-bold text-red-700 dark:text-tertiary mt-1">{fmtMoney(stats.totalEventExp + stats.totalCommunityExp)}</div>
-                <div className="text-[10px] text-muted mt-0.5">event + community</div>
+              <div className="card-compact px-4 py-3 text-center">
+                <div className="text-3xs text-muted uppercase tracking-wide font-semibold">Total Expenditure</div>
+                <div className="text-xl font-bold text-error mt-1">{fmtMoney(stats.totalEventExp + stats.totalCommunityExp)}</div>
+                <div className="text-3xs text-muted mt-0.5">event + community</div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-surface rounded-xl border border-border px-4 py-3 text-center">
-                <div className="text-[10px] text-muted uppercase tracking-wide font-semibold">Event Net P&L</div>
-                <div className={`text-lg font-bold mt-1 ${stats.eventPnL >= 0 ? 'text-green-700 dark:text-secondary' : 'text-red-700 dark:text-tertiary'}`}>{fmtMoney(stats.eventPnL)}</div>
-                <div className="text-[10px] text-muted mt-0.5">before community costs</div>
+              <div className="card-compact px-4 py-3 text-center">
+                <div className="text-3xs text-muted uppercase tracking-wide font-semibold">Event Net P&L</div>
+                <div className={`text-lg font-bold mt-1 ${stats.eventPnL >= 0 ? 'text-success' : 'text-error'}`}>{fmtMoney(stats.eventPnL)}</div>
+                <div className="text-3xs text-muted mt-0.5">before community costs</div>
               </div>
-              <div className="bg-surface rounded-xl border border-border px-4 py-3 text-center">
-                <div className="text-[10px] text-muted uppercase tracking-wide font-semibold">True Community Net</div>
-                <div className={`text-lg font-bold mt-1 ${stats.trueCommunityNet >= 0 ? 'text-green-700 dark:text-secondary' : 'text-red-700 dark:text-tertiary'}`}>{fmtMoney(stats.trueCommunityNet)}</div>
-                <div className="text-[10px] text-muted mt-0.5">after all expenses</div>
+              <div className="card-compact px-4 py-3 text-center">
+                <div className="text-3xs text-muted uppercase tracking-wide font-semibold">True Community Net</div>
+                <div className={`text-lg font-bold mt-1 ${stats.trueCommunityNet >= 0 ? 'text-success' : 'text-error'}`}>{fmtMoney(stats.trueCommunityNet)}</div>
+                <div className="text-3xs text-muted mt-0.5">after all expenses</div>
               </div>
             </div>
 
@@ -373,22 +373,22 @@ export default function Finances({ onBack }) {
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-surface rounded-lg border border-border px-3 py-2 text-center">
                 <div className="text-sm font-bold text-primary">{monthSessions.length}</div>
-                <div className="text-[9px] text-muted uppercase">Sessions</div>
+                <div className="text-3xs text-muted uppercase">Sessions</div>
               </div>
               <div className="bg-surface rounded-lg border border-border px-3 py-2 text-center">
                 <div className="text-sm font-bold text-primary">{stats.monthPlayers}</div>
-                <div className="text-[9px] text-muted uppercase">Players</div>
+                <div className="text-3xs text-muted uppercase">Players</div>
               </div>
               <div className="bg-surface rounded-lg border border-border px-3 py-2 text-center">
                 <div className="text-sm font-bold text-primary">{stats.monthPlayers > 0 && monthSessions.length > 0 ? fmtMoney(Math.round(stats.monthIncome / monthSessions.length)) : '—'}</div>
-                <div className="text-[9px] text-muted uppercase">Avg/Session</div>
+                <div className="text-3xs text-muted uppercase">Avg/Session</div>
               </div>
             </div>
 
             {/* Tabs */}
             <div className="flex gap-1 bg-bg rounded-xl p-1">
               {['overview', 'event costs', 'community costs', 'balances'].map(t => (
-                <button key={t} onClick={() => setTab(t)} className={`flex-1 text-[11px] font-semibold py-2 rounded-lg capitalize transition ${tab === t ? 'bg-surface text-primary shadow-sm' : 'text-muted'}`}>{t}</button>
+                <button key={t} onClick={() => setTab(t)} className={`flex-1 text-2xs font-semibold py-2 rounded-lg capitalize transition ease-spring ${tab === t ? 'bg-surface text-primary shadow-sm' : 'text-muted'}`}>{t}</button>
               ))}
             </div>
 
@@ -396,12 +396,12 @@ export default function Finances({ onBack }) {
             {tab === 'overview' && (
               <>
                 {stats.monthly.length > 0 && (
-                  <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                  <div className="card-compact overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-border">
                       <span className="text-xs font-semibold text-primary">Monthly Income & Expenditure</span>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-[11px]">
+                      <table className="w-full text-2xs">
                         <thead>
                           <tr className="border-b border-border text-muted">
                             <th className="text-left px-3 py-2 font-semibold">Month</th>
@@ -417,10 +417,10 @@ export default function Finances({ onBack }) {
                             <tr key={m.month} className="border-b border-border/50 last:border-0">
                               <td className="px-3 py-2 font-medium text-primary">{fmtMonth(m.month)}</td>
                               <td className="text-right px-2 py-2 text-muted">{m.sessions}</td>
-                              <td className="text-right px-2 py-2 text-green-700 dark:text-secondary font-medium">{fmtMoney(m.income)}</td>
-                              <td className="text-right px-2 py-2 text-red-700 dark:text-tertiary font-medium">{fmtMoney(m.expenses)}</td>
-                              <td className={`text-right px-2 py-2 font-semibold ${m.net >= 0 ? 'text-green-700 dark:text-secondary' : 'text-red-700 dark:text-tertiary'}`}>{fmtMoney(m.net)}</td>
-                              <td className={`text-right px-3 py-2 font-medium ${m.margin >= 0 ? 'text-green-700 dark:text-secondary' : 'text-red-700 dark:text-tertiary'}`}>{m.income > 0 ? `${m.margin}%` : '—'}</td>
+                              <td className="text-right px-2 py-2 text-success font-medium">{fmtMoney(m.income)}</td>
+                              <td className="text-right px-2 py-2 text-error font-medium">{fmtMoney(m.expenses)}</td>
+                              <td className={`text-right px-2 py-2 font-semibold ${m.net >= 0 ? 'text-success' : 'text-error'}`}>{fmtMoney(m.net)}</td>
+                              <td className={`text-right px-3 py-2 font-medium ${m.margin >= 0 ? 'text-success' : 'text-error'}`}>{m.income > 0 ? `${m.margin}%` : '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -431,27 +431,27 @@ export default function Finances({ onBack }) {
 
                 {/* Per-session P&L cards */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-muted uppercase tracking-wider">Sessions this month</span>
-                  <span className="text-[11px] text-muted">{monthSessions.length}</span>
+                  <span className="text-2xs font-semibold text-muted uppercase tracking-wider">Sessions this month</span>
+                  <span className="text-2xs text-muted">{monthSessions.length}</span>
                 </div>
 
                 {stats.sessionDetails.map(s => (
-                  <div key={s.id} className="bg-surface rounded-2xl border border-border overflow-hidden">
+                  <div key={s.id} className="card-compact overflow-hidden">
                     <button type="button" onClick={() => setViewPlayers(s)} className="w-full text-left px-5 py-4">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">
                           <div className="text-interactive font-bold text-sm">{s.time || fmtDate(s.date)}</div>
                           <div className="text-primary font-semibold text-sm mt-0.5 truncate">{s.title || s.venue}</div>
-                          <div className="text-[11px] text-muted mt-0.5">{fmtDate(s.date)} · {s.playerCount} players</div>
+                          <div className="text-2xs text-muted mt-0.5">{fmtDate(s.date)} · {s.playerCount} players</div>
                         </div>
                         <div className="text-right shrink-0 ml-3">
-                          <div className={`text-sm font-bold ${s.profit >= 0 ? 'text-green-700 dark:text-secondary' : 'text-red-700 dark:text-tertiary'}`}>{fmtMoney(s.profit)}</div>
-                          <div className="text-[10px] text-muted">P&L</div>
+                          <div className={`text-base font-extrabold ${s.profit >= 0 ? 'text-success' : 'text-error'}`}>{fmtMoney(s.profit)}</div>
+                          <div className="text-3xs text-muted">P&L</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-[11px]">
-                        <span className="text-green-700 dark:text-secondary font-medium">Income: {fmtMoney(s.income)}</span>
-                        <span className="text-red-700 dark:text-tertiary font-medium">Exp: {fmtMoney(s.expenses)}</span>
+                      <div className="flex items-center gap-3 mt-2 text-2xs">
+                        <span className="text-success font-medium">Income: {fmtMoney(s.income)}</span>
+                        <span className="text-error font-medium">Exp: {fmtMoney(s.expenses)}</span>
                         <span className="text-muted">{s.paidCount}/{s.playerCount} paid</span>
                       </div>
                     </button>
@@ -472,7 +472,7 @@ export default function Finances({ onBack }) {
                 )}
 
                 {eventExpenses.length === 0 && (
-                  <div className="bg-surface rounded-2xl border border-border px-5 py-8 text-center">
+                  <div className="card-compact px-5 py-8 text-center">
                     <p className="text-muted text-sm">No event expenses this month</p>
                   </div>
                 )}
@@ -480,24 +480,24 @@ export default function Finances({ onBack }) {
                 {eventExpenses.map(e => {
                   const linkedSession = e.session_id ? sessions.find(s => s.id === e.session_id) : null
                   return (
-                    <div key={e.id} className={`bg-surface rounded-xl border border-border px-4 py-3 ${e.settled ? 'opacity-50' : ''}`}>
+                    <div key={e.id} className={`card-compact px-4 py-3 ${e.settled ? 'opacity-50' : ''}`}>
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-primary font-medium">{e.category}</span>
-                            {e.description && <span className="text-[11px] text-muted">— {e.description}</span>}
+                            {e.description && <span className="text-2xs text-muted">— {e.description}</span>}
                           </div>
-                          <div className="text-[11px] text-muted mt-0.5">
+                          <div className="text-2xs text-muted mt-0.5">
                             {fmtDate(e.date)} · paid by <strong>{e.paid_by}</strong>
                             {linkedSession && <span> · {linkedSession.title || linkedSession.venue}</span>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-3">
-                          <span className="text-sm font-bold text-red-700 dark:text-tertiary">{fmtMoney(Number(e.amount))}</span>
-                          <button onClick={() => toggleSettled(e)} className={`relative shrink-0 w-9 h-[20px] rounded-full transition-colors ${e.settled ? 'bg-green-600 dark:bg-secondary' : 'bg-border'}`} title={e.settled ? 'Settled' : 'Mark settled'}>
+                          <span className="text-sm font-bold text-error">{fmtMoney(Number(e.amount))}</span>
+                          <button onClick={() => toggleSettled(e)} className={`relative shrink-0 w-9 h-[20px] rounded-full transition-colors ${e.settled ? 'bg-success' : 'bg-border'}`} title={e.settled ? 'Settled' : 'Mark settled'}>
                             <span className={`absolute top-[2px] left-[2px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${e.settled ? 'translate-x-[16px]' : ''}`} />
                           </button>
-                          <button onClick={() => deleteExpense(e.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-muted active:text-tertiary transition" title="Delete">
+                          <button onClick={() => deleteExpense(e.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-muted active:text-error transition" title="Delete">
                             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                           </button>
                         </div>
@@ -507,9 +507,9 @@ export default function Finances({ onBack }) {
                 })}
 
                 {eventExpenses.length > 0 && (
-                  <div className="bg-surface rounded-xl border border-border px-4 py-2.5 flex items-center justify-between">
+                  <div className="card-compact px-4 py-2.5 flex items-center justify-between">
                     <span className="text-xs font-semibold text-primary">Total Event Expenses</span>
-                    <span className="text-sm font-bold text-red-700 dark:text-tertiary">{fmtMoney(stats.totalEventExp)}</span>
+                    <span className="text-sm font-bold text-error">{fmtMoney(stats.totalEventExp)}</span>
                   </div>
                 )}
               </>
@@ -527,27 +527,27 @@ export default function Finances({ onBack }) {
                 )}
 
                 {communityExpenses.length === 0 && (
-                  <div className="bg-surface rounded-2xl border border-border px-5 py-8 text-center">
+                  <div className="card-compact px-5 py-8 text-center">
                     <p className="text-muted text-sm">No community expenses this month</p>
                   </div>
                 )}
 
                 {communityExpenses.map(e => (
-                  <div key={e.id} className={`bg-surface rounded-xl border border-border px-4 py-3 ${e.settled ? 'opacity-50' : ''}`}>
+                  <div key={e.id} className={`card-compact px-4 py-3 ${e.settled ? 'opacity-50' : ''}`}>
                     <div className="flex items-start justify-between">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-primary font-medium">{e.description || e.category}</span>
-                          <span className="text-[10px] font-medium text-muted bg-bg px-2 py-0.5 rounded-full">{e.category}</span>
+                          <span className="text-3xs font-medium text-muted bg-bg px-2 py-0.5 rounded-full">{e.category}</span>
                         </div>
-                        <div className="text-[11px] text-muted mt-0.5">{fmtDate(e.date)} · paid by <strong>{e.paid_by}</strong></div>
+                        <div className="text-2xs text-muted mt-0.5">{fmtDate(e.date)} · paid by <strong>{e.paid_by}</strong></div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="text-sm font-bold text-red-700 dark:text-tertiary">{fmtMoney(Number(e.amount))}</span>
-                        <button onClick={() => toggleSettled(e)} className={`relative shrink-0 w-9 h-[20px] rounded-full transition-colors ${e.settled ? 'bg-green-600 dark:bg-secondary' : 'bg-border'}`} title={e.settled ? 'Settled' : 'Mark settled'}>
+                        <span className="text-sm font-bold text-error">{fmtMoney(Number(e.amount))}</span>
+                        <button onClick={() => toggleSettled(e)} className={`relative shrink-0 w-9 h-[20px] rounded-full transition-colors ${e.settled ? 'bg-success' : 'bg-border'}`} title={e.settled ? 'Settled' : 'Mark settled'}>
                           <span className={`absolute top-[2px] left-[2px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${e.settled ? 'translate-x-[16px]' : ''}`} />
                         </button>
-                        <button onClick={() => deleteExpense(e.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-muted active:text-tertiary transition" title="Delete">
+                        <button onClick={() => deleteExpense(e.id)} className="w-6 h-6 flex items-center justify-center rounded-full text-muted active:text-error transition" title="Delete">
                           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                       </div>
@@ -556,9 +556,9 @@ export default function Finances({ onBack }) {
                 ))}
 
                 {communityExpenses.length > 0 && (
-                  <div className="bg-surface rounded-xl border border-border px-4 py-2.5 flex items-center justify-between">
+                  <div className="card-compact px-4 py-2.5 flex items-center justify-between">
                     <span className="text-xs font-semibold text-primary">Total Community Expenses</span>
-                    <span className="text-sm font-bold text-red-700 dark:text-tertiary">{fmtMoney(stats.totalCommunityExp)}</span>
+                    <span className="text-sm font-bold text-error">{fmtMoney(stats.totalCommunityExp)}</span>
                   </div>
                 )}
               </>
@@ -568,25 +568,25 @@ export default function Finances({ onBack }) {
             {tab === 'balances' && (
               <>
                 {balances.length === 0 && (
-                  <div className="bg-surface rounded-2xl border border-border px-5 py-8 text-center">
+                  <div className="card-compact px-5 py-8 text-center">
                     <p className="text-muted text-sm">No expenses recorded yet</p>
                   </div>
                 )}
 
                 {balances.map(b => (
-                  <div key={b.name} className="bg-surface rounded-xl border border-border px-4 py-3 flex items-center justify-between">
+                  <div key={b.name} className="card-compact px-4 py-3 flex items-center justify-between">
                     <div>
                       <span className="text-sm text-primary font-semibold">{b.name}</span>
-                      <div className="text-[11px] text-muted mt-0.5">Total spent: {fmtMoney(b.total)}</div>
+                      <div className="text-2xs text-muted mt-0.5">Total spent: {fmtMoney(b.total)}</div>
                     </div>
                     <div className="text-right">
                       {b.unsettled > 0 ? (
                         <>
-                          <span className="text-sm font-bold text-amber-700 dark:text-warning">{fmtMoney(b.unsettled)}</span>
-                          <div className="text-[10px] text-muted">to reimburse</div>
+                          <span className="text-sm font-bold text-warning-muted">{fmtMoney(b.unsettled)}</span>
+                          <div className="text-3xs text-muted">to reimburse</div>
                         </>
                       ) : (
-                        <span className="text-xs font-semibold text-green-700 dark:text-secondary bg-green-50 dark:bg-secondary/10 px-2.5 py-1 rounded-full">All Settled</span>
+                        <span className="badge-success">All Settled</span>
                       )}
                     </div>
                   </div>
