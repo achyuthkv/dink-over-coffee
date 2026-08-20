@@ -66,4 +66,23 @@ describe('computeSyncRows', () => {
     const players = [{ id: 1, name: 'Alice', partner_name: 'Amy', status: 'confirmed', needs_partner: false }];
     expect(computeSyncRows({ tournamentId: 't1', players, courts: [], existingTeams: [] })).toHaveLength(0);
   });
+
+  it('skips locked courts when choosing placement', () => {
+    const lockedCourts = [
+      { id: 'c1', sort_order: 0, fixtures_locked: true },
+      { id: 'c2', sort_order: 1, fixtures_locked: false }
+    ];
+    const players = [{ id: 1, name: 'Alice', partner_name: 'Amy', status: 'confirmed', needs_partner: false }];
+    const rows = computeSyncRows({ tournamentId: 't1', players, courts: lockedCourts, existingTeams: [] });
+    expect(rows[0].court_id).toBe('c2');
+  });
+
+  it('returns nothing when every court is locked', () => {
+    const lockedCourts = [
+      { id: 'c1', sort_order: 0, fixtures_locked: true },
+      { id: 'c2', sort_order: 1, fixtures_locked: true }
+    ];
+    const players = [{ id: 1, name: 'Alice', partner_name: 'Amy', status: 'confirmed', needs_partner: false }];
+    expect(computeSyncRows({ tournamentId: 't1', players, courts: lockedCourts, existingTeams: [] })).toHaveLength(0);
+  });
 });

@@ -248,6 +248,37 @@ function StatusBadge({ status, onChange }) {
   )
 }
 
+// A team's court can be changed any time its current court isn't locked --
+// this doubles as the recovery path for an orphaned team (court_id null,
+// e.g. from a deleted court): picking a court here reattaches it and its
+// matches in one step, no support-ticket-to-the-database required.
+function TeamRow({ team, courts, currentCourt, withdrawnPlayerIds, onReassign, onRemove }) {
+  const locked = currentCourt?.fixtures_locked
+  return (
+    <div className="flex items-center justify-between gap-2 bg-surface rounded-lg border border-border px-3 py-2">
+      <span className="text-sm text-primary min-w-0 truncate">
+        {team.name}
+        {withdrawnPlayerIds.has(team.source_player_id) && <WithdrawnBadge />}
+      </span>
+      <div className="flex items-center gap-2 shrink-0">
+        <select
+          value={team.court_id || ''}
+          onChange={e => onReassign(team, e.target.value)}
+          disabled={locked}
+          title={locked ? 'Unlock this court to move the team' : 'Move to a different court'}
+          className="text-2xs text-secondary bg-bg border border-border rounded-full pl-2 pr-1 py-1 disabled:opacity-50"
+        >
+          <option value="">Unassigned</option>
+          {courts.filter(c => !c.fixtures_locked || c.id === team.court_id).map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <button onClick={() => onRemove(team.id)} className="text-tertiary text-xs shrink-0">Remove</button>
+      </div>
+    </div>
+  )
+}
+
 function WithdrawnBadge() {
   return (
     <span className="inline-flex items-center text-3xs font-bold uppercase tracking-wide text-tertiary bg-error-subtle px-1.5 py-0.5 rounded-full ml-1.5 align-middle">
@@ -302,6 +333,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   const [loading, setLoading] = useState(true)
 
   const [newCourtName, setNewCourtName] = useState('')
+  const [courtNotice, setCourtNotice] = useState('')
   const [teamForm, setTeamForm] = useState({ name: '', player1_name: '', player2_name: '', court_id: '' })
   const [addingTeam, setAddingTeam] = useState(false)
   const [koForm, setKoForm] = useState({ stage: 'semifinal', teamA: '', teamB: '' })
@@ -434,8 +466,41 @@ export default function TournamentDetail({ tournamentId, onBack }) {
     load()
   }
 
+  // Deleting a court with teams still on it doesn't fail loudly -- the FK
+  // is ON DELETE SET NULL, so the teams and their matches just silently
+  // become orphaned (invisible everywhere, since nothing renders a null
+  // court_id). That's exactly what happened to a live tournament once
+  // already, so it's blocked outright rather than trusted to a confirm
+  // dialog: move or remove every team first, then the court can go.
   async function deleteCourt(id) {
+    const court = courts.find(c => c.id === id)
+    const teamCount = teams.filter(t => t.court_id === id).length
+    if (teamCount > 0) {
+      setCourtNotice(`"${court?.name}" still has ${teamCount} team${teamCount === 1 ? '' : 's'} on it — move or remove them first.`)
+      return
+    }
+    setCourtNotice('')
     await supabase.from('tournament_courts').delete().eq('id', id)
+    load()
+  }
+
+  async function toggleCourtLock(court) {
+    await supabase.from('tournament_courts').update({ fixtures_locked: !court.fixtures_locked }).eq('id', court.id)
+    load()
+  }
+
+  // Moves a team to a different court, taking its already-generated matches
+  // along with it -- keeps a team's fixtures glued to it as it moves rather
+  // than leaving them behind under the old court_id. This is also the
+  // recovery path for an orphaned team (court_id null): reassigning it
+  // reattaches both the team and its matches to a real court in one step.
+  async function reassignTeamCourt(team, newCourtId) {
+    await supabase.from('tournament_teams').update({ court_id: newCourtId || null }).eq('id', team.id)
+    let matchesQuery = supabase.from('tournament_matches')
+      .update({ court_id: newCourtId || null })
+      .or(`team_a_id.eq.${team.id},team_b_id.eq.${team.id}`)
+    matchesQuery = team.court_id ? matchesQuery.eq('court_id', team.court_id) : matchesQuery.is('court_id', null)
+    await matchesQuery
     load()
   }
 
@@ -454,6 +519,13 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   }
 
   async function deleteTeam(id) {
+    const team = teams.find(t => t.id === id)
+    const court = team?.court_id ? courts.find(c => c.id === team.court_id) : null
+    if (court?.fixtures_locked) {
+      setCourtNotice(`"${court.name}" is locked — unlock it first to remove a team.`)
+      return
+    }
+    setCourtNotice('')
     await supabase.from('tournament_teams').delete().eq('id', id)
     load()
   }
@@ -686,14 +758,36 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               <div className="space-y-2">
                 {courts.map(c => {
                   const courtMatchCount = roundRobinMatches.filter(m => m.court_id === c.id).length
+                  const locked = c.fixtures_locked
                   return (
-                    <div key={c.id} className="flex items-center justify-between card-compact px-3 py-2">
-                      <span className="text-sm text-primary font-medium">{c.name}</span>
-                      <div className="flex items-center gap-2">
+                    <div key={c.id} className={`flex items-center justify-between card-compact px-3 py-2 ${locked ? 'border-interactive/30' : ''}`}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-sm text-primary font-medium truncate">{c.name}</span>
+                        {locked && (
+                          <span className="badge-success shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Locked
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
                         <span className="text-2xs text-muted">{teams.filter(t => t.court_id === c.id).length} teams</span>
                         {courtMatchCount > 0 && (
                           <button onClick={() => setScoringCourtId(c.id)} className="text-2xs font-semibold text-interactive bg-interactive/10 px-2.5 py-1 rounded-full active:scale-[.98] transition ease-spring">
                             Score
+                          </button>
+                        )}
+                        {courtMatchCount > 0 && (
+                          <button
+                            onClick={() => toggleCourtLock(c)}
+                            title={locked ? 'Unlock fixtures' : 'Lock fixtures'}
+                            className={`w-7 h-7 shrink-0 flex items-center justify-center rounded-full border transition ${locked ? 'border-interactive/40 text-interactive bg-interactive/5' : 'border-border text-muted active:bg-bg'}`}
+                          >
+                            {locked ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-2"/></svg>
+                            )}
                           </button>
                         )}
                         <button onClick={() => deleteCourt(c.id)} className="w-7 h-7 shrink-0 flex items-center justify-center rounded-full border border-tertiary/30 text-tertiary active:bg-error-subtle transition">
@@ -703,6 +797,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                     </div>
                   )
                 })}
+                {courtNotice && <p className="text-xs text-warning-muted px-1">{courtNotice}</p>}
                 <div className="flex gap-2">
                   <input className="input" placeholder="Court name (e.g. Court 1)" value={newCourtName} onChange={e => setNewCourtName(e.target.value)} />
                   <button onClick={addCourt} disabled={!newCourtName.trim()} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Add</button>
@@ -722,13 +817,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                       <p className="text-3xs font-semibold text-muted uppercase tracking-wide mb-1">{c.name}</p>
                       <div className="space-y-1.5 mb-2">
                         {courtTeams.map(t => (
-                          <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                            <span className="text-sm text-primary">
-                              {t.name}
-                              {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
-                            </span>
-                            <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
-                          </div>
+                          <TeamRow key={t.id} team={t} courts={courts} currentCourt={c} withdrawnPlayerIds={withdrawnPlayerIds} onReassign={reassignTeamCourt} onRemove={deleteTeam} />
                         ))}
                       </div>
                     </div>
@@ -739,13 +828,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                     <p className="text-3xs font-semibold text-muted uppercase tracking-wide mb-1">Unassigned</p>
                     <div className="space-y-1.5 mb-2">
                       {teams.filter(t => !t.court_id).map(t => (
-                        <div key={t.id} className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2">
-                          <span className="text-sm text-primary">
-                            {t.name}
-                            {withdrawnPlayerIds.has(t.source_player_id) && <WithdrawnBadge />}
-                          </span>
-                          <button onClick={() => deleteTeam(t.id)} className="text-tertiary text-xs">Remove</button>
-                        </div>
+                        <TeamRow key={t.id} team={t} courts={courts} currentCourt={null} withdrawnPlayerIds={withdrawnPlayerIds} onReassign={reassignTeamCourt} onRemove={deleteTeam} />
                       ))}
                     </div>
                   </div>
@@ -760,7 +843,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                     </div>
                     <select className="input" value={teamForm.court_id} onChange={e => setTeamForm(f => ({ ...f, court_id: e.target.value }))}>
                       <option value="">No court yet</option>
-                      {courts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {courts.filter(c => !c.fixtures_locked).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <div className="flex gap-2">
                       <button onClick={addTeam} disabled={!teamForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Add Team</button>
@@ -789,13 +872,26 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               const missingPairs = totalPairs - courtMatches.length
               return (
                 <section key={c.id} className="mb-6">
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <h2 className="text-sm font-bold text-primary">{c.name} — Round Robin</h2>
+                  <div className="flex flex-wrap items-center justify-between mb-2 gap-x-2 gap-y-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h2 className="text-sm font-bold text-primary">{c.name} — Round Robin</h2>
+                      {c.fixtures_locked && (
+                        <span className="badge-success shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          Locked
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {courtMatches.length > 0 && (
                         <button onClick={() => setScoringCourtId(c.id)} className="text-xs font-semibold text-interactive">Score →</button>
                       )}
-                      {missingPairs > 0 && courtTeams.length >= 2 && (
+                      {courtMatches.length > 0 && (
+                        <button onClick={() => toggleCourtLock(c)} className="text-xs font-semibold text-muted">
+                          {c.fixtures_locked ? 'Unlock' : 'Lock'}
+                        </button>
+                      )}
+                      {!c.fixtures_locked && missingPairs > 0 && courtTeams.length >= 2 && (
                         <button
                           onClick={() => generateFixtures(c.id)}
                           className="text-xs font-semibold text-interactive"

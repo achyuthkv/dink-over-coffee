@@ -59,7 +59,7 @@ async function syncTeams(req, res) {
 
   const [{ data: players, error: pErr }, { data: courts, error: cErr }, { data: existingTeams, error: etErr }] = await Promise.all([
     supabase.from('players').select('id, name, partner_name, status, needs_partner').eq('session_id', tournament.session_id),
-    supabase.from('tournament_courts').select('id, sort_order').eq('tournament_id', tournamentId),
+    supabase.from('tournament_courts').select('id, sort_order, fixtures_locked').eq('tournament_id', tournamentId),
     supabase.from('tournament_teams').select('id, court_id, source_player_id').eq('tournament_id', tournamentId)
   ]);
 

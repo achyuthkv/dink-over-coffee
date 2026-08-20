@@ -8,9 +8,12 @@
  * touching Supabase.
  */
 export function computeSyncRows({ tournamentId, players, courts, existingTeams }) {
-  if (!courts || courts.length === 0) return [];
+  // Locked courts are excluded from placement -- their fixtures are final,
+  // so a newly-qualifying player shouldn't silently invalidate them.
+  const openCourts = (courts || []).filter(c => !c.fixtures_locked);
+  if (openCourts.length === 0) return [];
 
-  const sortedCourts = [...courts].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const sortedCourts = [...openCourts].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const existingSourceIds = new Set((existingTeams || []).map(t => t.source_player_id).filter(Boolean));
   const courtCounts = new Map(sortedCourts.map(c => [c.id, 0]));
   for (const t of existingTeams || []) {
