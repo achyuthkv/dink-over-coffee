@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { api } from '../api.js'
-import ThemeToggle from './ThemeToggle.jsx'
 import Logo from './Logo.jsx'
 import ActivityHeatmap from './ActivityHeatmap.jsx'
-import NavTabs from './NavTabs.jsx'
+
+// Code-split: three.js + the scene module only ship to whoever actually
+// loads the landing page, not every route in the app.
+const CourtFlythroughHero = lazy(() => import('./CourtFlythroughHero.jsx'))
 
 function fmtDate(d) {
   if (!d) return ''
@@ -24,117 +26,72 @@ export default function Landing() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-bg flex flex-col">
 
-      {/* Hero with aurora orbs */}
-      <div className="aurora relative">
-        <div className="mesh-blob mesh-blob-1" />
-        <div className="mesh-blob mesh-blob-2" />
-        <div className="mesh-blob mesh-blob-3" />
+      {/* WebGL flythrough hero (includes its own overlaid nav bar) -- see
+          CourtFlythroughHero.jsx */}
+      <Suspense fallback={<div className="h-screen bg-bg" />}>
+        <CourtFlythroughHero />
+      </Suspense>
 
-        {/* Nav — wraps to a second row on narrow screens instead of
-            overflowing horizontally: logo + toggle stay on row 1, the tab
-            pill (the widest element) drops to its own centered row 2. */}
-        <nav className="relative z-20 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-[calc(env(safe-area-inset-top)+1.5rem)] flex flex-wrap items-center justify-between gap-3">
-          <Link to="/" className="order-1 flex items-center gap-2.5">
-            <Logo className="h-12 w-auto" />
-          </Link>
-          <div className="order-2 sm:order-3 flex items-center gap-2.5">
-            <a href="https://www.instagram.com/dinkovercoffee" target="_blank" rel="noopener noreferrer" className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full border border-border/40 text-muted hover:text-primary hover:border-border transition" title="Instagram">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            </a>
-            <ThemeToggle />
-          </div>
-          <div className="order-3 sm:order-2 w-full sm:w-auto flex justify-center">
-            <NavTabs />
-          </div>
-        </nav>
-
-        {/* Hero content */}
-        <section className="relative z-10 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-20 pb-20 md:pt-28 md:pb-24 lg:pt-32 lg:pb-28 flex flex-col lg:flex-row lg:items-center lg:gap-20">
-          <div className="flex-1">
-            <p className="text-interactive text-xs font-semibold uppercase tracking-[0.2em] mb-4">Find your court. Build your crew.</p>
-            <h1 className="text-primary text-[clamp(2.4rem,6vw,4.2rem)] font-extrabold leading-[1.02] tracking-tight">
-              The game brings you here.
-            </h1>
-            <h1 className="text-secondary text-[clamp(2.4rem,6vw,4.2rem)] font-extrabold leading-[1.02] tracking-tight">
-              The people make you stay.
-            </h1>
-
-            <p className="mt-6 text-muted text-base md:text-lg leading-relaxed max-w-lg">
-              Bangalore's pickleball community. Sessions every week in Jayanagar. All levels. No partner needed. Just show up.
-            </p>
-
-            <div className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3">
-              <Link to="/events" className="glow-interactive inline-flex items-center justify-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition ease-spring w-full sm:w-auto">
-                Book a Session
-              </Link>
-              <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
-                Join Community
-              </a>
-              <Link to="/shop" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
-                Shop Merch
-              </Link>
+      {/* Sessions + how it works — previously the hero's side column,
+          now its own section since the hero is the flythrough. */}
+      <section className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-16 md:py-20">
+        <div className="grid md:grid-cols-2 gap-8">
+          {sessions.length > 0 && (
+            <div>
+              <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-3 font-medium">Upcoming sessions</p>
+              <div className="space-y-2.5">
+                {sessions.slice(0, 5).map(s => {
+                  const remaining = Math.max(0, s.maxSlots - s.takenSlots)
+                  const full = remaining <= 0
+                  return (
+                    <Link key={s.id} to={`/events?session=${s.id}`} className="glass flex items-center gap-3.5 rounded-2xl p-4 active:scale-[.98] transition ease-spring hover:border-interactive/30">
+                      <div className="w-11 h-11 rounded-xl bg-interactive/10 grid place-items-center shrink-0">
+                        <div className="text-center leading-none">
+                          <p className="text-interactive text-3xs font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                          <p className="text-interactive text-sm font-bold">{new Date(s.date + 'T00:00:00').getDate()}</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-primary text-sm font-semibold truncate">{s.title || s.venue}</p>
+                        <p className="text-muted text-xs truncate">{s.time} · {s.venue}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={`text-xs font-semibold ${full ? 'text-error' : 'text-interactive'}`}>
+                          {full ? 'Full' : `${remaining} left`}
+                        </p>
+                        <p className="text-muted text-3xs">{'₹'}{s.price}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+              {sessions.length > 5 && (
+                <Link to="/events" className="block text-center text-interactive text-xs font-medium mt-3 hover:underline">
+                  +{sessions.length - 5} more sessions →
+                </Link>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Right column — sessions + how it works */}
-          <div className="mt-14 lg:mt-0 lg:w-[400px] shrink-0 space-y-4">
-            {sessions.length > 0 && (
-              <div>
-                <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-3 font-medium">Upcoming sessions</p>
-                <div className="space-y-2.5">
-                  {sessions.slice(0, 5).map(s => {
-                    const remaining = Math.max(0, s.maxSlots - s.takenSlots)
-                    const full = remaining <= 0
-                    return (
-                      <Link key={s.id} to={`/events?session=${s.id}`} className="glass flex items-center gap-3.5 rounded-2xl p-4 active:scale-[.98] transition ease-spring hover:border-interactive/30">
-                        <div className="w-11 h-11 rounded-xl bg-interactive/10 grid place-items-center shrink-0">
-                          <div className="text-center leading-none">
-                            <p className="text-interactive text-3xs font-bold uppercase">{new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                            <p className="text-interactive text-sm font-bold">{new Date(s.date + 'T00:00:00').getDate()}</p>
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-primary text-sm font-semibold truncate">{s.title || s.venue}</p>
-                          <p className="text-muted text-xs truncate">{s.time} · {s.venue}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className={`text-xs font-semibold ${full ? 'text-error' : 'text-interactive'}`}>
-                            {full ? 'Full' : `${remaining} left`}
-                          </p>
-                          <p className="text-muted text-3xs">{'₹'}{s.price}</p>
-                        </div>
-                      </Link>
-                    )
-                  })}
+          <div className="glass rounded-2xl p-6 h-fit">
+            <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-5 font-medium">How it works</p>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              {[
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>, label: 'Sign up' },
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, label: 'Show up' },
+                { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>, label: 'Stay for coffee' },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="w-10 h-10 rounded-xl bg-interactive/10 grid place-items-center mx-auto mb-2">{item.icon}</div>
+                  <p className="text-primary text-xs font-semibold">{item.label}</p>
                 </div>
-                {sessions.length > 5 && (
-                  <Link to="/events" className="block text-center text-interactive text-xs font-medium mt-3 hover:underline">
-                    +{sessions.length - 5} more sessions →
-                  </Link>
-                )}
-              </div>
-            )}
-
-            <div className="glass rounded-2xl p-6">
-              <p className="text-muted text-3xs uppercase tracking-[0.3em] mb-5 font-medium">How it works</p>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                {[
-                  { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>, label: 'Sign up' },
-                  { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, label: 'Show up' },
-                  { icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="rgb(var(--color-interactive))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>, label: 'Stay for coffee' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <div className="w-10 h-10 rounded-xl bg-interactive/10 grid place-items-center mx-auto mb-2">{item.icon}</div>
-                    <p className="text-primary text-xs font-semibold">{item.label}</p>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       {/* Value props */}
       <section className="px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full py-16 md:py-20">
