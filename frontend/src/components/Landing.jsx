@@ -6,7 +6,7 @@ import ActivityHeatmap from './ActivityHeatmap.jsx'
 
 // Code-split: three.js + the scene module only ship to whoever actually
 // loads the landing page, not every route in the app.
-const CourtFlythroughHero = lazy(() => import('./CourtFlythroughHero.jsx'))
+const GardenCourtHero = lazy(() => import('./GardenCourtHero.jsx'))
 
 function fmtDate(d) {
   if (!d) return ''
@@ -28,10 +28,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
 
-      {/* WebGL flythrough hero (includes its own overlaid nav bar) -- see
-          CourtFlythroughHero.jsx */}
+      {/* WebGL "Living Green" hero (includes its own overlaid nav bar) --
+          see GardenCourtHero.jsx */}
       <Suspense fallback={<div className="h-screen bg-bg" />}>
-        <CourtFlythroughHero />
+        <GardenCourtHero />
       </Suspense>
 
       {/* Sessions + how it works — previously the hero's side column,

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { bgColorRGB, rgbStringToHex, bandOpacity, makeBeatOpacity, detectTier } from './heroSceneUtils.js'
 
 // A pickleball court, built entirely from primitives + canvas-drawn textures
 // (no model assets to ship or load) at roughly real-world proportions: 20ft
@@ -21,17 +22,6 @@ const KEYFRAMES = [
   { pos: [3, 4.5, 34], look: [0, 2, 46] },
   { pos: [0, 9, 54], look: [0, 1.5, 30] }
 ]
-
-function courtColorLight() { return getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '5 173 134' }
-function bgColorRGB() {
-  const isDark = document.documentElement.classList.contains('dark')
-  return isDark ? '10 20 16' : '234 254 246'
-}
-
-function rgbStringToHex(rgbStr) {
-  const [r, g, b] = rgbStr.split(' ').map(Number)
-  return (r << 16) | (g << 8) | b
-}
 
 function makeCourtTexture(tier) {
   const size = tier === 'low' ? 512 : 1024
@@ -95,17 +85,6 @@ function makeNetTexture() {
   return texture
 }
 
-function lerp3(a, b, t) {
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]
-}
-
-function bandOpacity(t, start, end, fade = 0.06) {
-  if (t <= start || t >= end) return 0
-  const fadeIn = Math.min(1, (t - start) / fade)
-  const fadeOut = Math.min(1, (end - t) / fade)
-  return Math.max(0, Math.min(fadeIn, fadeOut))
-}
-
 // Beat windows for the overlay text, expressed as scroll-progress ranges.
 export const TEXT_BEATS = [
   { id: 'eyebrow', start: -0.1, end: 0.16 },
@@ -114,11 +93,7 @@ export const TEXT_BEATS = [
   { id: 'cta', start: 0.66, end: 1.04 }
 ]
 
-export function beatOpacity(id, t) {
-  const beat = TEXT_BEATS.find(b => b.id === id)
-  if (!beat) return 0
-  return bandOpacity(t, beat.start, beat.end)
-}
+export const beatOpacity = makeBeatOpacity(TEXT_BEATS)
 
 export function createCourtScene(canvas, { tier = 'high' } = {}) {
   const renderer = new THREE.WebGLRenderer({
@@ -248,11 +223,4 @@ export function createCourtScene(canvas, { tier = 'high' } = {}) {
   }
 }
 
-export function detectTier() {
-  if (typeof window === 'undefined') return 'high'
-  const width = window.innerWidth
-  const cores = navigator.hardwareConcurrency || 4
-  if (width < 640 || cores <= 4) return 'low'
-  if (width < 1024 || cores <= 6) return 'mid'
-  return 'high'
-}
+export { detectTier }
