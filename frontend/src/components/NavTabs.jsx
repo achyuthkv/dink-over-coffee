@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const NAV_TABS = [
@@ -9,24 +10,84 @@ const NAV_TABS = [
 
 export default function NavTabs() {
   const location = useLocation()
+  const [open, setOpen] = useState(false)
+
+  // Close the drawer on route change and stop background scroll while it's open.
+  useEffect(() => { setOpen(false) }, [location.pathname])
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
+
   return (
-    <nav className="flex items-center gap-0.5 rounded-full bg-surface-alt border border-border p-1" aria-label="Primary">
-      {NAV_TABS.map(tab => {
-        const active = location.pathname === tab.to
-        return (
-          <Link
-            key={tab.to}
-            to={tab.to}
-            aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ease-spring ${
-              active ? 'bg-interactive text-inverse shadow-sm' : 'text-secondary hover:text-primary'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </Link>
-        )
-      })}
-    </nav>
+    <>
+      {/* Tablet/desktop: horizontal pill, all tabs visible */}
+      <nav className="hidden sm:flex items-center gap-0.5 rounded-full bg-surface-alt border border-border p-1" aria-label="Primary">
+        {NAV_TABS.map(tab => {
+          const active = location.pathname === tab.to
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              aria-current={active ? 'page' : undefined}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ease-spring ${
+                active ? 'bg-interactive text-inverse shadow-sm' : 'text-secondary hover:text-primary'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Mobile: hamburger trigger, opens a slide-in drawer instead of a squeezed pill row */}
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Open menu"
+        aria-expanded={open}
+        className="sm:hidden w-9 h-9 flex items-center justify-center rounded-full border border-border text-primary active:bg-surface-alt active:scale-[.98] transition ease-spring"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
+
+      {open && (
+        <div className="sm:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40 backdrop-in" onClick={() => setOpen(false)} aria-hidden="true" />
+          <div className="drawer-in absolute top-0 right-0 h-full w-72 max-w-[80%] bg-surface shadow-xl flex flex-col px-4 pb-6 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-primary font-bold text-sm">Menu</span>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-muted active:bg-bg transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <nav className="flex flex-col gap-1" aria-label="Primary">
+              {NAV_TABS.map(tab => {
+                const active = location.pathname === tab.to
+                return (
+                  <Link
+                    key={tab.to}
+                    to={tab.to}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${
+                      active ? 'bg-interactive text-inverse' : 'text-secondary active:bg-bg'
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
