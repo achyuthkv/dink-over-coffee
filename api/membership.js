@@ -17,6 +17,18 @@ const PLANS = {
   annual: { label: 'Annual', amountPaise: 1400000, months: 12 }
 };
 
+// Supabase Auth stores phone as E.164 minus the leading '+' (e.g.
+// "919876543210"), and Twilio's webhook `From` field is "whatsapp:+919876543210"
+// -- but every other phone-keyed table in this app (players, waivers, and
+// membership_waitlist here) stores a bare 10-digit number. Normalize at
+// every boundary rather than let two formats drift out of sync, which would
+// silently break phone-based lookups (admin-conversion linking, duplicate
+// detection, the WhatsApp webhook's member match).
+function normalizePhone(raw) {
+  const digits = (raw || '').replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 async function getAuthedUser(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
@@ -45,6 +57,16 @@ async function creditBalance(memberId) {
   return (data || []).reduce((sum, row) => sum + row.delta, 0);
 }
 
+async function getAvailability() {
+  const [{ data: settings }, { count }] = await Promise.all([
+    supabase.from('membership_settings').select('capacity').eq('id', true).single(),
+    supabase.from('members').select('id', { count: 'exact', head: true }).eq('status', 'active')
+  ]);
+  const capacity = settings?.capacity ?? 0;
+  const activeCount = count || 0;
+  return { capacity, activeCount, open: activeCount < capacity };
+}
+
 export default async function handler(req, res) {
   const action = req.query?.action || req.body?.action;
 
@@ -54,6 +76,9 @@ export default async function handler(req, res) {
 
   try {
     switch (action) {
+      case 'availability': return await availability(req, res);
+      case 'whoami': return await whoami(req, res);
+      case 'waitlist-interest': return await waitlistInterest(req, res);
       case 'signup-create-order': return await signupCreateOrder(req, res);
       case 'signup-confirm-payment': return await signupConfirmPayment(req, res);
       case 'signup-free': return await signupFree(req, res);
@@ -70,6 +95,57 @@ export default async function handler(req, res) {
   }
 }
 
+// Public, no auth -- lets the Landing page's "Become a member" button decide
+// whether to route to signup or to the "leave your details" interest form
+// before anyone has logged in.
+async function availability(req, res) {
+  const result = await getAvailability();
+  return res.status(200).json({ ok: true, ...result });
+}
+
+// Looks up the caller's member row by their verified auth identity. Handles
+// the case where an organizer converted a waitlist entry (or otherwise
+// created a `members` row directly) before this person ever logged in --
+// that row has phone/name but no user_id yet, so on this first login it's
+// linked by phone rather than leaving them stuck re-doing signup.
+async function whoami(req, res) {
+  const user = await getAuthedUser(req);
+  if (!user || !user.phone) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const { data: byUserId } = await supabase.from('members').select('*').eq('user_id', user.id).maybeSingle();
+  if (byUserId) return res.status(200).json({ ok: true, member: byUserId });
+
+  const { data: byPhone } = await supabase.from('members').select('*').eq('phone', normalizePhone(user.phone)).is('user_id', null).maybeSingle();
+  if (byPhone) {
+    const { data: linked, error } = await supabase.from('members').update({ user_id: user.id }).eq('id', byPhone.id).select('*').single();
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, member: linked });
+  }
+
+  return res.status(200).json({ ok: true, member: null });
+}
+
+// Public, no auth -- the "membership is full, notify me" lead-capture form.
+async function waitlistInterest(req, res) {
+  if (!rateLimit(req).ok) return res.status(429).json({ ok: false, error: 'Too many requests. Please try again shortly.' });
+
+  const { name, phone, email } = req.body;
+  if (!name || name.trim().length < 2) return res.status(400).json({ ok: false, error: 'Enter your name' });
+  if (!phone || !/^[0-9]{10}$/.test(phone.trim())) return res.status(400).json({ ok: false, error: 'Enter a valid 10-digit phone number' });
+
+  const { data: existingMember } = await supabase.from('members').select('id, status').eq('phone', phone.trim()).maybeSingle();
+  if (existingMember?.status === 'active') return res.status(409).json({ ok: false, error: 'You already have an active membership' });
+
+  const { error } = await supabase.from('membership_waitlist').insert({
+    name: name.trim(),
+    phone: phone.trim(),
+    email: email ? email.trim() : null
+  });
+  if (error) return res.status(500).json({ ok: false, error: error.message });
+
+  return res.status(200).json({ ok: true });
+}
+
 async function signupCreateOrder(req, res) {
   if (!rateLimit(req).ok) return res.status(429).json({ ok: false, error: 'Too many requests. Please try again shortly.' });
 
@@ -82,18 +158,24 @@ async function signupCreateOrder(req, res) {
   if (!name || name.trim().length < 2) return res.status(400).json({ ok: false, error: 'Enter your name' });
   if (!PLANS[plan]) return res.status(400).json({ ok: false, error: 'Invalid plan' });
 
-  const { data: existing } = await supabase.from('members').select('id, status').eq('phone', user.phone).maybeSingle();
+  const phone = normalizePhone(user.phone);
+  const { data: existing } = await supabase.from('members').select('id, status').eq('phone', phone).maybeSingle();
   if (existing?.status === 'active') return res.status(409).json({ ok: false, error: 'You already have an active membership' });
+
+  if (!existing) {
+    const { open } = await getAvailability();
+    if (!open) return res.status(409).json({ ok: false, error: 'Membership is currently full' });
+  }
 
   const { amountPaise } = PLANS[plan];
   const receipt = `doc_mem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const order = await createRazorpayOrder({ amount: amountPaise, currency: 'INR', receipt, notes: { phone: user.phone, plan } });
+  const order = await createRazorpayOrder({ amount: amountPaise, currency: 'INR', receipt, notes: { phone, plan } });
 
   const { data: member, error } = await supabase
     .from('members')
     .upsert({
       user_id: user.id,
-      phone: user.phone,
+      phone,
       name: name.trim(),
       email: email ? email.trim() : null,
       dupr_id: duprId ? duprId.trim() : null,
@@ -156,8 +238,14 @@ async function signupFree(req, res) {
   if (!name || name.trim().length < 2) return res.status(400).json({ ok: false, error: 'Enter your name' });
   if (!PLANS[plan]) return res.status(400).json({ ok: false, error: 'Invalid plan' });
 
-  const { data: existing } = await supabase.from('members').select('id, status').eq('phone', user.phone).maybeSingle();
+  const phone = normalizePhone(user.phone);
+  const { data: existing } = await supabase.from('members').select('id, status').eq('phone', phone).maybeSingle();
   if (existing?.status === 'active') return res.status(409).json({ ok: false, error: 'You already have an active membership' });
+
+  if (!existing) {
+    const { open } = await getAvailability();
+    if (!open) return res.status(409).json({ ok: false, error: 'Membership is currently full' });
+  }
 
   const start = todayIST();
   const end = addMonths(start, PLANS[plan].months);
@@ -166,7 +254,7 @@ async function signupFree(req, res) {
     .from('members')
     .upsert({
       user_id: user.id,
-      phone: user.phone,
+      phone,
       name: name.trim(),
       email: email ? email.trim() : null,
       dupr_id: duprId ? duprId.trim() : null,
@@ -245,7 +333,8 @@ async function whatsappWebhook(req, res) {
     return res.status(403).send('Invalid signature');
   }
 
-  const from = (params.From || '').replace('whatsapp:', '').trim();
+  const rawFrom = (params.From || '').replace('whatsapp:', '').trim();
+  const from = normalizePhone(rawFrom);
   const payload = params.ButtonPayload || '';
 
   const respondEmpty = () => {

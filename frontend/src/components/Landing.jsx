@@ -69,6 +69,9 @@ export default function Landing() {
               <Link to="/events" className="glow-interactive inline-flex items-center justify-center gap-2 rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition ease-spring w-full sm:w-auto">
                 Book a Session
               </Link>
+              <Link to="/membership" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
+                Become a Member
+              </Link>
               <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:bg-surface/80 w-full sm:w-auto">
                 Join Community
               </a>
@@ -182,6 +185,9 @@ export default function Landing() {
         <div className="mt-7 flex items-center justify-center gap-3">
           <Link to="/events" className="glow-interactive inline-flex items-center rounded-full bg-interactive text-inverse px-8 py-4 text-sm font-semibold active:scale-[.98] transition ease-spring">
             Book a Session
+          </Link>
+          <Link to="/membership" className="glass inline-flex items-center rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:border-interactive/30">
+            Become a Member
           </Link>
           <a href="https://chat.whatsapp.com/CxCddkzBtqc2uARp4tcPDy?s=cl&p=i&mlu=3" target="_blank" rel="noopener noreferrer" className="glass inline-flex items-center rounded-full px-8 py-4 text-sm font-medium text-primary active:scale-[.98] transition ease-spring hover:border-interactive/30">
             Join Community

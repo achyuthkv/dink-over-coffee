@@ -22,13 +22,21 @@ async function postMessage(params) {
   return res.json();
 }
 
+// `to` is always a bare 10-digit domestic number, matching how phone is
+// stored everywhere else in this app (members.phone, players.phone,
+// waivers.phone) -- Twilio needs full E.164, so add the country code here,
+// once, rather than have every caller remember to.
+function toWhatsApp(to) {
+  return `whatsapp:+91${to}`;
+}
+
 // contentSid is a pre-approved WhatsApp template (built + submitted for Meta
 // approval in Twilio's Content Template Builder) -- required for any message
 // sent outside a 24h window the recipient didn't start.
 export async function sendWhatsAppTemplate({ to, contentSid, variables }) {
   if (!WHATSAPP_CONFIGURED) return { skipped: true };
   return postMessage({
-    To: `whatsapp:${to}`,
+    To: toWhatsApp(to),
     ContentSid: contentSid,
     ...(variables && { ContentVariables: JSON.stringify(variables) })
   });
@@ -39,7 +47,7 @@ export async function sendWhatsAppTemplate({ to, contentSid, variables }) {
 // sent right after a member's decline reply.
 export async function sendWhatsAppText({ to, body }) {
   if (!WHATSAPP_CONFIGURED) return { skipped: true };
-  return postMessage({ To: `whatsapp:${to}`, Body: body });
+  return postMessage({ To: toWhatsApp(to), Body: body });
 }
 
 // Twilio webhook signature validation: HMAC-SHA1 of the full request URL with
