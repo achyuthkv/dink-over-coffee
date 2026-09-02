@@ -22,10 +22,8 @@ function PageLayout({ children }) {
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
               <Logo className="h-12 w-auto" />
             </Link>
-            <div className="flex items-center gap-2.5">
-              <NavTabs />
-              <ThemeToggle />
-            </div>
+            <NavTabs />
+            <ThemeToggle />
           </div>
         </header>
         <main className="flex-1 pt-4 pb-[calc(env(safe-area-inset-bottom)+24px)]">
