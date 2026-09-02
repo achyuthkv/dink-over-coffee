@@ -37,10 +37,23 @@
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0A1410" media="(prefers-color-scheme: dark)" />
 
-    <!-- Fonts -->
+    <!-- Fonts — loaded non-render-blocking: media="print" doesn't hold up
+         initial paint/script execution for the current (screen) media, then
+         onload flips it to "all" once the stylesheet actually arrives. A
+         slow or failing fonts.googleapis.com request (flaky network, DNS)
+         no longer freezes the whole page waiting on it; display=swap
+         already covers the fallback-to-webfont text swap. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    </noscript>
 
     <!-- Structured Data -->
     <script type="application/ld+json">
