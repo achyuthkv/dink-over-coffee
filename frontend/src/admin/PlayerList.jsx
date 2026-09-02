@@ -32,6 +32,12 @@ export default function PlayerList({ session, onBack }) {
     await supabase.from('players').update({ paid: newVal }).eq('id', player.id)
   }
 
+  async function toggleAttended(player) {
+    const newVal = !player.attended
+    setPlayers(ps => ps.map(p => p.id === player.id ? { ...p, attended: newVal } : p))
+    await supabase.from('players').update({ attended: newVal }).eq('id', player.id)
+  }
+
   async function promote(player) {
     await supabase.from('players').update({ status: 'confirmed' }).eq('id', player.id)
     loadPlayers()
@@ -63,6 +69,8 @@ export default function PlayerList({ session, onBack }) {
   const paidCount = confirmed.filter(p => p.paid).length
   const totalSlots = Number(session.max_slots || 0)
   const remaining = Math.max(0, totalSlots - confirmed.length)
+  const memberRows = confirmed.filter(p => p.member_id)
+  const attendedCount = memberRows.filter(p => p.attended).length
 
   const skillOrder = ['Beginner', 'Intermediate', 'Advanced']
   const groupBySkill = (list) => {
@@ -230,6 +238,12 @@ export default function PlayerList({ session, onBack }) {
             <div className="text-lg font-bold text-tertiary">{remaining}</div>
             <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Remaining</div>
           </div>
+          {memberRows.length > 0 && (
+            <div className="flex-1 card-compact px-3 py-2.5 text-center">
+              <div className="text-lg font-bold text-secondary-dark">{attendedCount}<span className="text-muted font-normal text-sm">/{memberRows.length}</span></div>
+              <div className="text-3xs text-muted uppercase tracking-wide mt-0.5">Members in</div>
+            </div>
+          )}
         </div>
 
         {loading && <p className="text-muted text-sm text-center py-8">Loading…</p>}
@@ -259,7 +273,18 @@ export default function PlayerList({ session, onBack }) {
                             >
                               <PlayerIdentity p={p} />
                               {p.needs_partner && <span className="text-3xs text-warning-muted font-medium shrink-0">(needs partner)</span>}
+                              {p.member_id && <span className="text-3xs font-semibold px-1.5 py-0.5 rounded-full bg-secondary/15 text-secondary-dark shrink-0">Member</span>}
                             </button>
+                            {p.member_id && (
+                              <button
+                                type="button"
+                                onClick={() => toggleAttended(p)}
+                                title={p.attended ? 'Mark not attended' : 'Mark attended'}
+                                className={`relative shrink-0 w-10 h-[22px] rounded-full transition-colors ${p.attended ? 'bg-secondary-dark' : 'bg-border'}`}
+                              >
+                                <span className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${p.attended ? 'translate-x-[18px]' : ''}`} />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => togglePaid(p)}

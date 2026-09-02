@@ -20,7 +20,7 @@ frontend/          Vite + React + Tailwind app (public booking flow + /admin)
     admin/          Organizer dashboard (sessions, players, venues, UPI accounts, waivers, finances)
     api.js          Thin fetch wrapper around the /api/* endpoints
     supabase.js     Browser Supabase client (anon key)
-api/                Vercel serverless functions — one file per route (Vercel's Hobby plan caps the function count, so routes are consolidated with an `action` field where it makes sense, e.g. `waiver.js`, `shop.js`)
+api/                Vercel serverless functions — one file per route (Vercel's Hobby plan caps the function count at 12, and this repo is at that cap, so routes are consolidated with an `action` field where it makes sense, e.g. `waiver.js`, `shop.js`, `membership.js`. Adding another net-new route needs either another consolidation or a plan upgrade)
   _lib/             Shared server helpers (supabase client, slot counting, atomic register, Razorpay, rate limiting, email) — underscore prefix excludes these from Vercel's function count
   _dev-server.js    Minimal local HTTP server that mounts api/*.js for `npm run dev:api` — underscore-prefixed so it isn't deployed as its own function
 apps-script/        Legacy/unused Apps Script prototype — not part of the current stack
@@ -52,10 +52,16 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **tournament_courts** — `id, tournament_id, name, sort_order, created_at`. A "court" is both the physical court and the round-robin pool of teams playing on it.
 - **tournament_teams** — `id, tournament_id, court_id (nullable), name, player1_name, player2_name, source_player_id (nullable, references players), created_at`. `source_player_id` marks a team as auto-synced from a session registration (see below); teams added by hand in `/admin` leave it null.
 - **tournament_matches** — `id, tournament_id, court_id (nullable — null for semifinal/final), stage (round_robin|semifinal|final), match_number, team_a_id, team_b_id, team_a_score, team_b_score, winner_team_id, status (scheduled|completed), created_at`.
+- **members** — `id, user_id (references auth.users, set once a member signs in via WhatsApp OTP), phone (unique), name, email, dupr_id, tshirt_size, plan, status (pending_payment|active|expired|cancelled), start_date, end_date, rollover_cap, whatsapp_opt_in, razorpay_order_id, razorpay_payment_id, created_at`.
+- **membership_credits** — a ledger, not a bare counter: `id, member_id, session_id (nullable), delta, reason (declined_monday|declined_wednesday|redeemed|admin_adjustment), created_at`. A member's rollover balance is `sum(delta)`, capped at `rollover_cap` when a credit is earned.
+- **sessions** gains `member_reserved_slots` (nullable int, same shape as `beginner_slots` — capacity carved out of `max_slots` for members) and `is_member_slot` (boolean, flags the standing Monday/Wednesday session admins want auto-reserved for members).
+- **players** gains `member_id` (nullable, references `members`) and `attended` (nullable boolean, set by an organizer in `/admin` — independent of the credit ledger, purely an attendance record).
 
 Optional: a Postgres function `atomic_register(p_session_id, p_name, p_phone, p_email, p_skill, p_amount, p_status, p_dupr_id, p_partner_name, p_partner_phone, p_partner_dupr_id, p_needs_partner)` for a fully atomic insert-and-capacity-check. If it doesn't exist, `api/_lib/atomicRegister.js` falls back to an insert-then-verify approach automatically.
 
-Enable Supabase Auth (email/password) and create organizer accounts — `/admin` and admin-only endpoints (e.g. `api/tournament.js`) require a valid Supabase session token.
+Enable Supabase Auth (email/password) and create organizer accounts — `/admin` and admin-only endpoints (e.g. `api/tournament.js`) require a valid Supabase session token. **Every organizer account must have `app_metadata.role = "admin"`** (set via the Supabase Admin API or SQL — `user_metadata` won't do, it's client-editable) — every `admin_all_<table>` RLS policy checks that claim rather than just "is signed in," specifically because members also sign in via Supabase Auth (phone OTP) and would otherwise share the same blanket `authenticated` access as organizers.
+
+For member login, additionally enable Supabase Auth's **Phone** provider with the **Twilio** SMS provider configured (Account SID + Auth Token + a WhatsApp-enabled sender), and set the frontend's `signInWithOtp` calls to `channel: 'whatsapp'` (already wired up in `frontend/src/membership/Login.jsx`) — WhatsApp delivery is only supported through Twilio/Twilio Verify, not Supabase's other SMS providers.
 
 ### 2. Razorpay (optional — omit to run free-registration only)
 
@@ -67,7 +73,14 @@ Enable Supabase Auth (email/password) and create organizer accounts — `/admin`
 
 - Create a Resend API key and verify the sending domain used in `api/_lib/sendConfirmationEmail.js` / `api/send-email.js` (`play@dinkovercoffee.com` by default — update if you fork this for another domain).
 
-### 4. Environment variables
+### 4. Twilio (optional — omit to run memberships without WhatsApp login/reminders)
+
+- Create a Twilio account, buy/enable a WhatsApp-capable sender (a WhatsApp Business sender approved by Meta — the sandbox works for testing), and configure it as this project's SMS provider in Supabase Auth (Authentication → Providers → Phone).
+- Build two WhatsApp templates in Twilio's Content Template Builder and get them approved by Meta: one **utility**-category reminder template with a Quick Reply button (used for the Monday/Wednesday reservation reminder, `TWILIO_REMINDER_CONTENT_SID`) and one generic single-variable **utility**-category announcement template (used for admin broadcasts, `TWILIO_BROADCAST_CONTENT_SID`). Free-form text (no template) only works as a reply within 24h of a member messaging in — that's used just for the automated "you're marked out" confirmation after a decline.
+- In the Twilio console, set the WhatsApp sender's inbound webhook URL to `https://<your-domain>/api/membership?action=whatsapp-webhook`.
+- Generate a random `CRON_SECRET` value — Vercel automatically sends it as `Authorization: Bearer $CRON_SECRET` on the cron-triggered reminder job (see `vercel.json`), which `api/membership.js` checks before running.
+
+### 5. Environment variables
 
 Create two files (both gitignored) and fill in real values — set the same keys as Vercel environment variables in prod.
 
@@ -80,6 +93,12 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RESEND_API_KEY=
 HOLD_TTL_MINUTES=5
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=whatsapp:+1415XXXXXXX
+TWILIO_REMINDER_CONTENT_SID=
+TWILIO_BROADCAST_CONTENT_SID=
+CRON_SECRET=
 ```
 
 `frontend/.env.local`:
@@ -90,7 +109,7 @@ VITE_SUPABASE_ANON_KEY=
 VITE_RAZORPAY_KEY_ID=
 ```
 
-### 5. Install and run locally
+### 6. Install and run locally
 
 ```bash
 # from repo root
@@ -104,7 +123,7 @@ npm run dev:api
 cd frontend && npm run dev
 ```
 
-### 6. Deploy on Vercel
+### 7. Deploy on Vercel
 
 1. Push this repo to GitHub.
 2. Import into Vercel. `vercel.json` sets the install command (`npm install && cd frontend && npm install`), build command (`cd frontend && npm run build`), and output directory (`frontend/dist`), and rewrites `/api/*` to the serverless functions.
@@ -173,9 +192,21 @@ Registrations that already existed *before* a session gets linked aren't picked 
 
 Neither path ever edits or deletes an existing team, so a later change to an already-synced registration doesn't retroactively alter its team. If a player withdraws their registration after their team already exists, the team isn't touched or removed (pulling a team after fixtures exist would corrupt the bracket); instead `/admin` shows a "Withdrawn" badge next to that team everywhere it appears (team list, per-court and overall standings) so the organizer can decide what to do. If a new team lands on a court that already has fixtures generated, the **Generate fixtures** button reappears there as **Add N new fixtures** — it only inserts the missing pairings for the new team, re-running the same back-to-back-avoiding order over the court's full team list but skipping any pairing that's already been scheduled or scored, so existing matches and results are untouched. `/admin`'s Tournament screen subscribes to realtime changes on `tournament_teams`/`tournament_matches`/`players` (scoped to the linked session) so all of this shows up live without a manual refresh.
 
+## Membership (`/membership`)
+
+Members sign in with their WhatsApp number (Supabase Auth phone OTP, `channel: 'whatsapp'`, via Twilio) — no password, no admin-style email account. First sign-in with no matching `members` row goes to a signup form (name, email, DUPR ID, t-shirt size, plan, WhatsApp opt-in) instead of an empty dashboard; payment reuses the same Razorpay hold-then-confirm pattern as session/shop checkout (`api/membership.js`, actions `signup-create-order`/`signup-confirm-payment`), with a `signup-free` fallback when Razorpay isn't configured. Sessions, shop, and tournaments stay completely login-free either way — nothing about this feature touches those flows.
+
+Once signed in, a member sees a **membership card** (plan, status, end date, rollover-credit balance — read directly via RLS, no API call needed) and a **directory of other active members** (first name + plan only, matching the existing "first name only" privacy stance the public Who's Playing view already uses — served through `api/membership.js`'s `directory` action rather than a raw table read, so a member can never pull another member's phone/email/DUPR ID).
+
+**The Monday/Wednesday reserved slot.** An organizer flags a session `is_member_slot` (in `SessionForm`) and sets `member_reserved_slots` — capacity carved out of `max_slots` for members, the same shape as the existing `beginner_slots` split. Two days before such a session, a Vercel Cron job (`vercel.json`, hits `api/membership.js?action=send-reminders` once daily) auto-creates a `players` row for every active member — reserved by default, since it's a slot they already committed to — and sends a WhatsApp reminder (Twilio Content API, one approved template with a **"Can't make it this week"** Quick Reply button). No reply means the reservation stands and counts toward the organizer's headcount; a member who doesn't show and never declined simply loses that week's slot, nothing to track. Tapping the decline button hits an inbound webhook (`action: whatsapp-webhook`, Twilio-signature-verified) that marks the reservation `withdrew` (freeing the slot) and banks **+1 rollover credit** (capped at the member's `rollover_cap`) — only an explicit advance decline ever earns a credit, so silent absence forfeits it by construction. A banked credit can be spent from the dashboard (`redeem-credit`) to reserve any other upcoming session.
+
+**Attendance check-in**, decoupled entirely from the credit ledger: in `/admin`'s session roster (`PlayerList.jsx`), a member-tagged registration shows a "Member" badge and a tap-to-mark-present toggle (`players.attended`) plus a "Members in" stat — a plain attendance record for the club's own history, independent of who reserved, declined, or no-showed.
+
+**Broadcast:** `/admin` → Manage → Memberships has a message box that sends a WhatsApp template to every opted-in active member (`action: broadcast`) — the same Twilio account and webhook as reminders, no separate messaging platform.
+
 ## Admin (`/admin`)
 
-Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, see basic finances, manage shop orders, and run tournaments — reached via the **Manage** menu (hamburger icon next to the theme toggle) rather than a row of icon buttons, so each destination has a visible label instead of relying on hover tooltips. Simple CRUD (sessions, shop orders, tournament courts/teams/scores, promoting a waitlisted player) queries Supabase directly from the browser with the organizer's authenticated session — an `admin_all_<table>` RLS policy (`for all to authenticated using (true)`) grants that access per table, so these screens don't need their own API routes. Actions with real server-side logic instead go through an admin-authenticated API route (`Authorization: Bearer <supabase access token>`, verified the same way each time) — currently just `api/tournament.js`'s session-registration backfill.
+Organizers sign in with Supabase Auth to manage sessions, view/promote waitlisted players, manage venues and per-session UPI payment accounts, review signed waivers, see basic finances, manage shop orders, run tournaments, and manage memberships — reached via the **Manage** menu (hamburger icon next to the theme toggle) rather than a row of icon buttons, so each destination has a visible label instead of relying on hover tooltips. Simple CRUD (sessions, shop orders, tournament courts/teams/scores, memberships, promoting a waitlisted player) queries Supabase directly from the browser with the organizer's authenticated session — an `admin_all_<table>` RLS policy grants that access per table, gated on `(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'` rather than merely "is signed in," so these screens don't need their own API routes. **This role check matters specifically because of `/membership`**: members also hold ordinary Supabase Auth (`authenticated`) sessions once logged in via WhatsApp OTP, and would otherwise share the same blanket admin access — every organizer account needs `app_metadata.role = "admin"` set (see the Supabase setup section above). Actions with real server-side logic instead go through an admin-authenticated API route (`Authorization: Bearer <supabase access token>`, verified the same way each time) — `api/tournament.js`'s session-registration backfill, and `api/membership.js`'s broadcast action.
 
 **Shop Orders** (`/admin` → Manage → Shop Orders) lists every `shop_orders` row, newest first, with a stats row (total / payment pending / to ship) and filter chips across both `payment_status` and `order_status`. Each order shows a status stepper (Placed → Confirmed → Packed → Shipped → Delivered, or a red Cancelled state) and a payment badge. Expanding an order reveals its line items, shipping address, and IDs, plus contextual actions:
 - **Mark as paid** when `payment_status` is `pending`.
