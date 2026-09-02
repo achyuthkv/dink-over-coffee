@@ -9,6 +9,7 @@ import Venues from './Venues.jsx'
 import ShopOrders from './ShopOrders.jsx'
 import Security from './Security.jsx'
 import Tournaments from './Tournaments.jsx'
+import Memberships from './Memberships.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -287,6 +288,7 @@ export default function Dashboard() {
   const [showShopOrders, setShowShopOrders] = useState(false)
   const [showSecurity, setShowSecurity] = useState(false)
   const [showTournaments, setShowTournaments] = useState(false)
+  const [showMemberships, setShowMemberships] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSessions() {
@@ -427,6 +429,10 @@ export default function Dashboard() {
     return <Tournaments onBack={() => setShowTournaments(false)} />
   }
 
+  if (showMemberships) {
+    return <Memberships onBack={() => setShowMemberships(false)} />
+  }
+
   if (viewPlayers) {
     return <PlayerList session={viewPlayers} onBack={() => setViewPlayers(null)} />
   }
@@ -497,6 +503,10 @@ export default function Dashboard() {
               {
                 label: 'Tournaments', hint: 'Courts, fixtures, scoring, standings', onClick: () => setShowTournaments(true),
                 icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
+              },
+              {
+                label: 'Memberships', hint: 'Members, credits, WhatsApp broadcast', onClick: () => setShowMemberships(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><line x1="14" y1="10" x2="18" y2="10"/><line x1="14" y1="14" x2="18" y2="14"/></svg>
               },
               {
                 label: 'All Sessions', hint: 'Every session, past and upcoming', onClick: () => setShowAllSessions(true),

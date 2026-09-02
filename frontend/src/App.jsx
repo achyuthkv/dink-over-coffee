@@ -15,19 +15,15 @@ function PageLayout({ children }) {
     <div className="min-h-full bg-pattern">
       <div className="flex flex-col min-h-full max-w-2xl mx-auto px-5 sm:px-6 md:px-8">
         <header className="pt-[env(safe-area-inset-top)]">
-          {/* Wraps to a second row on narrow screens instead of overflowing
-              horizontally: logo + toggle stay on row 1, the tab pill (the
-              widest element) drops to its own centered row 2. */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-5 pb-4">
-            <Link to="/" className="order-1 flex items-center gap-2.5 shrink-0">
+          {/* NavTabs renders a small hamburger button on mobile (opening a
+              drawer) and the full pill from sm: up, so everything fits on
+              one row at every width -- no wrapping needed. */}
+          <div className="flex items-center justify-between gap-3 pt-5 pb-4">
+            <Link to="/" className="flex items-center gap-2.5 shrink-0">
               <Logo className="h-12 w-auto" />
             </Link>
-            <div className="order-2 sm:order-3">
-              <ThemeToggle />
-            </div>
-            <div className="order-3 sm:order-2 w-full sm:w-auto flex justify-center">
-              <NavTabs />
-            </div>
+            <NavTabs />
+            <ThemeToggle />
           </div>
         </header>
         <main className="flex-1 pt-4 pb-[calc(env(safe-area-inset-bottom)+24px)]">

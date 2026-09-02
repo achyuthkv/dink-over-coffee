@@ -22,7 +22,9 @@ export default function SessionForm({ session, onSave, onCancel }) {
     beginner_waitlist_max: session?.beginner_waitlist_max || 0,
     description: session?.description || '',
     active: session?.active ?? true,
-    event_type: session?.event_type || 'regular'
+    event_type: session?.event_type || 'regular',
+    is_member_slot: session?.is_member_slot ?? false,
+    member_reserved_slots: session?.member_reserved_slots ?? ''
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -77,7 +79,8 @@ export default function SessionForm({ session, onSave, onCancel }) {
       max_slots: Number(form.max_slots),
       waitlist_max: Number(form.waitlist_max),
       beginner_slots: form.beginner_slots === '' ? null : Number(form.beginner_slots),
-      beginner_waitlist_max: Number(form.beginner_waitlist_max)
+      beginner_waitlist_max: Number(form.beginner_waitlist_max),
+      member_reserved_slots: form.member_reserved_slots === '' ? null : Number(form.member_reserved_slots)
     }
 
     let err, sessionId = session?.id
@@ -169,6 +172,28 @@ export default function SessionForm({ session, onSave, onCancel }) {
               <label className="text-xs font-semibold text-primary">Waitlist</label>
               <input type="number" className="input mt-1" value={form.waitlist_max} onChange={e => update('waitlist_max', e.target.value)} min="0" />
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-border-muted p-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => update('is_member_slot', !form.is_member_slot)}
+                className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${form.is_member_slot ? 'bg-secondary-dark' : 'bg-border-muted'}`}
+              >
+                <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${form.is_member_slot ? 'translate-x-4' : ''}`} />
+              </button>
+              <div>
+                <p className="text-sm font-medium text-primary">Member slot</p>
+                <p className="text-2xs text-muted">Reserves capacity for active members' weekly WhatsApp reminder</p>
+              </div>
+            </div>
+            {form.is_member_slot && (
+              <div>
+                <label className="text-xs font-semibold text-primary">Reserved for members</label>
+                <input type="number" className="input mt-1" value={form.member_reserved_slots} onChange={e => update('member_reserved_slots', e.target.value)} min="0" placeholder="blank = no cap" />
+              </div>
+            )}
           </div>
 
           <div>
