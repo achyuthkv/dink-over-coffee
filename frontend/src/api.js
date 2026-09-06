@@ -28,7 +28,13 @@ export const api = {
   shopCreateOrder: (items, customer) => call('shop', { action: 'create-order', items, customer }),
   shopConfirmPayment: (payload) => call('shop', { action: 'confirm-payment', ...payload }),
   shopPlaceOrder: (items, customer) => call('shop', { action: 'order', items, customer }),
-  tournamentSyncTeams: (tournamentId, token) => call('tournament', { action: 'sync-teams', tournamentId }, token)
+  tournamentSyncTeams: (categoryId, token) => call('tournament', { action: 'sync-teams', categoryId }, token),
+  tournamentBulkImport: (categoryId, rows, token) => call('tournament', { action: 'bulk-import', categoryId, rows }, token),
+  tournamentRegister: (categoryId, team) => call('tournament', { action: 'register', categoryId, team }),
+  tournamentCreateOrder: (categoryId, team) => call('tournament', { action: 'create-order', categoryId, team }),
+  tournamentConfirmPayment: (payload) => call('tournament', { action: 'confirm-payment', ...payload }),
+  createReferee: (referee, token) => call('tournament', { action: 'create-referee', ...referee }, token),
+  deleteReferee: (refereeId, token) => call('tournament', { action: 'delete-referee', refereeId }, token)
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID

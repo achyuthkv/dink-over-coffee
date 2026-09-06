@@ -8,6 +8,7 @@ import LockScreen from './LockScreen.jsx'
 export default function AdminLayout() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isReferee, setIsReferee] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -20,13 +21,32 @@ export default function AdminLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // A referee login is a real Supabase session too, but /admin is
+  // organizer-only -- everything a referee needs lives at /referee instead.
+  useEffect(() => {
+    if (!session) { setIsReferee(false); return }
+    supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
+      .then(({ data }) => setIsReferee(data?.role === 'referee'))
+  }, [session])
+
   const { locked, unlock } = useAppLock({
-    enabled: !!session,
+    enabled: !!session && !isReferee,
     onForceSignOut: () => supabase.auth.signOut()
   })
 
   if (loading) return <div className="min-h-screen bg-pattern flex items-center justify-center text-primary">Loading…</div>
   if (!session) return <Login />
+  if (isReferee) {
+    return (
+      <div className="min-h-screen bg-pattern flex items-center justify-center p-5">
+        <div className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-sm text-center space-y-3">
+          <h1 className="text-primary font-bold text-lg">This login is for referees</h1>
+          <p className="text-sm text-muted">Head to <a href="/referee" className="text-interactive font-semibold">/referee</a> to score your assigned matches.</p>
+          <button onClick={() => supabase.auth.signOut()} className="text-sm text-secondary font-medium">Sign out</button>
+        </div>
+      </div>
+    )
+  }
   return (
     <>
       <Dashboard />
