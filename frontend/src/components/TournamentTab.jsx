@@ -112,12 +112,12 @@ function FixtureView({ view, groups, teams, groupMatches, bracketMatches, totalR
   )
 }
 
-function CategoryDetail({ category, onBack }) {
+function CategoryDetail({ category, onBack, contactPhone, autoRegister }) {
   const [groups, setGroups] = useState([])
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
   const [activeViewId, setActiveViewId] = useState(null)
-  const [registering, setRegistering] = useState(false)
+  const [registering, setRegistering] = useState(autoRegister)
 
   async function load() {
     const [g, tm, m] = await Promise.all([
@@ -166,7 +166,7 @@ function CategoryDetail({ category, onBack }) {
   }, [category.id, groups.length, bracketMatches.length > 0])
 
   if (registering) {
-    return <TournamentRegisterForm category={category} onCancel={() => setRegistering(false)} onDone={() => setRegistering(false)} />
+    return <TournamentRegisterForm category={category} contactPhone={contactPhone} onCancel={() => setRegistering(false)} onDone={() => setRegistering(false)} />
   }
 
   return (
@@ -233,13 +233,25 @@ function CategoryDetail({ category, onBack }) {
 export default function TournamentTab() {
   const [tournament, setTournament] = useState(null)
   const [categories, setCategories] = useState([])
+  const [categoryIdsWithFixtures, setCategoryIdsWithFixtures] = useState(new Set())
   const [viewingCategoryId, setViewingCategoryId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   async function loadCategories(tournamentId) {
     const { data } = await supabase.from('tournament_categories').select('*').eq('tournament_id', tournamentId).order('sort_order')
-    setCategories((data || []).filter(c => c.status !== 'setup'))
+    const visible = (data || []).filter(c => c.status !== 'setup')
+    setCategories(visible)
+
+    // Whether a category's fixtures have been generated yet -- decides
+    // whether picking it from the grid should jump straight into
+    // registration (nothing to see yet) or the normal detail view.
+    if (visible.length > 0) {
+      const { data: matchRows } = await supabase.from('tournament_matches').select('category_id').in('category_id', visible.map(c => c.id))
+      setCategoryIdsWithFixtures(new Set((matchRows || []).map(m => m.category_id)))
+    } else {
+      setCategoryIdsWithFixtures(new Set())
+    }
   }
 
   async function load() {
@@ -287,7 +299,13 @@ export default function TournamentTab() {
       {categories.length === 0 ? (
         <p className="text-secondary text-sm text-center py-6">Categories haven't been published yet.</p>
       ) : viewingCategory ? (
-        <CategoryDetail key={viewingCategory.id} category={viewingCategory} onBack={() => setViewingCategoryId(null)} />
+        <CategoryDetail
+          key={viewingCategory.id}
+          category={viewingCategory}
+          onBack={() => setViewingCategoryId(null)}
+          contactPhone={tournament.contact_phone}
+          autoRegister={viewingCategory.status === 'registration_open' && !categoryIdsWithFixtures.has(viewingCategory.id)}
+        />
       ) : (
         <CategoryGrid categories={categories} onSelect={setViewingCategoryId} />
       )}

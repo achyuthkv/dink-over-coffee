@@ -54,7 +54,8 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   function startEditingSettings() {
     setSettingsForm({
       name: tournament.name || '', description: tournament.description || '', sport: tournament.sport || 'pickleball',
-      venue: tournament.venue || '', start_date: tournament.start_date || '', end_date: tournament.end_date || ''
+      venue: tournament.venue || '', start_date: tournament.start_date || '', end_date: tournament.end_date || '',
+      contact_phone: tournament.contact_phone || ''
     })
     setEditingSettings(true)
   }
@@ -62,7 +63,8 @@ export default function TournamentDetail({ tournamentId, onBack }) {
   async function saveSettings() {
     await supabase.from('tournaments').update({
       name: settingsForm.name.trim(), description: settingsForm.description.trim() || null, sport: settingsForm.sport.trim() || 'pickleball',
-      venue: settingsForm.venue.trim() || null, start_date: settingsForm.start_date || null, end_date: settingsForm.end_date || null
+      venue: settingsForm.venue.trim() || null, start_date: settingsForm.start_date || null, end_date: settingsForm.end_date || null,
+      contact_phone: settingsForm.contact_phone.trim() || null
     }).eq('id', tournamentId)
     setEditingSettings(false)
     load()
@@ -148,6 +150,10 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                     <input type="date" className="input" value={settingsForm.start_date} onChange={e => setSettingsForm(f => ({ ...f, start_date: e.target.value }))} />
                     <input type="date" className="input" value={settingsForm.end_date} onChange={e => setSettingsForm(f => ({ ...f, end_date: e.target.value }))} />
                   </div>
+                  <div>
+                    <input className="input" placeholder="Contact phone for registration issues (optional)" value={settingsForm.contact_phone} onChange={e => setSettingsForm(f => ({ ...f, contact_phone: e.target.value }))} />
+                    <p className="text-3xs text-muted mt-1">Shown to players on the registration form and confirmation screen, tap-to-call.</p>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={saveSettings} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring">Save</button>
                     <button onClick={() => setEditingSettings(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
@@ -161,6 +167,7 @@ export default function TournamentDetail({ tournamentId, onBack }) {
                     {tournament.venue ? ` · ${tournament.venue}` : ''}
                     {tournament.start_date ? ` · ${tournament.start_date}${tournament.end_date && tournament.end_date !== tournament.start_date ? ` – ${tournament.end_date}` : ''}` : ''}
                   </p>
+                  {tournament.contact_phone && <p className="text-2xs text-muted">Contact: {tournament.contact_phone}</p>}
                 </div>
               )}
             </section>
