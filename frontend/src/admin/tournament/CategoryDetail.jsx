@@ -4,8 +4,9 @@ import { api } from '../../api.js'
 import { parseCsv } from '../../lib/csv.js'
 import {
   generateRoundRobinPairs, computeStandings, generateSingleElimBracket,
-  buildKnockoutEntrants, computeAdvancement, stageLabelForRound
+  buildKnockoutEntrants, stageLabelForRound
 } from '../../lib/tournament.js'
+import { scoreMatchAndAdvance } from '../../lib/tournamentActions.js'
 import {
   StandingsTable, MatchRow, ScoreMode, BracketView, StatusBadge,
   WithdrawnBadge, WaitlistBadge, humanStage
@@ -45,6 +46,9 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   const [scoringGroupId, setScoringGroupId] = useState(null)
   const [scoringBracket, setScoringBracket] = useState(false)
 
+  const [referees, setReferees] = useState([])
+  const [assignments, setAssignments] = useState([])
+
   const [duprDate, setDuprDate] = useState('')
   const [duprScoreType, setDuprScoreType] = useState('RALLY')
   const [exportingDupr, setExportingDupr] = useState(false)
@@ -57,15 +61,17 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
 
   async function load() {
     setLoading(true)
-    const [g, tm, m] = await Promise.all([
+    const [g, tm, m, asn] = await Promise.all([
       supabase.from('tournament_groups').select('*').eq('category_id', category.id).order('sort_order'),
       supabase.from('tournament_teams').select('*').eq('category_id', category.id).order('created_at'),
-      supabase.from('tournament_matches').select('*').eq('category_id', category.id).order('match_number')
+      supabase.from('tournament_matches').select('*').eq('category_id', category.id).order('match_number'),
+      supabase.from('tournament_referee_assignments').select('*').eq('category_id', category.id)
     ])
     setGroups(g.data || [])
     const teamRows = tm.data || []
     setTeams(teamRows)
     setMatches(m.data || [])
+    setAssignments(asn.data || [])
 
     const teamIds = teamRows.map(t => t.id)
     if (teamIds.length > 0) {
@@ -109,6 +115,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   useEffect(() => {
     supabase.from('sessions').select('id, date, title, venue').order('date', { ascending: false }).limit(60)
       .then(({ data }) => setSessions(data || []))
+  }, [])
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, name, phone').eq('role', 'referee').order('name')
+      .then(({ data }) => setReferees(data || []))
   }, [])
 
   useEffect(() => {
@@ -178,6 +189,22 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
 
   async function deleteGroup(id) {
     await supabase.from('tournament_groups').delete().eq('id', id)
+    load()
+  }
+
+  // A group can have at most one referee assignment (scope 'group'); the
+  // bracket has at most one 'bracket'-scope assignment for the whole
+  // category. Picking a new referee replaces the existing assignment
+  // rather than stacking a second one.
+  async function assignReferee(scope, groupId, refereeId) {
+    const existing = assignments.find(a => a.scope === scope && a.group_id === (groupId || null))
+    if (!refereeId) {
+      if (existing) await supabase.from('tournament_referee_assignments').delete().eq('id', existing.id)
+    } else if (existing) {
+      await supabase.from('tournament_referee_assignments').update({ referee_id: refereeId }).eq('id', existing.id)
+    } else {
+      await supabase.from('tournament_referee_assignments').insert({ category_id: cat.id, group_id: groupId || null, scope, referee_id: refereeId })
+    }
     load()
   }
 
@@ -290,16 +317,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   }
 
   async function scoreMatch(match, scoreA, scoreB) {
-    const winner_team_id = scoreA > scoreB ? match.team_a_id : match.team_b_id
-    await supabase.from('tournament_matches').update({ team_a_score: scoreA, team_b_score: scoreB, winner_team_id, status: 'completed' }).eq('id', match.id)
-
-    if (match.round > 0) {
-      const snapshot = matches.map(m => m.id === match.id ? { ...m, status: 'completed', winner_team_id, team_a_score: scoreA, team_b_score: scoreB } : m)
-      const updates = computeAdvancement(snapshot, match.id, winner_team_id)
-      for (const { id, ...fields } of updates) {
-        await supabase.from('tournament_matches').update(fields).eq('id', id)
-      }
-    }
+    await scoreMatchAndAdvance(matches, match, scoreA, scoreB)
     load()
   }
 
@@ -576,6 +594,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
                     )}
                   </div>
                 </div>
+                <RefereePicker
+                  referees={referees}
+                  value={assignments.find(a => a.scope === 'group' && a.group_id === g.id)?.referee_id || ''}
+                  onChange={refereeId => assignReferee('group', g.id, refereeId)}
+                />
                 {gMatches.length > 0 && <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />}
                 <div className="space-y-2">
                   {gMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
@@ -637,6 +660,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
                 <button onClick={() => setScoringBracket(true)} className="text-xs font-semibold text-interactive">Score →</button>
                 <button onClick={resetBracket} className="text-2xs font-medium text-tertiary">Reset bracket</button>
               </div>
+              <RefereePicker
+                referees={referees}
+                value={assignments.find(a => a.scope === 'bracket')?.referee_id || ''}
+                onChange={refereeId => assignReferee('bracket', null, refereeId)}
+              />
               <BracketView matches={bracketMatches} teamsById={teamsById} totalRounds={totalRounds} onScore={scoreMatch} />
             </>
           )}
@@ -692,6 +720,25 @@ function TeamRow({ team, registration, groupsById, withdrawn, waitlisted, onProm
         {onWithdraw && <button onClick={onWithdraw} className="text-2xs font-medium text-tertiary">Withdraw</button>}
         {onDelete && <button onClick={onDelete} className="text-tertiary text-xs">Remove</button>}
       </div>
+    </div>
+  )
+}
+
+// Assigns a referee (a Supabase Auth account with profiles.role='referee')
+// to score this group's round robin or the category's knockout bracket --
+// mirrors Clutch pairing an organizer's tournament app with a separate
+// referee app scoped to one court/bracket at a time.
+function RefereePicker({ referees, value, onChange }) {
+  if (referees.length === 0) {
+    return <p className="text-2xs text-muted mb-2">No referee accounts yet — add one from Manage → Referees.</p>
+  }
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-2xs text-muted shrink-0">Referee:</span>
+      <select className="input !py-1.5 !text-xs" value={value} onChange={e => onChange(e.target.value)}>
+        <option value="">Unassigned</option>
+        {referees.map(r => <option key={r.id} value={r.id}>{r.name || r.id}</option>)}
+      </select>
     </div>
   )
 }

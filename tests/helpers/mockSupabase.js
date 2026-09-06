@@ -10,6 +10,8 @@ export function createMockSupabase() {
   let callLog = [];
   let authResponse = { data: { user: null }, error: { message: 'Not authenticated' } };
   let rpcResponse = { data: null, error: { message: 'function does not exist' } };
+  let adminCreateUserResponse = { data: { user: null }, error: { message: 'not configured' } };
+  let adminDeleteUserResponse = { data: {}, error: null };
 
   function makeChain(table) {
     const chain = {
@@ -106,6 +108,16 @@ export function createMockSupabase() {
         callLog.push({ method: 'auth.getUser', token });
         return Promise.resolve(authResponse);
       },
+      admin: {
+        createUser(payload) {
+          callLog.push({ method: 'auth.admin.createUser', payload });
+          return Promise.resolve(adminCreateUserResponse);
+        },
+        deleteUser(id) {
+          callLog.push({ method: 'auth.admin.deleteUser', id });
+          return Promise.resolve(adminDeleteUserResponse);
+        },
+      },
     },
 
     rpc(fnName, params) {
@@ -133,6 +145,16 @@ export function createMockSupabase() {
       rpcResponse = response;
     },
 
+    /** Set the auth.admin.createUser response */
+    __setAdminCreateUserResponse(response) {
+      adminCreateUserResponse = response;
+    },
+
+    /** Set the auth.admin.deleteUser response */
+    __setAdminDeleteUserResponse(response) {
+      adminDeleteUserResponse = response;
+    },
+
     __getCallLog() {
       return callLog;
     },
@@ -142,6 +164,8 @@ export function createMockSupabase() {
       callLog = [];
       authResponse = { data: { user: null }, error: { message: 'Not authenticated' } };
       rpcResponse = { data: null, error: { message: 'function does not exist' } };
+      adminCreateUserResponse = { data: { user: null }, error: { message: 'not configured' } };
+      adminDeleteUserResponse = { data: {}, error: null };
     }
   };
 

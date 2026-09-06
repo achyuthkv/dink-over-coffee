@@ -32,7 +32,9 @@ export const api = {
   tournamentBulkImport: (categoryId, rows, token) => call('tournament', { action: 'bulk-import', categoryId, rows }, token),
   tournamentRegister: (categoryId, team) => call('tournament', { action: 'register', categoryId, team }),
   tournamentCreateOrder: (categoryId, team) => call('tournament', { action: 'create-order', categoryId, team }),
-  tournamentConfirmPayment: (payload) => call('tournament', { action: 'confirm-payment', ...payload })
+  tournamentConfirmPayment: (payload) => call('tournament', { action: 'confirm-payment', ...payload }),
+  createReferee: (referee, token) => call('tournament', { action: 'create-referee', ...referee }, token),
+  deleteReferee: (refereeId, token) => call('tournament', { action: 'delete-referee', refereeId }, token)
 }
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID

@@ -19,8 +19,10 @@ export default async function handler(req, res) {
   try {
     const { action } = req.body || {};
     switch (action) {
-      case 'sync-teams': return await requireAdmin(req, res, syncTeams);
-      case 'bulk-import': return await requireAdmin(req, res, bulkImport);
+      case 'sync-teams': return await requireOrganizer(req, res, syncTeams);
+      case 'bulk-import': return await requireOrganizer(req, res, bulkImport);
+      case 'create-referee': return await requireOrganizer(req, res, createReferee);
+      case 'delete-referee': return await requireOrganizer(req, res, deleteReferee);
       case 'register': return await registerTeam(req, res);
       case 'create-order': return await createOrder(req, res);
       case 'confirm-payment': return await confirmPayment(req, res);
@@ -32,7 +34,14 @@ export default async function handler(req, res) {
   }
 }
 
-async function requireAdmin(req, res, next) {
+// Every action here writes through the service-role client, which bypasses
+// RLS entirely -- so unlike the browser-direct CRUD elsewhere in /admin,
+// checking "is this a valid Supabase session" is not enough once referee
+// accounts exist. A referee has a perfectly valid session too; they just
+// shouldn't be able to reach any of these actions (sync/import/referee
+// management are all organizer-only, mirroring the DB-level lockdown in
+// migrations/0002_referee_role.sql).
+async function requireOrganizer(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
@@ -41,7 +50,43 @@ async function requireAdmin(req, res, next) {
   if (authErr || !user) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (profile?.role === 'referee') {
+    return res.status(403).json({ ok: false, error: 'Organizer access required' });
+  }
   return next(req, res);
+}
+
+// Referee accounts are real Supabase Auth users (so RLS can tell them apart
+// from organizers via profiles.role), which only the service-role admin API
+// can create/delete -- not something a browser client can do directly even
+// with an authenticated session.
+async function createReferee(req, res) {
+  const { name, email, password, phone } = req.body || {};
+  if (!name?.trim() || !email?.trim() || !password || password.length < 8) {
+    return res.status(400).json({ ok: false, error: 'Name, email, and a password of at least 8 characters are required' });
+  }
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: email.trim(), password, email_confirm: true, user_metadata: { name: name.trim(), role: 'referee' }
+  });
+  if (error) return res.status(400).json({ ok: false, error: error.message });
+
+  const { error: profileErr } = await supabase.from('profiles').insert({
+    id: data.user.id, role: 'referee', name: name.trim(), phone: phone?.trim() || null
+  });
+  if (profileErr) {
+    await supabase.auth.admin.deleteUser(data.user.id);
+    return res.status(500).json({ ok: false, error: profileErr.message });
+  }
+  return res.status(200).json({ ok: true, refereeId: data.user.id });
+}
+
+async function deleteReferee(req, res) {
+  const { refereeId } = req.body || {};
+  if (!refereeId) return res.status(400).json({ ok: false, error: 'refereeId required' });
+  const { error } = await supabase.auth.admin.deleteUser(refereeId);
+  if (error) return res.status(500).json({ ok: false, error: error.message });
+  return res.status(200).json({ ok: true });
 }
 
 // Backfills teams for every currently-qualifying confirmed registration on a

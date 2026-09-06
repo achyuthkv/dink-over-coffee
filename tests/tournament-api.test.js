@@ -42,6 +42,87 @@ describe('tournament handler', () => {
       await handler(req, res);
       expect(res._status).toBe(401);
     });
+
+    it('returns 403 for a referee account (valid session, wrong role)', async () => {
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'ref-1' } }, error: null });
+      mockSupabase.__setResponse('profiles', { data: { role: 'referee' }, error: null });
+      const req = createMockReq({ body: { action: 'sync-teams', categoryId: 'c1' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(403);
+    });
+
+    it('allows an organizer session through (no profiles row = organizer by default)', async () => {
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+      mockSupabase.__setResponse('tournament_categories', { data: { id: 'c1', team_size: 2, session_id: null, status: 'setup' }, error: null });
+      const req = createMockReq({ body: { action: 'sync-teams', categoryId: 'c1' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(200);
+    });
+  });
+
+  describe('referee management', () => {
+    beforeEach(() => {
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+    });
+
+    it('returns 401 for create-referee with no authorization header', async () => {
+      mockSupabase.__reset();
+      const req = createMockReq({ body: { action: 'create-referee', name: 'Ref', email: 'ref@example.com', password: 'longpassword' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(401);
+    });
+
+    it('returns 400 for a short password', async () => {
+      const req = createMockReq({ body: { action: 'create-referee', name: 'Ref', email: 'ref@example.com', password: 'short' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(400);
+    });
+
+    it('creates a referee auth user and profile row', async () => {
+      mockSupabase.__setAdminCreateUserResponse({ data: { user: { id: 'new-ref-1' } }, error: null });
+      // First 'profiles' query is requireOrganizer's own role check; second is the insert.
+      mockSupabase.__queueResponses('profiles', [{ data: null, error: null }, { data: null, error: null }]);
+      const req = createMockReq({
+        body: { action: 'create-referee', name: 'Riya Referee', email: 'riya@example.com', password: 'longenoughpassword' },
+        headers: { authorization: 'Bearer valid-token' }
+      });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json).toEqual({ ok: true, refereeId: 'new-ref-1' });
+    });
+
+    it('rolls back the auth user if the profile insert fails', async () => {
+      mockSupabase.__setAdminCreateUserResponse({ data: { user: { id: 'new-ref-1' } }, error: null });
+      mockSupabase.__queueResponses('profiles', [{ data: null, error: null }, { data: null, error: { message: 'insert failed' } }]);
+      const req = createMockReq({
+        body: { action: 'create-referee', name: 'Riya', email: 'riya@example.com', password: 'longenoughpassword' },
+        headers: { authorization: 'Bearer valid-token' }
+      });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(500);
+      expect(mockSupabase.__getCallLog().some(c => c.method === 'auth.admin.deleteUser' && c.id === 'new-ref-1')).toBe(true);
+    });
+
+    it('deletes a referee by id', async () => {
+      const req = createMockReq({ body: { action: 'delete-referee', refereeId: 'ref-1' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json).toEqual({ ok: true });
+    });
+
+    it('returns 400 when refereeId is missing on delete', async () => {
+      const req = createMockReq({ body: { action: 'delete-referee' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(400);
+    });
   });
 
   describe('sync-teams', () => {

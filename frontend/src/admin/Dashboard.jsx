@@ -9,6 +9,7 @@ import Venues from './Venues.jsx'
 import ShopOrders from './ShopOrders.jsx'
 import Security from './Security.jsx'
 import Tournaments from './Tournaments.jsx'
+import Referees from './Referees.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DateStrip({ selectedDate, onSelect, sessionDates }) {
@@ -287,6 +288,7 @@ export default function Dashboard() {
   const [showShopOrders, setShowShopOrders] = useState(false)
   const [showSecurity, setShowSecurity] = useState(false)
   const [showTournaments, setShowTournaments] = useState(false)
+  const [showReferees, setShowReferees] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSessions() {
@@ -427,6 +429,10 @@ export default function Dashboard() {
     return <Tournaments onBack={() => setShowTournaments(false)} />
   }
 
+  if (showReferees) {
+    return <Referees onBack={() => setShowReferees(false)} />
+  }
+
   if (viewPlayers) {
     return <PlayerList session={viewPlayers} onBack={() => setViewPlayers(null)} />
   }
@@ -497,6 +503,10 @@ export default function Dashboard() {
               {
                 label: 'Tournaments', hint: 'Categories, registrations, fixtures, scoring', onClick: () => setShowTournaments(true),
                 icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>
+              },
+              {
+                label: 'Referees', hint: 'Accounts for court-side scoring', onClick: () => setShowReferees(true),
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               },
               {
                 label: 'All Sessions', hint: 'Every session, past and upcoming', onClick: () => setShowAllSessions(true),
