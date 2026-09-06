@@ -50,13 +50,39 @@ function TshirtSizeSelect({ label, value, onChange, onShowChart }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-2xs text-muted">{label}</span>
+        <label className="text-2xs font-semibold text-primary">{label}</label>
         <button type="button" onClick={onShowChart} className="text-2xs font-semibold text-interactive">Size chart</button>
       </div>
       <select className="input" value={value} onChange={e => onChange(e.target.value)} required>
         <option value="" disabled>Select size</option>
         {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
+    </div>
+  )
+}
+
+function CancellationPolicy({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="card w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-primary font-bold text-sm">Cancellation & Refund Policy</h4>
+          <button onClick={onClose} className="text-muted text-sm">Close</button>
+        </div>
+        <ul className="space-y-2 text-sm text-secondary leading-relaxed">
+          <li>Entry fees are non-refundable once paid.</li>
+          <li>If the organizer cancels this category or the tournament, a full refund will be issued.</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function LabeledInput({ label, ...props }) {
+  return (
+    <div>
+      <label className="block text-2xs font-semibold text-primary mb-1">{label}</label>
+      <input className="input" {...props} />
     </div>
   )
 }
@@ -69,7 +95,8 @@ function effectiveFee(category) {
   return Number(category.entry_fee) || 0
 }
 
-export default function TournamentRegisterForm({ category, onDone, onCancel }) {
+export default function TournamentRegisterForm({ category, contactPhone, onDone, onCancel }) {
+  const supportPhone = contactPhone || SUPPORT_PHONE
   const [form, setForm] = useState({
     player1Name: '', player1Phone: '', player1DuprId: '', player1TshirtSize: '',
     player2Name: '', player2Phone: '', player2DuprId: '', player2TshirtSize: '', email: ''
@@ -78,6 +105,7 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const [showSizeChart, setShowSizeChart] = useState(false)
+  const [showPolicy, setShowPolicy] = useState(false)
 
   const fee = effectiveFee(category)
   const isEarlyBird = fee !== Number(category.entry_fee)
@@ -187,12 +215,12 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
                 {result.upiAccounts.map(u => <p key={u.id}>{u.label}: {u.upi_id}</p>)}
               </>
             ) : (
-              <p>{SUPPORT_PHONE ? `We'll reach out to confirm payment — or call/WhatsApp ${SUPPORT_PHONE}.` : "We'll reach out shortly to confirm payment."}</p>
+              <p>{supportPhone ? `We'll reach out to confirm payment — or call/WhatsApp ${supportPhone}.` : "We'll reach out shortly to confirm payment."}</p>
             )}
           </div>
         )}
-        {SUPPORT_PHONE && (
-          <p className="text-2xs text-muted mt-2">Questions? Call or WhatsApp <a href={`tel:${SUPPORT_PHONE}`} className="text-interactive font-medium">{SUPPORT_PHONE}</a>.</p>
+        {supportPhone && (
+          <p className="text-2xs text-muted mt-2">Questions? Call or WhatsApp <a href={`tel:${supportPhone}`} className="text-interactive font-medium">{supportPhone}</a>.</p>
         )}
         <button onClick={onDone} className="btn-ghost mt-3">Done</button>
       </div>
@@ -211,29 +239,35 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
           {isEarlyBird && <span className="text-2xs text-success ml-1">(early bird)</span>}
         </p>
       )}
-      <input className="input" placeholder={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
-      <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" maxLength={10} value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
-      <input className="input" placeholder="Your DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
+      <LabeledInput label={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
+      <LabeledInput label="Phone number" placeholder="10 digits" inputMode="numeric" maxLength={10} value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
+      <LabeledInput label="DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
       <TshirtSizeSelect label={category.team_size === 2 ? 'Your T-shirt size' : 'T-shirt size'} value={form.player1TshirtSize} onChange={v => set('player1TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
       {category.team_size === 2 && (
         <>
-          <input className="input" placeholder="Partner's name" value={form.player2Name} onChange={e => set('player2Name', e.target.value)} required />
-          <input className="input" placeholder="Partner's phone (10 digits)" inputMode="numeric" maxLength={10} value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} required />
-          <input className="input" placeholder="Partner's DUPR ID" value={form.player2DuprId} onChange={e => set('player2DuprId', e.target.value)} required />
+          <LabeledInput label="Partner's name" value={form.player2Name} onChange={e => set('player2Name', e.target.value)} required />
+          <LabeledInput label="Partner's phone number" placeholder="10 digits" inputMode="numeric" maxLength={10} value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} required />
+          <LabeledInput label="Partner's DUPR ID" value={form.player2DuprId} onChange={e => set('player2DuprId', e.target.value)} required />
           <TshirtSizeSelect label="Partner's T-shirt size" value={form.player2TshirtSize} onChange={v => set('player2TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
         </>
       )}
-      <input className="input" type="email" placeholder="Email (optional)" value={form.email} onChange={e => set('email', e.target.value)} />
+      <LabeledInput label="Email (optional)" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
       {error && <p className="text-error text-sm">{error}</p>}
-      {SUPPORT_PHONE && (
+      {supportPhone && (
         <p className="text-2xs text-muted">
-          Facing issues registering? Call or WhatsApp <a href={`tel:${SUPPORT_PHONE}`} className="text-interactive font-medium">{SUPPORT_PHONE}</a>.
+          Facing issues registering? Call or WhatsApp <a href={`tel:${supportPhone}`} className="text-interactive font-medium">{supportPhone}</a>.
         </p>
       )}
       {showSizeChart && <TshirtSizeChart onClose={() => setShowSizeChart(false)} />}
+      {showPolicy && <CancellationPolicy onClose={() => setShowPolicy(false)} />}
       <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? 'Processing…' : (PAYMENTS_ENABLED && fee > 0) ? `Pay ₹${fee} & register` : 'Register'}
       </button>
+      {fee > 0 && (
+        <button type="button" onClick={() => setShowPolicy(true)} className="w-full text-center text-2xs font-medium text-muted underline">
+          Cancellation & Refund Policy
+        </button>
+      )}
     </form>
   )
 }
