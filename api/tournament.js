@@ -1,5 +1,4 @@
 import supabase from './_lib/supabase.js';
-import { computeSyncRows } from './_lib/tournamentSync.js';
 import { computeEntryFee, getTeamCounts, resolveEntryStatus, validateTeamPayload } from './_lib/tournamentCapacity.js';
 import { createRazorpayOrder, verifySignature, fetchOrder } from './_lib/razorpay.js';
 import { rateLimit } from './_lib/rateLimit.js';
@@ -11,7 +10,7 @@ const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES) || 5;
  * (action-dispatched, same pattern as api/shop.js) so tournament logic
  * doesn't spend a new Serverless Function slot per endpoint. Public
  * registration/payment actions need no auth; category management (bulk
- * import, session-registration sync) requires an organizer session.
+ * import, referee accounts) requires an organizer session.
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -19,7 +18,6 @@ export default async function handler(req, res) {
   try {
     const { action } = req.body || {};
     switch (action) {
-      case 'sync-teams': return await requireOrganizer(req, res, syncTeams);
       case 'bulk-import': return await requireOrganizer(req, res, bulkImport);
       case 'create-referee': return await requireOrganizer(req, res, createReferee);
       case 'delete-referee': return await requireOrganizer(req, res, deleteReferee);
@@ -93,49 +91,6 @@ async function deleteReferee(req, res) {
   const { error } = await supabase.auth.admin.deleteUser(refereeId);
   if (error) return res.status(500).json({ ok: false, error: error.message });
   return res.status(200).json({ ok: true });
-}
-
-// Backfills teams for every currently-qualifying confirmed registration on a
-// category's linked session, for registrations that predate the session
-// being linked (or predate the category having any groups to place them
-// on). Idempotent -- safe to call repeatedly.
-//
-// New/updated registrations keep syncing automatically in real time via a
-// Postgres trigger (sync_tournament_team_from_player) that fires on any
-// `players` write, including ones made directly from the browser
-// (promoting a waitlisted player, marking someone withdrawn) -- that piece
-// stays a DB trigger rather than move here, since there's no HTTP request
-// to hook for a browser-direct write.
-async function syncTeams(req, res) {
-  const { categoryId } = req.body || {};
-  if (!categoryId) return res.status(400).json({ ok: false, error: 'categoryId required' });
-
-  const { data: category, error: catErr } = await supabase
-    .from('tournament_categories')
-    .select('id, team_size, session_id, status')
-    .eq('id', categoryId)
-    .single();
-
-  if (catErr || !category) return res.status(404).json({ ok: false, error: 'Category not found' });
-  if (!category.session_id || !['setup', 'registration_open', 'registration_closed', 'active'].includes(category.status)) {
-    return res.status(200).json({ ok: true, created: 0 });
-  }
-
-  const [{ data: players, error: pErr }, { data: groups, error: gErr }, { data: existingTeams, error: etErr }] = await Promise.all([
-    supabase.from('players').select('id, name, partner_name, status, needs_partner').eq('session_id', category.session_id),
-    supabase.from('tournament_groups').select('id, sort_order').eq('category_id', categoryId),
-    supabase.from('tournament_teams').select('id, group_id, source_player_id').eq('category_id', categoryId)
-  ]);
-
-  if (pErr || gErr || etErr) return res.status(500).json({ ok: false, error: 'Failed to load category data' });
-
-  const rows = computeSyncRows({ categoryId, teamSize: category.team_size, players, groups, existingTeams });
-  if (rows.length === 0) return res.status(200).json({ ok: true, created: 0 });
-
-  const { error: insertErr } = await supabase.from('tournament_teams').insert(rows);
-  if (insertErr) return res.status(500).json({ ok: false, error: insertErr.message });
-
-  return res.status(200).json({ ok: true, created: rows.length });
 }
 
 // Admin bulk CSV import: one row per team, validated the same way as a

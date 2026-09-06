@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { computeStandings } from '../lib/tournament.js'
-import { StandingsTable, MatchRow, BracketView, WithdrawnBadge } from './tournament/shared.jsx'
+import { StandingsTable, MatchRow, BracketView } from './tournament/shared.jsx'
 import TournamentRegisterForm from './TournamentRegisterForm.jsx'
 
 const FORMAT_LABEL = { round_robin: 'Round Robin', single_elim: 'Single Elimination', group_knockout: 'Group Stage + Knockout' }
@@ -31,7 +31,6 @@ function CategorySection({ category, onRegister }) {
   const [groups, setGroups] = useState([])
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
-  const [withdrawnPlayerIds, setWithdrawnPlayerIds] = useState(new Set())
 
   async function load() {
     const [g, tm, m] = await Promise.all([
@@ -40,15 +39,8 @@ function CategorySection({ category, onRegister }) {
       supabase.from('tournament_matches').select('*').eq('category_id', category.id).order('match_number')
     ])
     setGroups(g.data || [])
-    const teamRows = tm.data || []
-    setTeams(teamRows)
+    setTeams(tm.data || [])
     setMatches(m.data || [])
-
-    const sourceIds = teamRows.map(t => t.source_player_id).filter(Boolean)
-    if (sourceIds.length > 0) {
-      const { data: withdrawn } = await supabase.from('players').select('id').eq('status', 'withdrew').in('id', sourceIds)
-      setWithdrawnPlayerIds(new Set((withdrawn || []).map(p => p.id)))
-    } else setWithdrawnPlayerIds(new Set())
   }
 
   useEffect(() => { load() }, [category.id])
@@ -101,7 +93,7 @@ function CategorySection({ category, onRegister }) {
             {standings.length > 0 && (
               <section className="card">
                 <h3 className="text-primary font-bold text-sm mb-2">{g.name} Standings</h3>
-                <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />
+                <StandingsTable standings={standings} />
               </section>
             )}
             {gMatches.length > 0 && <GroupFixtures group={g} matches={gMatches} teamsById={teamsById} />}

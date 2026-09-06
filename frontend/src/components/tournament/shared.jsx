@@ -72,7 +72,7 @@ export function WaitlistBadge() {
   )
 }
 
-export function StandingsTable({ standings, highlightTop, withdrawnPlayerIds }) {
+export function StandingsTable({ standings, highlightTop }) {
   if (standings.length === 0) return null
   return (
     <div className="rounded-xl border border-border overflow-hidden mb-3">
@@ -91,10 +91,7 @@ export function StandingsTable({ standings, highlightTop, withdrawnPlayerIds }) 
           {standings.map((row, i) => (
             <tr key={row.team.id} className={`border-t border-border ${highlightTop && i < highlightTop ? 'bg-interactive/5' : ''}`}>
               <td className="px-3 py-2 text-muted">{i + 1}</td>
-              <td className="px-3 py-2 text-primary font-medium">
-                {row.team.name}
-                {withdrawnPlayerIds?.has(row.team.source_player_id) && <WithdrawnBadge />}
-              </td>
+              <td className="px-3 py-2 text-primary font-medium">{row.team.name}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.played}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.wins}</td>
               <td className="px-2 py-2 text-center text-secondary">{row.losses}</td>

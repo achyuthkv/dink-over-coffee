@@ -9,7 +9,7 @@ import {
 import { scoreMatchAndAdvance } from '../../lib/tournamentActions.js'
 import {
   StandingsTable, MatchRow, ScoreMode, BracketView, StatusBadge,
-  WithdrawnBadge, WaitlistBadge, humanStage
+  WaitlistBadge, humanStage
 } from '../../components/tournament/shared.jsx'
 
 const FORMAT_LABEL = { round_robin: 'Round Robin', single_elim: 'Single Elimination', group_knockout: 'Group Stage + Knockout' }
@@ -26,15 +26,8 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
   const [registrations, setRegistrations] = useState([])
-  const [withdrawnPlayerIds, setWithdrawnPlayerIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('registrations')
-
-  const [sessions, setSessions] = useState([])
-  const [linkedSession, setLinkedSession] = useState(null)
-  const [selectedSessionId, setSelectedSessionId] = useState('')
-  const [syncing, setSyncing] = useState(false)
-  const [syncMessage, setSyncMessage] = useState('')
 
   const [newGroupName, setNewGroupName] = useState('')
   const [teamForm, setTeamForm] = useState({ name: '', player1_name: '', player2_name: '', group_id: '' })
@@ -80,14 +73,6 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
     } else {
       setRegistrations([])
     }
-
-    const sourceIds = teamRows.map(t => t.source_player_id).filter(Boolean)
-    if (sourceIds.length > 0) {
-      const { data: withdrawn } = await supabase.from('players').select('id').eq('status', 'withdrew').in('id', sourceIds)
-      setWithdrawnPlayerIds(new Set((withdrawn || []).map(p => p.id)))
-    } else {
-      setWithdrawnPlayerIds(new Set())
-    }
     setLoading(false)
   }
 
@@ -104,34 +89,14 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   }, [category.id])
 
   useEffect(() => {
-    if (!cat.session_id) return
-    const channel = supabase
-      .channel(`admin-category-players-${cat.session_id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${cat.session_id}` }, load)
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [cat.session_id])
-
-  useEffect(() => {
-    supabase.from('sessions').select('id, date, title, venue').order('date', { ascending: false }).limit(60)
-      .then(({ data }) => setSessions(data || []))
-  }, [])
-
-  useEffect(() => {
     supabase.from('referees').select('id, name, phone').order('name')
       .then(({ data }) => setReferees(data || []))
   }, [])
 
   useEffect(() => {
-    if (!cat.session_id) { setLinkedSession(null); return }
-    supabase.from('sessions').select('id, date, title, venue').eq('id', cat.session_id).maybeSingle()
-      .then(({ data }) => setLinkedSession(data))
-  }, [cat.session_id])
-
-  useEffect(() => {
     if (duprDate) return
-    setDuprDate(linkedSession?.date || new Date().toISOString().slice(0, 10))
-  }, [linkedSession, duprDate])
+    setDuprDate(new Date().toISOString().slice(0, 10))
+  }, [duprDate])
 
   useEffect(() => { window.scrollTo(0, 0) }, [activeTab])
 
@@ -152,33 +117,6 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   async function setStatus(status) {
     await supabase.from('tournament_categories').update({ status }).eq('id', cat.id)
     reloadCategory()
-  }
-
-  async function linkSession() {
-    if (!selectedSessionId) return
-    await supabase.from('tournament_categories').update({ session_id: selectedSessionId }).eq('id', cat.id)
-    setSelectedSessionId(''); setSyncMessage('')
-    reloadCategory()
-  }
-
-  async function unlinkSession() {
-    await supabase.from('tournament_categories').update({ session_id: null }).eq('id', cat.id)
-    setSyncMessage('')
-    reloadCategory()
-  }
-
-  async function syncTeams() {
-    setSyncing(true); setSyncMessage('')
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const { created } = await api.tournamentSyncTeams(cat.id, session?.access_token)
-      setSyncMessage(created > 0 ? `Synced ${created} new team${created === 1 ? '' : 's'}.` : 'Already up to date — no new teams to add.')
-      load()
-    } catch {
-      setSyncMessage('Sync failed — try again.')
-    } finally {
-      setSyncing(false)
-    }
   }
 
   async function addGroup() {
@@ -324,23 +262,13 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   // DUPR's bulk match-upload CSV -- see the round-robin era's version of this
   // for the full column-format rationale. `event` now folds in the category
   // name (and group/stage) since a tournament can run several categories at once.
+  // Player DUPR IDs are always left blank here -- registration doesn't collect
+  // one, so the organizer fills these in before uploading to DUPR.
   async function exportForDupr() {
     const completed = matches.filter(m => m.status === 'completed')
     if (completed.length === 0) return
     setExportingDupr(true); setDuprMessage('')
 
-    const sourceIds = teams.map(t => t.source_player_id).filter(Boolean)
-    let duprById = new Map()
-    if (sourceIds.length > 0) {
-      const { data } = await supabase.from('players').select('id, dupr_id, partner_dupr_id').in('id', sourceIds)
-      duprById = new Map((data || []).map(p => [p.id, p]))
-    }
-    function teamDuprIds(team) {
-      const p = team?.source_player_id ? duprById.get(team.source_player_id) : null
-      return [p?.dupr_id || '', p?.partner_dupr_id || '']
-    }
-
-    let missingDupr = 0
     const rows = completed.map(m => {
       const teamA = teamsById.get(m.team_a_id)
       const teamB = teamsById.get(m.team_b_id)
@@ -348,15 +276,12 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
       const eventName = m.round === 0
         ? `${tournamentName} — ${cat.name} — ${groupsById.get(m.group_id)?.name || 'Group Stage'}`
         : `${tournamentName} — ${cat.name} — ${humanStage(m.stage)}`
-      const [aDupr1, aDupr2] = teamDuprIds(teamA)
-      const [bDupr1, bDupr2] = teamDuprIds(teamB)
-      if (!aDupr1 || !bDupr1) missingDupr++
       return [
         matchType, duprScoreType, eventName, duprDate,
-        teamA?.player1_name || teamA?.name || '', aDupr1,
-        teamA?.player2_name || '', aDupr2,
-        teamB?.player1_name || teamB?.name || '', bDupr1,
-        teamB?.player2_name || '', bDupr2,
+        teamA?.player1_name || teamA?.name || '', '',
+        teamA?.player2_name || '', '',
+        teamB?.player1_name || teamB?.name || '', '',
+        teamB?.player2_name || '', '',
         m.team_a_score, m.team_b_score, '', '', '', '', '', '', '', ''
       ]
     })
@@ -371,11 +296,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
     a.click()
 
     setExportingDupr(false)
-    setDuprMessage(
-      missingDupr > 0
-        ? `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. ${missingDupr} ${missingDupr === 1 ? 'is' : 'are'} missing a player DUPR ID — fill those in before uploading to DUPR.`
-        : `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}.`
-    )
+    setDuprMessage(`Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. Fill in player DUPR IDs before uploading to DUPR.`)
   }
 
   if (loading) return <div className="text-center text-muted text-sm py-10">Loading…</div>
@@ -444,38 +365,6 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
       {activeTab === 'registrations' && (
         <>
           <section className="mb-6">
-            <h3 className="text-sm font-bold text-primary mb-2">Linked Session</h3>
-            {linkedSession ? (
-              <div className="card-compact px-3 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-primary font-medium truncate">{linkedSession.title || linkedSession.id}</p>
-                    <p className="text-2xs text-muted mt-0.5">{linkedSession.date}{linkedSession.venue ? ` · ${linkedSession.venue}` : ''}</p>
-                  </div>
-                  <button onClick={unlinkSession} className="shrink-0 text-2xs font-medium text-tertiary">Unlink</button>
-                </div>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <button onClick={syncTeams} disabled={syncing} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">
-                    {syncing ? 'Syncing…' : 'Sync teams from session'}
-                  </button>
-                  {syncMessage && <span className="text-2xs text-muted">{syncMessage}</span>}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-surface rounded-xl border border-dashed border-border px-3 py-3 space-y-2">
-                <p className="text-xs text-muted">Link a session to auto-populate teams from its confirmed registrations.</p>
-                <div className="flex gap-2">
-                  <select className="input" value={selectedSessionId} onChange={e => setSelectedSessionId(e.target.value)}>
-                    <option value="">Select a session…</option>
-                    {sessions.map(s => <option key={s.id} value={s.id}>{s.date} — {s.title || s.id}</option>)}
-                  </select>
-                  <button onClick={linkSession} disabled={!selectedSessionId} className="shrink-0 text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Link</button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="mb-6">
             <h3 className="text-sm font-bold text-primary mb-2">Bulk Import (CSV)</h3>
             <p className="text-2xs text-muted mb-2">Columns: teamName, player1Name, player1Phone, player2Name, player2Phone, email. Header names are case-sensitive; player2 columns can be left blank for singles.</p>
             <label className="inline-block text-xs font-semibold text-interactive bg-interactive/10 px-4 py-2 rounded-full cursor-pointer">
@@ -492,7 +381,6 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
             <div className="space-y-1.5">
               {confirmedTeams.map(t => (
                 <TeamRow key={t.id} team={t} registration={registrationsByTeamId.get(t.id)} groupsById={groupsById}
-                  withdrawn={withdrawnPlayerIds.has(t.source_player_id)}
                   onWithdraw={() => setTeamStatus(t.id, 'withdrawn')} onDelete={() => deleteTeam(t.id)} onMarkPaid={() => markPaid(t.id)} />
               ))}
               {confirmedTeams.length === 0 && <p className="text-xs text-muted">No confirmed teams yet.</p>}
@@ -599,7 +487,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
                   value={assignments.find(a => a.scope === 'group' && a.group_id === g.id)?.referee_id || ''}
                   onChange={refereeId => assignReferee('group', g.id, refereeId)}
                 />
-                {gMatches.length > 0 && <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} />}
+                {gMatches.length > 0 && <StandingsTable standings={standings} />}
                 <div className="space-y-2">
                   {gMatches.map(m => <MatchRow key={m.id} match={m} teamsById={teamsById} onScore={scoreMatch} />)}
                   {gMatches.length === 0 && <p className="text-xs text-muted">{gTeams.length < 2 ? 'Add at least 2 confirmed teams to this group first.' : 'No fixtures yet — generate them above.'}</p>}
@@ -624,7 +512,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
             return (
               <section key={g.id} className="mb-6">
                 <h3 className="text-sm font-bold text-primary mb-2">{g.name}</h3>
-                {standings.length > 0 ? <StandingsTable standings={standings} withdrawnPlayerIds={withdrawnPlayerIds} /> : <p className="text-xs text-muted">No completed matches yet.</p>}
+                {standings.length > 0 ? <StandingsTable standings={standings} /> : <p className="text-xs text-muted">No completed matches yet.</p>}
               </section>
             )
           })
@@ -697,13 +585,12 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   )
 }
 
-function TeamRow({ team, registration, groupsById, withdrawn, waitlisted, onPromote, onWithdraw, onDelete, onMarkPaid }) {
+function TeamRow({ team, registration, groupsById, waitlisted, onPromote, onWithdraw, onDelete, onMarkPaid }) {
   return (
     <div className="flex items-center justify-between bg-surface rounded-lg border border-border px-3 py-2 gap-2">
       <div className="min-w-0">
         <span className="text-sm text-primary">
           {team.name}
-          {withdrawn && <WithdrawnBadge />}
           {waitlisted && <WaitlistBadge />}
         </span>
         <p className="text-2xs text-muted mt-0.5 truncate">
