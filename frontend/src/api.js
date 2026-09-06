@@ -28,7 +28,6 @@ export const api = {
   shopCreateOrder: (items, customer) => call('shop', { action: 'create-order', items, customer }),
   shopConfirmPayment: (payload) => call('shop', { action: 'confirm-payment', ...payload }),
   shopPlaceOrder: (items, customer) => call('shop', { action: 'order', items, customer }),
-  tournamentSyncTeams: (categoryId, token) => call('tournament', { action: 'sync-teams', categoryId }, token),
   tournamentBulkImport: (categoryId, rows, token) => call('tournament', { action: 'bulk-import', categoryId, rows }, token),
   tournamentRegister: (categoryId, team) => call('tournament', { action: 'register', categoryId, team }),
   tournamentCreateOrder: (categoryId, team) => call('tournament', { action: 'create-order', categoryId, team }),

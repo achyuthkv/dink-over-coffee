@@ -14,9 +14,29 @@
 -- project that's ready to lose any existing tournament_teams/matches rows
 -- (export anything worth keeping first). Sessions, players, shop, etc. are
 -- untouched.
+--
+-- IMPORTANT -- admin access model: this project gates admin (organizer)
+-- access via a Supabase Auth JWT claim, not "any authenticated user":
+-- existing admin_all_<table> policies check
+-- `(auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'`. is_organizer()
+-- below wraps that same check so every policy in this file (and
+-- 0002_referee_role.sql) uses the identical rule an organizer account
+-- already satisfies -- no backfill needed for existing admins, and no
+-- changes needed to any pre-existing table's policies, since a non-admin
+-- authenticated user (a referee, or a customer "member" account from the
+-- membership feature) was already excluded by that same JWT check before
+-- this migration existed.
+
+create or replace function is_organizer()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false);
+$$;
 
 -- ── Drop old tournament objects (no-ops on a fresh project with none of this yet) ──
-drop trigger if exists sync_tournament_team_from_player on players;
+drop trigger if exists players_sync_tournament_team on players;
 drop function if exists sync_team_for_player_in_tournament(uuid, bigint);
 drop function if exists sync_tournament_team_from_player();
 drop table if exists tournament_matches cascade;
@@ -42,13 +62,17 @@ alter table tournaments add column if not exists end_date date;
 
 alter table tournaments enable row level security;
 drop policy if exists admin_all_tournaments on tournaments;
-create policy admin_all_tournaments on tournaments for all to authenticated using (true);
+create policy admin_all_tournaments on tournaments for all to authenticated using (is_organizer()) with check (is_organizer());
 drop policy if exists public_read_tournaments on tournaments;
-create policy public_read_tournaments on tournaments for select to anon using (true);
+create policy public_read_tournaments on tournaments for select to anon using (status <> 'setup');
+drop policy if exists read_tournaments_authenticated on tournaments;
+create policy read_tournaments_authenticated on tournaments for select to authenticated using (true);
 
 -- ── Categories ───────────────────────────────────────────────────────────
 -- One tournament can run several categories in parallel (Men's Doubles,
 -- Women's Doubles, Mixed, skill brackets, ...), each its own bracket.
+-- session_id is `text` (not uuid) -- sessions.id is a short opaque string
+-- id in this project, not a uuid.
 create table tournament_categories (
   id uuid primary key default gen_random_uuid(),
   tournament_id uuid not null references tournaments(id) on delete cascade,
@@ -60,7 +84,7 @@ create table tournament_categories (
   early_bird_fee numeric,
   early_bird_deadline date,
   advance_per_group smallint not null default 2,
-  session_id uuid references sessions(id) on delete set null,
+  session_id text references sessions(id) on delete set null,
   status text not null default 'setup' check (status in ('setup', 'registration_open', 'registration_closed', 'active', 'completed')),
   sort_order int not null default 0,
   created_at timestamptz not null default now()
@@ -173,24 +197,57 @@ alter table tournament_registrations enable row level security;
 alter table tournament_holds enable row level security;
 alter table tournament_matches enable row level security;
 
-create policy admin_all_tournament_categories on tournament_categories for all to authenticated using (true);
-create policy admin_all_tournament_groups on tournament_groups for all to authenticated using (true);
-create policy admin_all_tournament_courts on tournament_courts for all to authenticated using (true);
-create policy admin_all_tournament_teams on tournament_teams for all to authenticated using (true);
-create policy admin_all_tournament_registrations on tournament_registrations for all to authenticated using (true);
-create policy admin_all_tournament_holds on tournament_holds for all to authenticated using (true);
-create policy admin_all_tournament_matches on tournament_matches for all to authenticated using (true);
+create policy admin_all_tournament_categories on tournament_categories for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_groups on tournament_groups for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_courts on tournament_courts for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_teams on tournament_teams for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_registrations on tournament_registrations for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_holds on tournament_holds for all to authenticated using (is_organizer()) with check (is_organizer());
+create policy admin_all_tournament_matches on tournament_matches for all to authenticated using (is_organizer()) with check (is_organizer());
+
+-- Any authenticated principal (organizer, referee, or a customer "member"
+-- account) can read the non-sensitive structural tables -- none of this is
+-- more sensitive than what's about to go public anyway, and referees need
+-- it to render their scoring screen. tournament_registrations/
+-- tournament_holds get no such policy -- contact/payment details stay
+-- organizer-only.
+create policy read_tournament_categories_authenticated on tournament_categories for select to authenticated using (true);
+create policy read_tournament_groups_authenticated on tournament_groups for select to authenticated using (true);
+create policy read_tournament_courts_authenticated on tournament_courts for select to authenticated using (true);
+create policy read_tournament_teams_authenticated on tournament_teams for select to authenticated using (true);
+create policy read_tournament_matches_authenticated on tournament_matches for select to authenticated using (true);
 
 -- Public (anon) read access for the live bracket/standings page and the
--- category picker on the registration form. tournament_registrations and
--- tournament_holds intentionally get no anon policy -- contact details and
--- payment state stay server-side (service role) or admin-only, same as
--- upi_accounts/session_upis.
-create policy public_read_tournament_categories on tournament_categories for select to anon using (true);
-create policy public_read_tournament_groups on tournament_groups for select to anon using (true);
-create policy public_read_tournament_courts on tournament_courts for select to anon using (true);
-create policy public_read_tournament_teams on tournament_teams for select to anon using (true);
-create policy public_read_tournament_matches on tournament_matches for select to anon using (true);
+-- category picker on the registration form -- mirrors the existing
+-- public_read_tournaments convention of hiding 'setup'-status rows at the
+-- RLS layer itself (not just via client-side query filtering), extended
+-- down through category status too, since a category has its own
+-- setup/registration_open/... lifecycle independent of its tournament's.
+create policy public_read_tournament_categories on tournament_categories for select to anon using (
+  status <> 'setup'
+  and exists (select 1 from tournaments t where t.id = tournament_categories.tournament_id and t.status <> 'setup')
+);
+create policy public_read_tournament_groups on tournament_groups for select to anon using (
+  exists (
+    select 1 from tournament_categories c join tournaments t on t.id = c.tournament_id
+    where c.id = tournament_groups.category_id and c.status <> 'setup' and t.status <> 'setup'
+  )
+);
+create policy public_read_tournament_courts on tournament_courts for select to anon using (
+  exists (select 1 from tournaments t where t.id = tournament_courts.tournament_id and t.status <> 'setup')
+);
+create policy public_read_tournament_teams on tournament_teams for select to anon using (
+  exists (
+    select 1 from tournament_categories c join tournaments t on t.id = c.tournament_id
+    where c.id = tournament_teams.category_id and c.status <> 'setup' and t.status <> 'setup'
+  )
+);
+create policy public_read_tournament_matches on tournament_matches for select to anon using (
+  exists (
+    select 1 from tournament_categories c join tournaments t on t.id = c.tournament_id
+    where c.id = tournament_matches.category_id and c.status <> 'setup' and t.status <> 'setup'
+  )
+);
 
 -- ── Auto-sync from a category's linked session ──────────────────────────
 -- Mirrors the old tournament-level trigger, scoped to a category: when a
@@ -237,7 +294,7 @@ begin
   insert into tournament_teams (category_id, group_id, name, player1_name, player2_name, source_player_id)
   values (p_category_id, v_group_id, v_team_name, v_player.name, case when v_category.team_size = 2 then v_player.partner_name else null end, p_player_id);
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
 create or replace function sync_tournament_team_from_player()
 returns trigger as $$
@@ -249,8 +306,8 @@ begin
   end loop;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public, pg_temp;
 
-create trigger sync_tournament_team_from_player
+create trigger players_sync_tournament_team
 after insert or update on players
 for each row execute function sync_tournament_team_from_player();

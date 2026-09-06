@@ -6,10 +6,6 @@ import RefereeApp from './RefereeApp.jsx'
 export default function RefereeLayout() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  // undefined = not fetched yet; null = fetched, no profiles row (a
-  // pre-role organizer account, since a referee always gets a row at
-  // creation time); an object = fetched, has a row.
-  const [profile, setProfile] = useState(undefined)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -20,17 +16,13 @@ export default function RefereeLayout() {
     return () => subscription.unsubscribe()
   }, [])
 
-  useEffect(() => {
-    if (!session) { setProfile(undefined); return }
-    supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
-      .then(({ data }) => setProfile(data ?? null))
-  }, [session])
-
   if (loading) return <div className="min-h-screen bg-pattern flex items-center justify-center text-primary">Loading…</div>
   if (!session) return <RefereeLogin />
-  if (profile === undefined) return <div className="min-h-screen bg-pattern flex items-center justify-center text-primary">Loading…</div>
 
-  if (!profile || profile.role !== 'referee') {
+  // Role lives in the session's JWT (app_metadata, not user-editable) --
+  // the same claim every RLS policy checks -- so this is a plain read, no
+  // extra query needed.
+  if (session.user.app_metadata?.role !== 'referee') {
     return (
       <div className="min-h-screen bg-pattern flex items-center justify-center p-5">
         <div className="w-full max-w-sm bg-surface rounded-3xl p-6 shadow-sm text-center space-y-3">
@@ -42,5 +34,5 @@ export default function RefereeLayout() {
     )
   }
 
-  return <RefereeApp userId={session.user.id} name={profile.name} />
+  return <RefereeApp userId={session.user.id} name={session.user.user_metadata?.name} />
 }

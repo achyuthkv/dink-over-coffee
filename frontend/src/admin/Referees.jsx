@@ -18,7 +18,7 @@ export default function Referees({ onBack }) {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from('profiles').select('*').eq('role', 'referee').order('created_at', { ascending: false })
+    const { data } = await supabase.from('referees').select('*').order('created_at', { ascending: false })
     setReferees(data || [])
     setLoading(false)
   }
