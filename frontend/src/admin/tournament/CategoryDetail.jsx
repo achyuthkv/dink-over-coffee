@@ -47,9 +47,39 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   const [exportingDupr, setExportingDupr] = useState(false)
   const [duprMessage, setDuprMessage] = useState('')
 
+  const [editingCategory, setEditingCategory] = useState(false)
+  const [categorySettingsForm, setCategorySettingsForm] = useState(null)
+  const [savingCategory, setSavingCategory] = useState(false)
+
   async function reloadCategory() {
     const { data } = await supabase.from('tournament_categories').select('*').eq('id', category.id).single()
     if (data) { setCat(data); onChanged?.() }
+  }
+
+  function startEditingCategory() {
+    setCategorySettingsForm({
+      name: cat.name || '', format: cat.format, team_size: String(cat.team_size),
+      max_teams: cat.max_teams ?? '', entry_fee: String(cat.entry_fee ?? 0),
+      early_bird_fee: cat.early_bird_fee ?? '', early_bird_deadline: cat.early_bird_deadline || '',
+      advance_per_group: String(cat.advance_per_group ?? 2)
+    })
+    setEditingCategory(true)
+  }
+
+  async function saveCategorySettings() {
+    setSavingCategory(true)
+    const f = categorySettingsForm
+    await supabase.from('tournament_categories').update({
+      name: f.name.trim(), format: f.format, team_size: Number(f.team_size),
+      max_teams: f.max_teams === '' ? null : Number(f.max_teams),
+      entry_fee: Number(f.entry_fee) || 0,
+      early_bird_fee: f.early_bird_fee === '' ? null : Number(f.early_bird_fee),
+      early_bird_deadline: f.early_bird_fee === '' ? null : (f.early_bird_deadline || null),
+      advance_per_group: Number(f.advance_per_group) || 2
+    }).eq('id', cat.id)
+    setSavingCategory(false)
+    setEditingCategory(false)
+    reloadCategory()
   }
 
   async function load() {
@@ -357,8 +387,54 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
           <h2 className="text-primary font-bold truncate">{cat.name}</h2>
           <p className="text-2xs text-muted">{FORMAT_LABEL[cat.format]}</p>
         </div>
+        {!editingCategory && <button onClick={startEditingCategory} className="text-2xs font-semibold text-interactive shrink-0">Edit</button>}
         <StatusBadge status={cat.status} onChange={setStatus} />
       </div>
+
+      {editingCategory && (
+        <div className="card-compact px-3 py-3 space-y-2 mb-4">
+          <input className="input" placeholder="Category name" value={categorySettingsForm.name} onChange={e => setCategorySettingsForm(f => ({ ...f, name: e.target.value }))} />
+          <select
+            className="input"
+            value={categorySettingsForm.format}
+            onChange={e => setCategorySettingsForm(f => ({ ...f, format: e.target.value }))}
+            disabled={teams.length > 0}
+          >
+            <option value="round_robin">Round Robin</option>
+            <option value="single_elim">Single Elimination</option>
+            <option value="group_knockout">Group Stage + Knockout</option>
+          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              className="input"
+              value={categorySettingsForm.team_size}
+              onChange={e => setCategorySettingsForm(f => ({ ...f, team_size: e.target.value }))}
+              disabled={teams.length > 0}
+            >
+              <option value="2">Doubles (2 players)</option>
+              <option value="1">Singles (1 player)</option>
+            </select>
+            <input type="number" min="0" className="input" placeholder="Max teams (optional)" value={categorySettingsForm.max_teams} onChange={e => setCategorySettingsForm(f => ({ ...f, max_teams: e.target.value }))} />
+          </div>
+          {teams.length > 0 && <p className="text-3xs text-muted">Format and team size are locked once teams have registered.</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <input type="number" min="0" className="input" placeholder="Entry fee (₹)" value={categorySettingsForm.entry_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, entry_fee: e.target.value }))} />
+            <input type="number" min="0" className="input" placeholder="Early-bird fee (optional)" value={categorySettingsForm.early_bird_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_fee: e.target.value }))} />
+          </div>
+          {categorySettingsForm.early_bird_fee !== '' && (
+            <input type="date" className="input" value={categorySettingsForm.early_bird_deadline} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_deadline: e.target.value }))} />
+          )}
+          {categorySettingsForm.format === 'group_knockout' && (
+            <input type="number" min="1" className="input" placeholder="Teams advancing per group" value={categorySettingsForm.advance_per_group} onChange={e => setCategorySettingsForm(f => ({ ...f, advance_per_group: e.target.value }))} />
+          )}
+          <div className="flex gap-2">
+            <button onClick={saveCategorySettings} disabled={savingCategory || !categorySettingsForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-50">
+              {savingCategory ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={() => setEditingCategory(false)} className="text-xs font-medium text-muted px-4 py-2 rounded-full border border-border active:bg-bg transition">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {champion && (
         <div className="rounded-2xl bg-interactive/10 border border-interactive/20 px-4 py-3 mb-4 text-center">
