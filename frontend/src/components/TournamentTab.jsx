@@ -65,7 +65,10 @@ function CategorySection({ category, onRegister }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-2xs font-semibold text-muted uppercase tracking-wide">{FORMAT_LABEL[category.format]}</p>
+        <div>
+          <h3 className="text-primary font-bold">{category.name}</h3>
+          <p className="text-2xs font-semibold text-muted uppercase tracking-wide">{FORMAT_LABEL[category.format]}</p>
+        </div>
         {category.status === 'registration_open' && (
           <button onClick={() => onRegister(category)} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring">
             Register
