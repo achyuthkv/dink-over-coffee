@@ -188,8 +188,10 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
         teamName: r.teamName || r.TeamName || '',
         player1Name: r.player1Name || r.Player1 || r.player1 || '',
         player1Phone: r.player1Phone || r.Phone || r.phone || '',
+        player1DuprId: r.player1DuprId || r.DuprId || r.duprId || '',
         player2Name: r.player2Name || r.Player2 || r.player2 || '',
         player2Phone: r.player2Phone || '',
+        player2DuprId: r.player2DuprId || '',
         email: r.email || r.Email || ''
       }))
       if (rows.length === 0) { setImportMessage('No rows found in that file.'); return }
@@ -261,14 +263,20 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
 
   // DUPR's bulk match-upload CSV -- see the round-robin era's version of this
   // for the full column-format rationale. `event` now folds in the category
-  // name (and group/stage) since a tournament can run several categories at once.
-  // Player DUPR IDs are always left blank here -- registration doesn't collect
-  // one, so the organizer fills these in before uploading to DUPR.
+  // name (and group/stage) since a tournament can run several categories at
+  // once. Player DUPR IDs come straight from tournament_registrations --
+  // required at registration/import time now, so every team has one.
   async function exportForDupr() {
     const completed = matches.filter(m => m.status === 'completed')
     if (completed.length === 0) return
     setExportingDupr(true); setDuprMessage('')
 
+    function teamDuprIds(team) {
+      const reg = team ? registrationsByTeamId.get(team.id) : null
+      return [reg?.dupr_id || '', reg?.partner_dupr_id || '']
+    }
+
+    let missingDupr = 0
     const rows = completed.map(m => {
       const teamA = teamsById.get(m.team_a_id)
       const teamB = teamsById.get(m.team_b_id)
@@ -276,12 +284,15 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
       const eventName = m.round === 0
         ? `${tournamentName} — ${cat.name} — ${groupsById.get(m.group_id)?.name || 'Group Stage'}`
         : `${tournamentName} — ${cat.name} — ${humanStage(m.stage)}`
+      const [aDupr1, aDupr2] = teamDuprIds(teamA)
+      const [bDupr1, bDupr2] = teamDuprIds(teamB)
+      if (!aDupr1 || !bDupr1) missingDupr++
       return [
         matchType, duprScoreType, eventName, duprDate,
-        teamA?.player1_name || teamA?.name || '', '',
-        teamA?.player2_name || '', '',
-        teamB?.player1_name || teamB?.name || '', '',
-        teamB?.player2_name || '', '',
+        teamA?.player1_name || teamA?.name || '', aDupr1,
+        teamA?.player2_name || '', aDupr2,
+        teamB?.player1_name || teamB?.name || '', bDupr1,
+        teamB?.player2_name || '', bDupr2,
         m.team_a_score, m.team_b_score, '', '', '', '', '', '', '', ''
       ]
     })
@@ -296,7 +307,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
     a.click()
 
     setExportingDupr(false)
-    setDuprMessage(`Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. Fill in player DUPR IDs before uploading to DUPR.`)
+    setDuprMessage(
+      missingDupr > 0
+        ? `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}. ${missingDupr} ${missingDupr === 1 ? 'is' : 'are'} missing a player DUPR ID — fill those in before uploading to DUPR.`
+        : `Exported ${rows.length} match${rows.length === 1 ? '' : 'es'}.`
+    )
   }
 
   if (loading) return <div className="text-center text-muted text-sm py-10">Loading…</div>
@@ -366,7 +381,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
         <>
           <section className="mb-6">
             <h3 className="text-sm font-bold text-primary mb-2">Bulk Import (CSV)</h3>
-            <p className="text-2xs text-muted mb-2">Columns: teamName, player1Name, player1Phone, player2Name, player2Phone, email. Header names are case-sensitive; player2 columns can be left blank for singles.</p>
+            <p className="text-2xs text-muted mb-2">Columns: teamName, player1Name, player1Phone, player1DuprId, player2Name, player2Phone, player2DuprId, email. Header names are case-sensitive; player2 columns can be left blank for singles. DUPR ID is required for every player.</p>
             <label className="inline-block text-xs font-semibold text-interactive bg-interactive/10 px-4 py-2 rounded-full cursor-pointer">
               {importing ? 'Importing…' : 'Choose CSV file'}
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFile} disabled={importing} />
@@ -594,9 +609,8 @@ function TeamRow({ team, registration, groupsById, waitlisted, onPromote, onWith
           {waitlisted && <WaitlistBadge />}
         </span>
         <p className="text-2xs text-muted mt-0.5 truncate">
-          {groupsById?.get(team.group_id)?.name}
-          {registration?.phone && `${groupsById?.get(team.group_id)?.name ? ' · ' : ''}${registration.phone}`}
-          {registration && registration.payment_status !== 'free' && ` · ${registration.payment_status}`}
+          {[groupsById?.get(team.group_id)?.name, registration?.phone, registration?.dupr_id && `DUPR ${registration.dupr_id}`, registration && registration.payment_status !== 'free' ? registration.payment_status : null]
+            .filter(Boolean).join(' · ')}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">

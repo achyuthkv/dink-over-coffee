@@ -117,8 +117,8 @@ async function bulkImport(req, res) {
   const errors = [];
   rows.forEach((row, i) => {
     const result = validateTeamPayload(category, {
-      teamName: row.teamName, player1Name: row.player1Name, player1Phone: row.player1Phone,
-      player2Name: row.player2Name, player2Phone: row.player2Phone, email: row.email
+      teamName: row.teamName, player1Name: row.player1Name, player1Phone: row.player1Phone, player1DuprId: row.player1DuprId,
+      player2Name: row.player2Name, player2Phone: row.player2Phone, player2DuprId: row.player2DuprId, email: row.email
     });
     if (result.error) { errors.push({ row: i + 1, error: result.error }); return; }
 
@@ -139,6 +139,7 @@ async function bulkImport(req, res) {
 
   const registrationRows = insertedTeams.map((t, i) => ({
     team_id: t.id, phone: toInsert[i].team.phone, player2_phone: toInsert[i].team.player2_phone,
+    dupr_id: toInsert[i].team.dupr_id, partner_dupr_id: toInsert[i].team.partner_dupr_id,
     email: toInsert[i].team.email, amount: 0, payment_status: 'free'
   }));
   await supabase.from('tournament_registrations').insert(registrationRows);
@@ -223,7 +224,8 @@ async function registerTeam(req, res) {
 
   const paymentStatus = amount === 0 ? 'free' : 'pending';
   await supabase.from('tournament_registrations').insert({
-    team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone, email: team.email,
+    team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone,
+    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id, email: team.email,
     amount, payment_status: paymentStatus
   });
 
@@ -308,7 +310,8 @@ async function confirmPayment(req, res) {
   if (teamErr) return res.status(500).json({ ok: false, error: teamErr.message });
 
   await supabase.from('tournament_registrations').insert({
-    team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone, email: team.email,
+    team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone,
+    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id, email: team.email,
     amount: Number(order.amount) / 100, payment_status: 'paid', razorpay_order_id, razorpay_payment_id
   });
 
