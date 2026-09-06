@@ -6,6 +6,59 @@ import TournamentRegisterForm from './TournamentRegisterForm.jsx'
 
 const FORMAT_LABEL = { round_robin: 'Round Robin', single_elim: 'Single Elimination', group_knockout: 'Group Stage + Knockout' }
 
+const STATUS_META = {
+  registration_open: { label: 'Registration Open', className: 'badge-success' },
+  active: { label: 'Live', className: 'badge-success' },
+  registration_closed: { label: 'Registration Closed', className: 'inline-flex items-center rounded-full bg-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wide text-muted' },
+  completed: { label: 'Completed', className: 'inline-flex items-center rounded-full bg-surface-alt px-2 py-0.5 text-3xs font-bold uppercase tracking-wide text-secondary' }
+}
+
+function StatusPill({ status }) {
+  const meta = STATUS_META[status]
+  if (!meta) return null
+  return <span className={meta.className}>{meta.label}</span>
+}
+
+// "Free", "₹500", or "₹350 early bird" (while an early-bird deadline hasn't passed).
+function feeLabel(category) {
+  const entryFee = Number(category.entry_fee) || 0
+  if (category.early_bird_fee !== null && category.early_bird_fee !== undefined && category.early_bird_deadline) {
+    const deadline = new Date(`${category.early_bird_deadline}T23:59:59`)
+    if (new Date() <= deadline) return `₹${category.early_bird_fee} early bird`
+  }
+  return entryFee > 0 ? `₹${entryFee}` : 'Free'
+}
+
+// The categories landing view: a card per category rather than a pill row --
+// with more than a couple of categories, a horizontally-scrolling pill row
+// hides most of them and gives no sense of what's inside each one (format,
+// fee, whether it's still open). A card can show all of that at a glance,
+// which matters here since choosing a category is the point of this screen.
+function CategoryGrid({ categories, onSelect }) {
+  return (
+    <div className="space-y-2.5">
+      {categories.map(c => (
+        <button
+          key={c.id}
+          onClick={() => onSelect(c.id)}
+          className="w-full text-left card-compact px-4 py-3.5 flex items-center justify-between gap-3 active:bg-bg transition"
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-primary font-bold text-sm truncate">{c.name}</h3>
+              <StatusPill status={c.status} />
+            </div>
+            <p className="text-2xs text-muted mt-1">
+              {FORMAT_LABEL[c.format]} · {c.team_size === 2 ? 'Doubles' : 'Singles'} · {feeLabel(c)}
+            </p>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="text-muted shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function GroupFixtures({ group, matches, teamsById }) {
   const [open, setOpen] = useState(false)
   const playedCount = matches.filter(m => m.status === 'completed').length
@@ -27,10 +80,44 @@ function GroupFixtures({ group, matches, teamsById }) {
   )
 }
 
-function CategorySection({ category, onRegister }) {
+// One group's or the knockout bracket's content -- whichever "view" pill is
+// currently selected.
+function FixtureView({ view, groups, teams, groupMatches, bracketMatches, totalRounds, teamsById }) {
+  if (view.type === 'bracket') {
+    return (
+      <section className="card">
+        <h3 className="text-primary font-bold text-sm mb-2">Knockout Bracket</h3>
+        <BracketView matches={bracketMatches} teamsById={teamsById} totalRounds={totalRounds} readOnly />
+      </section>
+    )
+  }
+  const group = groups.find(g => g.id === view.id)
+  const gTeams = teams.filter(t => t.group_id === group.id && t.status !== 'withdrawn')
+  const gMatches = groupMatches.filter(m => m.group_id === group.id)
+  const standings = computeStandings(gTeams, gMatches)
+  return (
+    <div className="space-y-2">
+      {gMatches.length > 0 ? (
+        <>
+          <section className="card">
+            <h3 className="text-primary font-bold text-sm mb-2">{group.name} Standings</h3>
+            <StandingsTable standings={standings} />
+          </section>
+          <GroupFixtures group={group} matches={gMatches} teamsById={teamsById} />
+        </>
+      ) : (
+        <p className="text-secondary text-sm text-center py-6">Fixtures haven't been published for this group yet.</p>
+      )}
+    </div>
+  )
+}
+
+function CategoryDetail({ category, onBack }) {
   const [groups, setGroups] = useState([])
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
+  const [activeViewId, setActiveViewId] = useState(null)
+  const [registering, setRegistering] = useState(false)
 
   async function load() {
     const [g, tm, m] = await Promise.all([
@@ -61,21 +148,47 @@ function CategorySection({ category, onRegister }) {
   const totalRounds = bracketMatches.reduce((max, m) => Math.max(max, m.round), 0)
   const finalMatch = bracketMatches.find(m => m.round === totalRounds)
   const champion = finalMatch?.winner_team_id ? teamsById.get(finalMatch.winner_team_id) : null
-  const confirmedCount = teams.filter(t => t.status === 'confirmed').length
+
+  // The set of fixture "views" for this category: one per group, plus a
+  // knockout view once a bracket exists. A handful of tightly related,
+  // same-category views like this is exactly what a pill row is good for --
+  // unlike the category picker, there's nothing to browse or compare here,
+  // just a quick toggle.
+  const views = [
+    ...groups.map(g => ({ id: g.id, type: 'group', label: g.name })),
+    ...(bracketMatches.length > 0 ? [{ id: 'bracket', type: 'bracket', label: 'Knockout' }] : [])
+  ]
+  const activeView = views.find(v => v.id === activeViewId) || views[0] || null
+
+  useEffect(() => {
+    if (!views.some(v => v.id === activeViewId)) setActiveViewId(views[0]?.id || null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.id, groups.length, bracketMatches.length > 0])
+
+  if (registering) {
+    return <TournamentRegisterForm category={category} onCancel={() => setRegistering(false)} onDone={() => setRegistering(false)} />
+  }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <p className="text-2xs font-semibold text-muted uppercase tracking-wide">{FORMAT_LABEL[category.format]}</p>
-          <p className="text-2xs text-secondary mt-0.5">{confirmedCount} team{confirmedCount === 1 ? '' : 's'} registered{category.max_teams ? ` / ${category.max_teams}` : ''}</p>
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full border border-border text-muted active:bg-surface transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-primary font-bold truncate">{category.name}</h2>
+            <StatusPill status={category.status} />
+          </div>
+          <p className="text-2xs text-muted mt-0.5">{FORMAT_LABEL[category.format]} · {category.team_size === 2 ? 'Doubles' : 'Singles'} · {feeLabel(category)}</p>
         </div>
-        {category.status === 'registration_open' && (
-          <button onClick={() => onRegister(category)} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring">
-            Register
-          </button>
-        )}
       </div>
+
+      {category.status === 'registration_open' && (
+        <button onClick={() => setRegistering(true)} className="w-full text-sm font-semibold text-inverse bg-interactive px-4 py-3 rounded-full active:scale-[.98] transition ease-spring">
+          Register for {category.name}
+        </button>
+      )}
 
       {champion && (
         <div className="card text-center bg-interactive/5 border-interactive/20">
@@ -84,32 +197,34 @@ function CategorySection({ category, onRegister }) {
         </div>
       )}
 
-      {groups.map(g => {
-        const gTeams = teams.filter(t => t.group_id === g.id && t.status !== 'withdrawn')
-        const gMatches = groupMatches.filter(m => m.group_id === g.id)
-        const standings = computeStandings(gTeams, gMatches)
-        return (
-          <div key={g.id} className="space-y-2">
-            {standings.length > 0 && (
-              <section className="card">
-                <h3 className="text-primary font-bold text-sm mb-2">{g.name} Standings</h3>
-                <StandingsTable standings={standings} />
-              </section>
-            )}
-            {gMatches.length > 0 && <GroupFixtures group={g} matches={gMatches} teamsById={teamsById} />}
-          </div>
-        )
-      })}
-
-      {bracketMatches.length > 0 && (
-        <section className="card">
-          <h3 className="text-primary font-bold text-sm mb-2">Bracket</h3>
-          <BracketView matches={bracketMatches} teamsById={teamsById} totalRounds={totalRounds} readOnly />
-        </section>
+      {views.length === 0 && (
+        <p className="text-secondary text-sm text-center py-6">Fixtures haven't been published for this category yet.</p>
       )}
 
-      {groups.length === 0 && bracketMatches.length === 0 && (
-        <p className="text-secondary text-sm text-center py-6">Fixtures haven't been published for this category yet.</p>
+      {views.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {views.map(v => (
+            <button
+              key={v.id}
+              onClick={() => setActiveViewId(v.id)}
+              className={`shrink-0 text-xs font-semibold px-3.5 py-2 rounded-full border transition ${activeView?.id === v.id ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeView && (
+        <FixtureView
+          view={activeView}
+          groups={groups}
+          teams={teams}
+          groupMatches={groupMatches}
+          bracketMatches={bracketMatches}
+          totalRounds={totalRounds}
+          teamsById={teamsById}
+        />
       )}
     </div>
   )
@@ -118,16 +233,13 @@ function CategorySection({ category, onRegister }) {
 export default function TournamentTab() {
   const [tournament, setTournament] = useState(null)
   const [categories, setCategories] = useState([])
-  const [activeCategoryId, setActiveCategoryId] = useState(null)
-  const [registeringCategory, setRegisteringCategory] = useState(null)
+  const [viewingCategoryId, setViewingCategoryId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   async function loadCategories(tournamentId) {
     const { data } = await supabase.from('tournament_categories').select('*').eq('tournament_id', tournamentId).order('sort_order')
-    const visible = (data || []).filter(c => c.status !== 'setup')
-    setCategories(visible)
-    setActiveCategoryId(prev => (prev && visible.some(c => c.id === prev)) ? prev : visible[0]?.id || null)
+    setCategories((data || []).filter(c => c.status !== 'setup'))
   }
 
   async function load() {
@@ -157,7 +269,7 @@ export default function TournamentTab() {
   if (loading) return <div className="card text-center text-secondary text-sm">Loading tournament…</div>
   if (notFound) return <div className="card text-center text-secondary text-sm">No tournament right now. Check back soon.</div>
 
-  const activeCategory = categories.find(c => c.id === activeCategoryId)
+  const viewingCategory = categories.find(c => c.id === viewingCategoryId)
 
   return (
     <div className="space-y-5">
@@ -174,28 +286,10 @@ export default function TournamentTab() {
 
       {categories.length === 0 ? (
         <p className="text-secondary text-sm text-center py-6">Categories haven't been published yet.</p>
+      ) : viewingCategory ? (
+        <CategoryDetail key={viewingCategory.id} category={viewingCategory} onBack={() => setViewingCategoryId(null)} />
       ) : (
-        <>
-          {categories.length > 1 && (
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {categories.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setActiveCategoryId(c.id)}
-                  className={`shrink-0 text-xs font-semibold px-3.5 py-2 rounded-full border transition ${activeCategoryId === c.id ? 'bg-interactive text-inverse border-interactive' : 'text-secondary border-border'}`}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {registeringCategory ? (
-            <TournamentRegisterForm category={registeringCategory} onCancel={() => setRegisteringCategory(null)} onDone={() => {}} />
-          ) : (
-            activeCategory && <CategorySection key={activeCategory.id} category={activeCategory} onRegister={setRegisteringCategory} />
-          )}
-        </>
+        <CategoryGrid categories={categories} onSelect={setViewingCategoryId} />
       )}
     </div>
   )

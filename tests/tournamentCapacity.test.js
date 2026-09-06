@@ -42,37 +42,50 @@ describe('validateTeamPayload', () => {
   const doublesCategory = { team_size: 2 };
 
   it('requires player 1 name and a valid 10-digit phone', () => {
-    expect(validateTeamPayload(singlesCategory, { player1Name: 'A', player1Phone: '9999999999' }).error).toMatch(/name/i);
-    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '123' }).error).toMatch(/phone/i);
+    expect(validateTeamPayload(singlesCategory, { player1Name: 'A', player1Phone: '9999999999', player1DuprId: '1234567' }).error).toMatch(/name/i);
+    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '123', player1DuprId: '1234567' }).error).toMatch(/phone/i);
+  });
+
+  it('requires a DUPR ID for player 1', () => {
+    const result = validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999' });
+    expect(result.error).toMatch(/dupr/i);
   });
 
   it('accepts a valid singles entry with no partner required', () => {
-    const { team, error } = validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999' });
+    const { team, error } = validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567' });
     expect(error).toBeUndefined();
-    expect(team).toMatchObject({ name: 'Alice', player1_name: 'Alice', player2_name: null, phone: '9999999999' });
+    expect(team).toMatchObject({ name: 'Alice', player1_name: 'Alice', player2_name: null, phone: '9999999999', dupr_id: '1234567', partner_dupr_id: null });
   });
 
   it('requires a partner name for a doubles category', () => {
-    const result = validateTeamPayload(doublesCategory, { player1Name: 'Alice', player1Phone: '9999999999' });
+    const result = validateTeamPayload(doublesCategory, { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567' });
     expect(result.error).toMatch(/partner/i);
+  });
+
+  it('requires a DUPR ID for the partner in a doubles category', () => {
+    const result = validateTeamPayload(doublesCategory, {
+      player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', player2Name: 'Amy'
+    });
+    expect(result.error).toMatch(/dupr/i);
   });
 
   it('builds a default team name from both players when none is given', () => {
     const { team } = validateTeamPayload(doublesCategory, {
-      player1Name: 'Alice', player1Phone: '9999999999', player2Name: 'Amy'
+      player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', player2Name: 'Amy', player2DuprId: '7654321'
     });
     expect(team.name).toBe('Alice & Amy');
+    expect(team).toMatchObject({ dupr_id: '1234567', partner_dupr_id: '7654321' });
   });
 
   it('respects an explicit team name', () => {
     const { team } = validateTeamPayload(doublesCategory, {
-      teamName: 'The Smashers', player1Name: 'Alice', player1Phone: '9999999999', player2Name: 'Amy'
+      teamName: 'The Smashers', player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', player2Name: 'Amy', player2DuprId: '7654321'
     });
     expect(team.name).toBe('The Smashers');
   });
 
   it('rejects an invalid email but allows an empty one', () => {
-    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999', email: 'nope' }).error).toMatch(/email/i);
-    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999' }).error).toBeUndefined();
+    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', email: 'nope' }).error).toMatch(/email/i);
+    expect(validateTeamPayload(singlesCategory, { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567' }).error).toBeUndefined();
   });
 });

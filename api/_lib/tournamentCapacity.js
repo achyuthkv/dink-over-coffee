@@ -35,12 +35,16 @@ export function validateTeamPayload(category, team) {
   if (!name1 || name1.length < 2) return { error: 'Player 1 name is required' };
   const phone1 = team?.player1Phone?.trim();
   if (!phone1 || !/^[0-9]{10}$/.test(phone1)) return { error: 'A valid 10-digit phone number is required' };
+  const duprId1 = team?.player1DuprId?.trim();
+  if (!duprId1 || duprId1.length < 3) return { error: 'A DUPR ID is required for player 1' };
 
-  let name2 = null, phone2 = null;
+  let name2 = null, phone2 = null, duprId2 = null;
   if (category.team_size === 2) {
     name2 = team?.player2Name?.trim();
     if (!name2 || name2.length < 2) return { error: 'Partner name is required for this category' };
     phone2 = team?.player2Phone?.trim() || null;
+    duprId2 = team?.player2DuprId?.trim();
+    if (!duprId2 || duprId2.length < 3) return { error: 'A DUPR ID is required for the partner' };
   }
 
   const email = team?.email?.trim() || null;
@@ -55,6 +59,8 @@ export function validateTeamPayload(category, team) {
       player2_name: name2,
       phone: phone1,
       player2_phone: phone2,
+      dupr_id: duprId1,
+      partner_dupr_id: duprId2,
       email
     }
   };

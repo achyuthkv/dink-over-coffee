@@ -11,7 +11,7 @@ function effectiveFee(category) {
 }
 
 export default function TournamentRegisterForm({ category, onDone, onCancel }) {
-  const [form, setForm] = useState({ teamName: '', player1Name: '', player1Phone: '', player2Name: '', player2Phone: '', email: '' })
+  const [form, setForm] = useState({ teamName: '', player1Name: '', player1Phone: '', player1DuprId: '', player2Name: '', player2Phone: '', player2DuprId: '', email: '' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
@@ -29,16 +29,24 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
     if (!form.player1Name.trim() || !/^[0-9]{10}$/.test(form.player1Phone.trim())) {
       setError('Enter a name and a valid 10-digit phone number'); return
     }
-    if (category.team_size === 2 && !form.player2Name.trim()) {
-      setError("Enter your partner's name"); return
+    if (!form.player1DuprId.trim() || form.player1DuprId.trim().length < 3) {
+      setError('Enter a valid DUPR ID'); return
+    }
+    if (category.team_size === 2) {
+      if (!form.player2Name.trim()) { setError("Enter your partner's name"); return }
+      if (!form.player2DuprId.trim() || form.player2DuprId.trim().length < 3) {
+        setError("Enter your partner's DUPR ID"); return
+      }
     }
     setSubmitting(true)
     const team = {
       teamName: form.teamName.trim() || undefined,
       player1Name: form.player1Name.trim(),
       player1Phone: form.player1Phone.trim(),
+      player1DuprId: form.player1DuprId.trim(),
       player2Name: category.team_size === 2 ? form.player2Name.trim() : undefined,
       player2Phone: category.team_size === 2 ? form.player2Phone.trim() || undefined : undefined,
+      player2DuprId: category.team_size === 2 ? form.player2DuprId.trim() : undefined,
       email: form.email.trim() || undefined
     }
 
@@ -128,10 +136,12 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
       <input className="input" placeholder="Team name (optional)" value={form.teamName} onChange={e => set('teamName', e.target.value)} />
       <input className="input" placeholder={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
       <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
+      <input className="input" placeholder="Your DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
       {category.team_size === 2 && (
         <>
           <input className="input" placeholder="Partner's name" value={form.player2Name} onChange={e => set('player2Name', e.target.value)} required />
           <input className="input" placeholder="Partner's phone (optional)" inputMode="numeric" value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} />
+          <input className="input" placeholder="Partner's DUPR ID" value={form.player2DuprId} onChange={e => set('player2DuprId', e.target.value)} required />
         </>
       )}
       <input className="input" type="email" placeholder="Email (optional)" value={form.email} onChange={e => set('email', e.target.value)} />
