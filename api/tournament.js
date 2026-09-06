@@ -36,11 +36,12 @@ export default async function handler(req, res) {
 
 // Every action here writes through the service-role client, which bypasses
 // RLS entirely -- so unlike the browser-direct CRUD elsewhere in /admin,
-// checking "is this a valid Supabase session" is not enough once referee
-// accounts exist. A referee has a perfectly valid session too; they just
-// shouldn't be able to reach any of these actions (sync/import/referee
-// management are all organizer-only, mirroring the DB-level lockdown in
-// migrations/0002_referee_role.sql).
+// checking "is this a valid Supabase session" is not enough. This project
+// gates admin access via a JWT claim (app_metadata.role === 'admin', same
+// check every admin_all_<table> RLS policy uses -- see
+// migrations/0001_tournament_categories.sql's is_organizer()), not "any
+// authenticated user", so that's what's checked here too: a referee, or a
+// customer "member" account, has a perfectly valid session but no such claim.
 async function requireOrganizer(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -50,33 +51,38 @@ async function requireOrganizer(req, res, next) {
   if (authErr || !user) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (profile?.role === 'referee') {
+  if (user.app_metadata?.role !== 'admin') {
     return res.status(403).json({ ok: false, error: 'Organizer access required' });
   }
   return next(req, res);
 }
 
-// Referee accounts are real Supabase Auth users (so RLS can tell them apart
-// from organizers via profiles.role), which only the service-role admin API
-// can create/delete -- not something a browser client can do directly even
-// with an authenticated session.
+// Referee accounts are real Supabase Auth users, which only the
+// service-role admin API can create/delete -- not something a browser
+// client can do directly even with an authenticated session. The role
+// lives in app_metadata (not user-editable, unlike user_metadata) since
+// it's the security-relevant claim every RLS policy checks; `name` goes in
+// user_metadata purely for display (readable straight off the session, no
+// extra query), and a `referees` row records it too so /admin can list
+// referees without a service-role "list users" call.
 async function createReferee(req, res) {
   const { name, email, password, phone } = req.body || {};
   if (!name?.trim() || !email?.trim() || !password || password.length < 8) {
     return res.status(400).json({ ok: false, error: 'Name, email, and a password of at least 8 characters are required' });
   }
   const { data, error } = await supabase.auth.admin.createUser({
-    email: email.trim(), password, email_confirm: true, user_metadata: { name: name.trim(), role: 'referee' }
+    email: email.trim(), password, email_confirm: true,
+    app_metadata: { role: 'referee' },
+    user_metadata: { name: name.trim() }
   });
   if (error) return res.status(400).json({ ok: false, error: error.message });
 
-  const { error: profileErr } = await supabase.from('profiles').insert({
-    id: data.user.id, role: 'referee', name: name.trim(), phone: phone?.trim() || null
+  const { error: refereeErr } = await supabase.from('referees').insert({
+    id: data.user.id, name: name.trim(), phone: phone?.trim() || null
   });
-  if (profileErr) {
+  if (refereeErr) {
     await supabase.auth.admin.deleteUser(data.user.id);
-    return res.status(500).json({ ok: false, error: profileErr.message });
+    return res.status(500).json({ ok: false, error: refereeErr.message });
   }
   return res.status(200).json({ ok: true, refereeId: data.user.id });
 }

@@ -44,16 +44,23 @@ describe('tournament handler', () => {
     });
 
     it('returns 403 for a referee account (valid session, wrong role)', async () => {
-      mockSupabase.__setAuthResponse({ data: { user: { id: 'ref-1' } }, error: null });
-      mockSupabase.__setResponse('profiles', { data: { role: 'referee' }, error: null });
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'ref-1', app_metadata: { role: 'referee' } } }, error: null });
       const req = createMockReq({ body: { action: 'sync-teams', categoryId: 'c1' }, headers: { authorization: 'Bearer valid-token' } });
       const res = createMockRes();
       await handler(req, res);
       expect(res._status).toBe(403);
     });
 
-    it('allows an organizer session through (no profiles row = organizer by default)', async () => {
-      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+    it('returns 403 for a session with no admin role claim at all (e.g. a customer "member" account)', async () => {
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'member-1' } }, error: null });
+      const req = createMockReq({ body: { action: 'sync-teams', categoryId: 'c1' }, headers: { authorization: 'Bearer valid-token' } });
+      const res = createMockRes();
+      await handler(req, res);
+      expect(res._status).toBe(403);
+    });
+
+    it('allows an organizer session through (app_metadata.role === admin)', async () => {
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1', app_metadata: { role: 'admin' } } }, error: null });
       mockSupabase.__setResponse('tournament_categories', { data: { id: 'c1', team_size: 2, session_id: null, status: 'setup' }, error: null });
       const req = createMockReq({ body: { action: 'sync-teams', categoryId: 'c1' }, headers: { authorization: 'Bearer valid-token' } });
       const res = createMockRes();
@@ -64,7 +71,7 @@ describe('tournament handler', () => {
 
   describe('referee management', () => {
     beforeEach(() => {
-      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1', app_metadata: { role: 'admin' } } }, error: null });
     });
 
     it('returns 401 for create-referee with no authorization header', async () => {
@@ -82,10 +89,8 @@ describe('tournament handler', () => {
       expect(res._status).toBe(400);
     });
 
-    it('creates a referee auth user and profile row', async () => {
+    it('creates a referee auth user and referee row', async () => {
       mockSupabase.__setAdminCreateUserResponse({ data: { user: { id: 'new-ref-1' } }, error: null });
-      // First 'profiles' query is requireOrganizer's own role check; second is the insert.
-      mockSupabase.__queueResponses('profiles', [{ data: null, error: null }, { data: null, error: null }]);
       const req = createMockReq({
         body: { action: 'create-referee', name: 'Riya Referee', email: 'riya@example.com', password: 'longenoughpassword' },
         headers: { authorization: 'Bearer valid-token' }
@@ -96,9 +101,9 @@ describe('tournament handler', () => {
       expect(res._json).toEqual({ ok: true, refereeId: 'new-ref-1' });
     });
 
-    it('rolls back the auth user if the profile insert fails', async () => {
+    it('rolls back the auth user if the referee row insert fails', async () => {
       mockSupabase.__setAdminCreateUserResponse({ data: { user: { id: 'new-ref-1' } }, error: null });
-      mockSupabase.__queueResponses('profiles', [{ data: null, error: null }, { data: null, error: { message: 'insert failed' } }]);
+      mockSupabase.__setResponse('referees', { data: null, error: { message: 'insert failed' } });
       const req = createMockReq({
         body: { action: 'create-referee', name: 'Riya', email: 'riya@example.com', password: 'longenoughpassword' },
         headers: { authorization: 'Bearer valid-token' }
@@ -127,7 +132,7 @@ describe('tournament handler', () => {
 
   describe('sync-teams', () => {
     beforeEach(() => {
-      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1', app_metadata: { role: 'admin' } } }, error: null });
     });
 
     it('returns 400 when categoryId is missing', async () => {
@@ -256,7 +261,7 @@ describe('tournament handler', () => {
 
   describe('bulk-import', () => {
     beforeEach(() => {
-      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1' } }, error: null });
+      mockSupabase.__setAuthResponse({ data: { user: { id: 'admin-1', app_metadata: { role: 'admin' } } }, error: null });
     });
 
     it('returns 400 when rows is empty', async () => {

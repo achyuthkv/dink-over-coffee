@@ -118,7 +118,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
   }, [])
 
   useEffect(() => {
-    supabase.from('profiles').select('id, name, phone').eq('role', 'referee').order('name')
+    supabase.from('referees').select('id, name, phone').order('name')
       .then(({ data }) => setReferees(data || []))
   }, [])
 
@@ -724,7 +724,7 @@ function TeamRow({ team, registration, groupsById, withdrawn, waitlisted, onProm
   )
 }
 
-// Assigns a referee (a Supabase Auth account with profiles.role='referee')
+// Assigns a referee (a Supabase Auth account with app_metadata.role='referee')
 // to score this group's round robin or the category's knockout bracket --
 // mirrors Clutch pairing an organizer's tournament app with a separate
 // referee app scoped to one court/bracket at a time.

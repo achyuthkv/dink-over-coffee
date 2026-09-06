@@ -8,7 +8,6 @@ import LockScreen from './LockScreen.jsx'
 export default function AdminLayout() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isReferee, setIsReferee] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -23,11 +22,9 @@ export default function AdminLayout() {
 
   // A referee login is a real Supabase session too, but /admin is
   // organizer-only -- everything a referee needs lives at /referee instead.
-  useEffect(() => {
-    if (!session) { setIsReferee(false); return }
-    supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
-      .then(({ data }) => setIsReferee(data?.role === 'referee'))
-  }, [session])
+  // The role lives in the session's JWT (app_metadata, not user-editable),
+  // so this is a plain read, no extra query needed.
+  const isReferee = session?.user?.app_metadata?.role === 'referee'
 
   const { locked, unlock } = useAppLock({
     enabled: !!session && !isReferee,
