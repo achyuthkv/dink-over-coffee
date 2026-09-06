@@ -212,13 +212,13 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
         </p>
       )}
       <input className="input" placeholder={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
-      <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
+      <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" maxLength={10} value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
       <input className="input" placeholder="Your DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
       <TshirtSizeSelect label={category.team_size === 2 ? 'Your T-shirt size' : 'T-shirt size'} value={form.player1TshirtSize} onChange={v => set('player1TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
       {category.team_size === 2 && (
         <>
           <input className="input" placeholder="Partner's name" value={form.player2Name} onChange={e => set('player2Name', e.target.value)} required />
-          <input className="input" placeholder="Partner's phone (10 digits)" inputMode="numeric" value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} required />
+          <input className="input" placeholder="Partner's phone (10 digits)" inputMode="numeric" maxLength={10} value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} required />
           <input className="input" placeholder="Partner's DUPR ID" value={form.player2DuprId} onChange={e => set('player2DuprId', e.target.value)} required />
           <TshirtSizeSelect label="Partner's T-shirt size" value={form.player2TshirtSize} onChange={v => set('player2TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
         </>
