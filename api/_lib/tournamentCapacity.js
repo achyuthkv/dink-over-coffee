@@ -29,6 +29,8 @@ export function resolveEntryStatus(category, counts) {
   return counts.confirmed + counts.activeHolds < category.max_teams ? 'confirmed' : 'waitlisted';
 }
 
+export const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
 /** Validates and normalizes a public team-registration payload against a category's rules. Returns { error } or { team }. */
 export function validateTeamPayload(category, team) {
   const name1 = team?.player1Name?.trim();
@@ -37,14 +39,19 @@ export function validateTeamPayload(category, team) {
   if (!phone1 || !/^[0-9]{10}$/.test(phone1)) return { error: 'A valid 10-digit phone number is required' };
   const duprId1 = team?.player1DuprId?.trim();
   if (!duprId1 || duprId1.length < 3) return { error: 'A DUPR ID is required for player 1' };
+  const tshirtSize1 = team?.player1TshirtSize?.trim();
+  if (!TSHIRT_SIZES.includes(tshirtSize1)) return { error: 'A T-shirt size is required for player 1' };
 
-  let name2 = null, phone2 = null, duprId2 = null;
+  let name2 = null, phone2 = null, duprId2 = null, tshirtSize2 = null;
   if (category.team_size === 2) {
     name2 = team?.player2Name?.trim();
     if (!name2 || name2.length < 2) return { error: 'Partner name is required for this category' };
-    phone2 = team?.player2Phone?.trim() || null;
+    phone2 = team?.player2Phone?.trim();
+    if (!phone2 || !/^[0-9]{10}$/.test(phone2)) return { error: 'A valid 10-digit phone number is required for the partner' };
     duprId2 = team?.player2DuprId?.trim();
     if (!duprId2 || duprId2.length < 3) return { error: 'A DUPR ID is required for the partner' };
+    tshirtSize2 = team?.player2TshirtSize?.trim();
+    if (!TSHIRT_SIZES.includes(tshirtSize2)) return { error: 'A T-shirt size is required for the partner' };
   }
 
   const email = team?.email?.trim() || null;
@@ -61,6 +68,8 @@ export function validateTeamPayload(category, team) {
       player2_phone: phone2,
       dupr_id: duprId1,
       partner_dupr_id: duprId2,
+      tshirt_size: tshirtSize1,
+      partner_tshirt_size: tshirtSize2,
       email
     }
   };

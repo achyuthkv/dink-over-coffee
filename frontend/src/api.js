@@ -38,3 +38,4 @@ export const api = {
 
 export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
 export const PAYMENTS_ENABLED = !!RAZORPAY_KEY_ID
+export const SUPPORT_PHONE = import.meta.env.VITE_SUPPORT_PHONE || ''
