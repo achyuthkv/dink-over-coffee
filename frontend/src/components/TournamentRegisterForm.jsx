@@ -71,7 +71,7 @@ function effectiveFee(category) {
 
 export default function TournamentRegisterForm({ category, onDone, onCancel }) {
   const [form, setForm] = useState({
-    teamName: '', player1Name: '', player1Phone: '', player1DuprId: '', player1TshirtSize: '',
+    player1Name: '', player1Phone: '', player1DuprId: '', player1TshirtSize: '',
     player2Name: '', player2Phone: '', player2DuprId: '', player2TshirtSize: '', email: ''
   })
   const [submitting, setSubmitting] = useState(false)
@@ -106,7 +106,6 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
     }
     setSubmitting(true)
     const team = {
-      teamName: form.teamName.trim() || undefined,
       player1Name: form.player1Name.trim(),
       player1Phone: form.player1Phone.trim(),
       player1DuprId: form.player1DuprId.trim(),
@@ -214,7 +213,6 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
           {isEarlyBird && <span className="text-2xs text-success ml-1">(early bird)</span>}
         </p>
       )}
-      <input className="input" placeholder="Team name (optional)" value={form.teamName} onChange={e => set('teamName', e.target.value)} />
       <input className="input" placeholder={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
       <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
       <input className="input" placeholder="Your DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
