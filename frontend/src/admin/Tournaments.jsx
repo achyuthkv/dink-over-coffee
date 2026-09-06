@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import TournamentDetail from './TournamentDetail.jsx'
+import { LabeledInput } from '../components/tournament/shared.jsx'
 
 const STATUS_LABEL = { setup: 'Setup', active: 'Active', completed: 'Completed' }
 const STATUS_STYLE = {
@@ -82,11 +83,11 @@ export default function Tournaments({ onBack }) {
 
             {creating ? (
               <div className="card-compact px-4 py-3 space-y-3">
-                <input className="input" placeholder="Tournament name" value={name} onChange={e => setName(e.target.value)} autoFocus />
-                <input className="input" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
+                <LabeledInput label="Tournament name" value={name} onChange={e => setName(e.target.value)} autoFocus />
+                <LabeledInput label="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
                 <div className="grid grid-cols-2 gap-2">
-                  <input className="input" placeholder="Sport (e.g. pickleball)" value={sport} onChange={e => setSport(e.target.value)} />
-                  <input className="input" placeholder="Venue (optional)" value={venue} onChange={e => setVenue(e.target.value)} />
+                  <LabeledInput label="Sport" placeholder="e.g. pickleball" value={sport} onChange={e => setSport(e.target.value)} />
+                  <LabeledInput label="Venue (optional)" value={venue} onChange={e => setVenue(e.target.value)} />
                 </div>
                 <p className="text-2xs text-muted">Add categories (Men's Doubles, Mixed, etc.) once the tournament is created — each has its own format, entry fee and registrations.</p>
                 <div className="flex gap-2">

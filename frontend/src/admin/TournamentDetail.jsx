@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import CategoryDetail from './tournament/CategoryDetail.jsx'
-import { StatusBadge } from '../components/tournament/shared.jsx'
+import { StatusBadge, LabeledInput, LabeledSelect } from '../components/tournament/shared.jsx'
 
 const TOURNAMENT_STATUS_FLOW = ['setup', 'active', 'completed']
 const TOURNAMENT_STATUS_LABEL = { setup: 'Setup', active: 'Active', completed: 'Completed' }
@@ -140,18 +140,18 @@ export default function TournamentDetail({ tournamentId, onBack }) {
               </div>
               {editingSettings ? (
                 <div className="card-compact px-3 py-3 space-y-2">
-                  <input className="input" placeholder="Tournament name" value={settingsForm.name} onChange={e => setSettingsForm(f => ({ ...f, name: e.target.value }))} />
-                  <input className="input" placeholder="Description (optional)" value={settingsForm.description} onChange={e => setSettingsForm(f => ({ ...f, description: e.target.value }))} />
+                  <LabeledInput label="Tournament name" value={settingsForm.name} onChange={e => setSettingsForm(f => ({ ...f, name: e.target.value }))} />
+                  <LabeledInput label="Description (optional)" value={settingsForm.description} onChange={e => setSettingsForm(f => ({ ...f, description: e.target.value }))} />
                   <div className="grid grid-cols-2 gap-2">
-                    <input className="input" placeholder="Sport (e.g. pickleball)" value={settingsForm.sport} onChange={e => setSettingsForm(f => ({ ...f, sport: e.target.value }))} />
-                    <input className="input" placeholder="Venue" value={settingsForm.venue} onChange={e => setSettingsForm(f => ({ ...f, venue: e.target.value }))} />
+                    <LabeledInput label="Sport" placeholder="e.g. pickleball" value={settingsForm.sport} onChange={e => setSettingsForm(f => ({ ...f, sport: e.target.value }))} />
+                    <LabeledInput label="Venue" value={settingsForm.venue} onChange={e => setSettingsForm(f => ({ ...f, venue: e.target.value }))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <input type="date" className="input" value={settingsForm.start_date} onChange={e => setSettingsForm(f => ({ ...f, start_date: e.target.value }))} />
-                    <input type="date" className="input" value={settingsForm.end_date} onChange={e => setSettingsForm(f => ({ ...f, end_date: e.target.value }))} />
+                    <LabeledInput label="Start date" type="date" value={settingsForm.start_date} onChange={e => setSettingsForm(f => ({ ...f, start_date: e.target.value }))} />
+                    <LabeledInput label="End date" type="date" value={settingsForm.end_date} onChange={e => setSettingsForm(f => ({ ...f, end_date: e.target.value }))} />
                   </div>
                   <div>
-                    <input className="input" placeholder="Contact phone for registration issues (optional)" value={settingsForm.contact_phone} onChange={e => setSettingsForm(f => ({ ...f, contact_phone: e.target.value }))} />
+                    <LabeledInput label="Contact phone for registration issues (optional)" value={settingsForm.contact_phone} onChange={e => setSettingsForm(f => ({ ...f, contact_phone: e.target.value }))} />
                     <p className="text-3xs text-muted mt-1">Shown to players on the registration form and confirmation screen, tap-to-call.</p>
                   </div>
                   <div className="flex gap-2">
@@ -212,28 +212,28 @@ export default function TournamentDetail({ tournamentId, onBack }) {
 
                 {addingCategory ? (
                   <div className="card-compact px-3 py-3 space-y-2">
-                    <input className="input" placeholder="Category name (e.g. Men's Doubles)" value={categoryForm.name} onChange={e => setCategoryForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                    <select className="input" value={categoryForm.format} onChange={e => setCategoryForm(f => ({ ...f, format: e.target.value }))}>
+                    <LabeledInput label="Category name" placeholder="e.g. Men's Doubles" value={categoryForm.name} onChange={e => setCategoryForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+                    <LabeledSelect label="Format" value={categoryForm.format} onChange={e => setCategoryForm(f => ({ ...f, format: e.target.value }))}>
                       <option value="round_robin">Round Robin</option>
                       <option value="single_elim">Single Elimination</option>
                       <option value="group_knockout">Group Stage + Knockout</option>
-                    </select>
+                    </LabeledSelect>
                     <div className="grid grid-cols-2 gap-2">
-                      <select className="input" value={categoryForm.team_size} onChange={e => setCategoryForm(f => ({ ...f, team_size: e.target.value }))}>
+                      <LabeledSelect label="Team size" value={categoryForm.team_size} onChange={e => setCategoryForm(f => ({ ...f, team_size: e.target.value }))}>
                         <option value="2">Doubles (2 players)</option>
                         <option value="1">Singles (1 player)</option>
-                      </select>
-                      <input type="number" min="0" className="input" placeholder="Max teams (optional)" value={categoryForm.max_teams} onChange={e => setCategoryForm(f => ({ ...f, max_teams: e.target.value }))} />
+                      </LabeledSelect>
+                      <LabeledInput label="Max teams (optional)" type="number" min="0" value={categoryForm.max_teams} onChange={e => setCategoryForm(f => ({ ...f, max_teams: e.target.value }))} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="number" min="0" className="input" placeholder="Entry fee (₹)" value={categoryForm.entry_fee} onChange={e => setCategoryForm(f => ({ ...f, entry_fee: e.target.value }))} />
-                      <input type="number" min="0" className="input" placeholder="Early-bird fee (optional)" value={categoryForm.early_bird_fee} onChange={e => setCategoryForm(f => ({ ...f, early_bird_fee: e.target.value }))} />
+                      <LabeledInput label="Entry fee (₹)" type="number" min="0" value={categoryForm.entry_fee} onChange={e => setCategoryForm(f => ({ ...f, entry_fee: e.target.value }))} />
+                      <LabeledInput label="Early-bird fee (optional)" type="number" min="0" value={categoryForm.early_bird_fee} onChange={e => setCategoryForm(f => ({ ...f, early_bird_fee: e.target.value }))} />
                     </div>
                     {categoryForm.early_bird_fee && (
-                      <input type="date" className="input" value={categoryForm.early_bird_deadline} onChange={e => setCategoryForm(f => ({ ...f, early_bird_deadline: e.target.value }))} />
+                      <LabeledInput label="Early-bird deadline" type="date" value={categoryForm.early_bird_deadline} onChange={e => setCategoryForm(f => ({ ...f, early_bird_deadline: e.target.value }))} />
                     )}
                     {categoryForm.format === 'group_knockout' && (
-                      <input type="number" min="1" className="input" placeholder="Teams advancing per group" value={categoryForm.advance_per_group} onChange={e => setCategoryForm(f => ({ ...f, advance_per_group: e.target.value }))} />
+                      <LabeledInput label="Teams advancing per group" type="number" min="1" value={categoryForm.advance_per_group} onChange={e => setCategoryForm(f => ({ ...f, advance_per_group: e.target.value }))} />
                     )}
                     <div className="flex gap-2">
                       <button onClick={createCategory} disabled={!categoryForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Create Category</button>

@@ -47,6 +47,27 @@ export function StatusBadge({ status, onChange, flow = CATEGORY_STATUS_FLOW, lab
   )
 }
 
+// A visible label above the field, kept on screen once the player/organizer
+// starts typing -- unlike a placeholder, which disappears the moment there's
+// a value and leaves the field looking unlabeled.
+export function LabeledInput({ label, ...props }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-primary mb-1">{label}</label>
+      <input className="input" {...props} />
+    </div>
+  )
+}
+
+export function LabeledSelect({ label, children, ...props }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-primary mb-1">{label}</label>
+      <select className="input" {...props}>{children}</select>
+    </div>
+  )
+}
+
 export const STAGE_LABEL = {
   final: 'Final', semifinal: 'Semifinal', quarterfinal: 'Quarterfinal',
   round_of_16: 'Round of 16', round_of_32: 'Round of 32', group: 'Group Stage'

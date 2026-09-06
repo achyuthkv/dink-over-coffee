@@ -9,7 +9,7 @@ import {
 import { scoreMatchAndAdvance } from '../../lib/tournamentActions.js'
 import {
   StandingsTable, MatchRow, ScoreMode, BracketView, StatusBadge,
-  WaitlistBadge, humanStage
+  WaitlistBadge, humanStage, LabeledInput, LabeledSelect
 } from '../../components/tournament/shared.jsx'
 
 const FORMAT_LABEL = { round_robin: 'Round Robin', single_elim: 'Single Elimination', group_knockout: 'Group Stage + Knockout' }
@@ -393,9 +393,9 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
 
       {editingCategory && (
         <div className="card-compact px-3 py-3 space-y-2 mb-4">
-          <input className="input" placeholder="Category name" value={categorySettingsForm.name} onChange={e => setCategorySettingsForm(f => ({ ...f, name: e.target.value }))} />
-          <select
-            className="input"
+          <LabeledInput label="Category name" value={categorySettingsForm.name} onChange={e => setCategorySettingsForm(f => ({ ...f, name: e.target.value }))} />
+          <LabeledSelect
+            label="Format"
             value={categorySettingsForm.format}
             onChange={e => setCategorySettingsForm(f => ({ ...f, format: e.target.value }))}
             disabled={teams.length > 0}
@@ -403,29 +403,29 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
             <option value="round_robin">Round Robin</option>
             <option value="single_elim">Single Elimination</option>
             <option value="group_knockout">Group Stage + Knockout</option>
-          </select>
+          </LabeledSelect>
           <div className="grid grid-cols-2 gap-2">
-            <select
-              className="input"
+            <LabeledSelect
+              label="Team size"
               value={categorySettingsForm.team_size}
               onChange={e => setCategorySettingsForm(f => ({ ...f, team_size: e.target.value }))}
               disabled={teams.length > 0}
             >
               <option value="2">Doubles (2 players)</option>
               <option value="1">Singles (1 player)</option>
-            </select>
-            <input type="number" min="0" className="input" placeholder="Max teams (optional)" value={categorySettingsForm.max_teams} onChange={e => setCategorySettingsForm(f => ({ ...f, max_teams: e.target.value }))} />
+            </LabeledSelect>
+            <LabeledInput label="Max teams (optional)" type="number" min="0" value={categorySettingsForm.max_teams} onChange={e => setCategorySettingsForm(f => ({ ...f, max_teams: e.target.value }))} />
           </div>
           {teams.length > 0 && <p className="text-3xs text-muted">Format and team size are locked once teams have registered.</p>}
           <div className="grid grid-cols-2 gap-2">
-            <input type="number" min="0" className="input" placeholder="Entry fee (₹)" value={categorySettingsForm.entry_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, entry_fee: e.target.value }))} />
-            <input type="number" min="0" className="input" placeholder="Early-bird fee (optional)" value={categorySettingsForm.early_bird_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_fee: e.target.value }))} />
+            <LabeledInput label="Entry fee (₹)" type="number" min="0" value={categorySettingsForm.entry_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, entry_fee: e.target.value }))} />
+            <LabeledInput label="Early-bird fee (optional)" type="number" min="0" value={categorySettingsForm.early_bird_fee} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_fee: e.target.value }))} />
           </div>
           {categorySettingsForm.early_bird_fee !== '' && (
-            <input type="date" className="input" value={categorySettingsForm.early_bird_deadline} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_deadline: e.target.value }))} />
+            <LabeledInput label="Early-bird deadline" type="date" value={categorySettingsForm.early_bird_deadline} onChange={e => setCategorySettingsForm(f => ({ ...f, early_bird_deadline: e.target.value }))} />
           )}
           {categorySettingsForm.format === 'group_knockout' && (
-            <input type="number" min="1" className="input" placeholder="Teams advancing per group" value={categorySettingsForm.advance_per_group} onChange={e => setCategorySettingsForm(f => ({ ...f, advance_per_group: e.target.value }))} />
+            <LabeledInput label="Teams advancing per group" type="number" min="1" value={categorySettingsForm.advance_per_group} onChange={e => setCategorySettingsForm(f => ({ ...f, advance_per_group: e.target.value }))} />
           )}
           <div className="flex gap-2">
             <button onClick={saveCategorySettings} disabled={savingCategory || !categorySettingsForm.name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-50">
@@ -508,16 +508,16 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
           <section className="mb-6">
             {addingTeam ? (
               <div className="card-compact px-3 py-3 space-y-2">
-                <input className="input" placeholder="Team name (optional)" value={teamForm.name} onChange={e => setTeamForm(f => ({ ...f, name: e.target.value }))} />
+                <LabeledInput label="Team name (optional)" value={teamForm.name} onChange={e => setTeamForm(f => ({ ...f, name: e.target.value }))} />
                 <div className="grid grid-cols-2 gap-2">
-                  <input className="input" placeholder="Player 1" value={teamForm.player1_name} onChange={e => setTeamForm(f => ({ ...f, player1_name: e.target.value }))} autoFocus />
-                  {cat.team_size === 2 && <input className="input" placeholder="Player 2" value={teamForm.player2_name} onChange={e => setTeamForm(f => ({ ...f, player2_name: e.target.value }))} />}
+                  <LabeledInput label="Player 1" value={teamForm.player1_name} onChange={e => setTeamForm(f => ({ ...f, player1_name: e.target.value }))} autoFocus />
+                  {cat.team_size === 2 && <LabeledInput label="Player 2" value={teamForm.player2_name} onChange={e => setTeamForm(f => ({ ...f, player2_name: e.target.value }))} />}
                 </div>
                 {groups.length > 0 && (
-                  <select className="input" value={teamForm.group_id} onChange={e => setTeamForm(f => ({ ...f, group_id: e.target.value }))}>
+                  <LabeledSelect label="Group" value={teamForm.group_id} onChange={e => setTeamForm(f => ({ ...f, group_id: e.target.value }))}>
                     <option value="">No group yet</option>
                     {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                  </select>
+                  </LabeledSelect>
                 )}
                 <div className="flex gap-2">
                   <button onClick={addTeam} disabled={!teamForm.player1_name.trim()} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring disabled:opacity-40">Add Team</button>
@@ -657,11 +657,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
           <div className="card-compact px-3 py-3 space-y-2">
             <p className="text-2xs text-muted">Every completed match in this category — group stage and knockout alike.</p>
             <div className="grid grid-cols-2 gap-2">
-              <input type="date" className="input" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
-              <select className="input" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
+              <LabeledInput label="Match date" type="date" value={duprDate} onChange={e => setDuprDate(e.target.value)} />
+              <LabeledSelect label="Score type" value={duprScoreType} onChange={e => setDuprScoreType(e.target.value)}>
                 <option value="RALLY">Rally scoring</option>
                 <option value="SIDEOUT">Side-out scoring</option>
-              </select>
+              </LabeledSelect>
             </div>
             <button
               onClick={exportForDupr}
