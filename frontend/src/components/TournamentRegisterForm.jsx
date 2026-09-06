@@ -122,7 +122,6 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
         const res = await api.tournamentRegister(category.id, team)
         if (res.alreadyRegistered) { setError('This phone number is already registered for this category.'); setSubmitting(false); return }
         setResult(res)
-        onDone?.()
         return
       }
       const order = await api.tournamentCreateOrder(category.id, team)
@@ -159,7 +158,6 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
             razorpay_signature: resp.razorpay_signature
           })
           setResult({ status: 'confirmed', paymentStatus: 'paid' })
-          onDone?.()
         } catch (e) {
           setError(e.message || 'Payment confirmation failed')
         } finally {
@@ -196,7 +194,7 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
         {SUPPORT_PHONE && (
           <p className="text-2xs text-muted mt-2">Questions? Call or WhatsApp <a href={`tel:${SUPPORT_PHONE}`} className="text-interactive font-medium">{SUPPORT_PHONE}</a>.</p>
         )}
-        <button onClick={onCancel} className="btn-ghost mt-3">Done</button>
+        <button onClick={onDone} className="btn-ghost mt-3">Done</button>
       </div>
     )
   }
