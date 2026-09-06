@@ -189,9 +189,11 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
         player1Name: r.player1Name || r.Player1 || r.player1 || '',
         player1Phone: r.player1Phone || r.Phone || r.phone || '',
         player1DuprId: r.player1DuprId || r.DuprId || r.duprId || '',
+        player1TshirtSize: r.player1TshirtSize || '',
         player2Name: r.player2Name || r.Player2 || r.player2 || '',
         player2Phone: r.player2Phone || '',
         player2DuprId: r.player2DuprId || '',
+        player2TshirtSize: r.player2TshirtSize || '',
         email: r.email || r.Email || ''
       }))
       if (rows.length === 0) { setImportMessage('No rows found in that file.'); return }
@@ -381,7 +383,7 @@ export default function CategoryDetail({ tournamentName, category, onBack, onCha
         <>
           <section className="mb-6">
             <h3 className="text-sm font-bold text-primary mb-2">Bulk Import (CSV)</h3>
-            <p className="text-2xs text-muted mb-2">Columns: teamName, player1Name, player1Phone, player1DuprId, player2Name, player2Phone, player2DuprId, email. Header names are case-sensitive; player2 columns can be left blank for singles. DUPR ID is required for every player.</p>
+            <p className="text-2xs text-muted mb-2">Columns: teamName, player1Name, player1Phone, player1DuprId, player1TshirtSize, player2Name, player2Phone, player2DuprId, player2TshirtSize, email. Header names are case-sensitive; player2 columns can be left blank for singles. DUPR ID and T-shirt size (S/M/L/XL/XXL/XXXL) are required for every player.</p>
             <label className="inline-block text-xs font-semibold text-interactive bg-interactive/10 px-4 py-2 rounded-full cursor-pointer">
               {importing ? 'Importing…' : 'Choose CSV file'}
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFile} disabled={importing} />
@@ -609,8 +611,13 @@ function TeamRow({ team, registration, groupsById, waitlisted, onPromote, onWith
           {waitlisted && <WaitlistBadge />}
         </span>
         <p className="text-2xs text-muted mt-0.5 truncate">
-          {[groupsById?.get(team.group_id)?.name, registration?.phone, registration?.dupr_id && `DUPR ${registration.dupr_id}`, registration && registration.payment_status !== 'free' ? registration.payment_status : null]
-            .filter(Boolean).join(' · ')}
+          {[
+            groupsById?.get(team.group_id)?.name,
+            registration?.phone,
+            registration?.dupr_id && `DUPR ${registration.dupr_id}`,
+            registration?.tshirt_size && `Shirt ${registration.tshirt_size}${registration.partner_tshirt_size ? `/${registration.partner_tshirt_size}` : ''}`,
+            registration && registration.payment_status !== 'free' ? registration.payment_status : null
+          ].filter(Boolean).join(' · ')}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">

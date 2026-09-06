@@ -172,7 +172,7 @@ describe('tournament handler', () => {
         { data: null, error: null }                  // insert registration
       ]);
 
-      const req = createMockReq({ body: { action: 'register', categoryId: 'c1', team: { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567' } } });
+      const req = createMockReq({ body: { action: 'register', categoryId: 'c1', team: { player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', player1TshirtSize: 'M' } } });
       const res = createMockRes();
       await handler(req, res);
 
@@ -223,7 +223,7 @@ describe('tournament handler', () => {
       mockSupabase.__queueResponses('tournament_registrations', [{ data: null, error: null }]);
 
       const req = createMockReq({
-        body: { action: 'bulk-import', categoryId: 'c1', rows: [{ player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567' }, { player1Name: 'X', player1Phone: 'bad' }] },
+        body: { action: 'bulk-import', categoryId: 'c1', rows: [{ player1Name: 'Alice', player1Phone: '9999999999', player1DuprId: '1234567', player1TshirtSize: 'M' }, { player1Name: 'X', player1Phone: 'bad' }] },
         headers: { authorization: 'Bearer valid-token' }
       });
       const res = createMockRes();

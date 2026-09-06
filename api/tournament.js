@@ -117,8 +117,8 @@ async function bulkImport(req, res) {
   const errors = [];
   rows.forEach((row, i) => {
     const result = validateTeamPayload(category, {
-      teamName: row.teamName, player1Name: row.player1Name, player1Phone: row.player1Phone, player1DuprId: row.player1DuprId,
-      player2Name: row.player2Name, player2Phone: row.player2Phone, player2DuprId: row.player2DuprId, email: row.email
+      teamName: row.teamName, player1Name: row.player1Name, player1Phone: row.player1Phone, player1DuprId: row.player1DuprId, player1TshirtSize: row.player1TshirtSize,
+      player2Name: row.player2Name, player2Phone: row.player2Phone, player2DuprId: row.player2DuprId, player2TshirtSize: row.player2TshirtSize, email: row.email
     });
     if (result.error) { errors.push({ row: i + 1, error: result.error }); return; }
 
@@ -140,6 +140,7 @@ async function bulkImport(req, res) {
   const registrationRows = insertedTeams.map((t, i) => ({
     team_id: t.id, phone: toInsert[i].team.phone, player2_phone: toInsert[i].team.player2_phone,
     dupr_id: toInsert[i].team.dupr_id, partner_dupr_id: toInsert[i].team.partner_dupr_id,
+    tshirt_size: toInsert[i].team.tshirt_size, partner_tshirt_size: toInsert[i].team.partner_tshirt_size,
     email: toInsert[i].team.email, amount: 0, payment_status: 'free'
   }));
   await supabase.from('tournament_registrations').insert(registrationRows);
@@ -225,8 +226,9 @@ async function registerTeam(req, res) {
   const paymentStatus = amount === 0 ? 'free' : 'pending';
   await supabase.from('tournament_registrations').insert({
     team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone,
-    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id, email: team.email,
-    amount, payment_status: paymentStatus
+    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id,
+    tshirt_size: team.tshirt_size, partner_tshirt_size: team.partner_tshirt_size,
+    email: team.email, amount, payment_status: paymentStatus
   });
 
   if (paymentStatus === 'pending') {
@@ -311,8 +313,9 @@ async function confirmPayment(req, res) {
 
   await supabase.from('tournament_registrations').insert({
     team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone,
-    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id, email: team.email,
-    amount: Number(order.amount) / 100, payment_status: 'paid', razorpay_order_id, razorpay_payment_id
+    dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id,
+    tshirt_size: team.tshirt_size, partner_tshirt_size: team.partner_tshirt_size,
+    email: team.email, amount: Number(order.amount) / 100, payment_status: 'paid', razorpay_order_id, razorpay_payment_id
   });
 
   await supabase.from('tournament_holds').update({ status: 'consumed' }).eq('id', holdId);

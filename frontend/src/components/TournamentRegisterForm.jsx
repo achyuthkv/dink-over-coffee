@@ -1,6 +1,65 @@
 import { useEffect, useState } from 'react'
-import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
+import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED, SUPPORT_PHONE } from '../api.js'
 import { loadRazorpay } from '../lib/loadRazorpay.js'
+
+const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+const TSHIRT_CHART = [
+  { size: 'S', chest: 38, length: 26 },
+  { size: 'M', chest: 40, length: 27 },
+  { size: 'L', chest: 42, length: 28 },
+  { size: 'XL', chest: 44, length: 29 },
+  { size: 'XXL', chest: 46, length: 30 },
+  { size: 'XXXL', chest: 48, length: 31 }
+]
+
+function TshirtSizeChart({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="card w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-primary font-bold text-sm">T-shirt size chart</h4>
+          <button onClick={onClose} className="text-muted text-sm">Close</button>
+        </div>
+        <p className="text-2xs text-muted mb-2">All measurements in inches.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-center border-collapse">
+            <thead>
+              <tr className="text-secondary">
+                <th className="py-1.5 text-left font-semibold">Size</th>
+                {TSHIRT_CHART.map(row => <th key={row.size} className="py-1.5 font-semibold">{row.size}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-border">
+                <td className="py-1.5 text-left text-secondary">Chest</td>
+                {TSHIRT_CHART.map(row => <td key={row.size} className="py-1.5 text-primary">{row.chest}</td>)}
+              </tr>
+              <tr className="border-t border-border">
+                <td className="py-1.5 text-left text-secondary">Length</td>
+                {TSHIRT_CHART.map(row => <td key={row.size} className="py-1.5 text-primary">{row.length}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TshirtSizeSelect({ label, value, onChange, onShowChart }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-2xs text-muted">{label}</span>
+        <button type="button" onClick={onShowChart} className="text-2xs font-semibold text-interactive">Size chart</button>
+      </div>
+      <select className="input" value={value} onChange={e => onChange(e.target.value)} required>
+        <option value="" disabled>Select size</option>
+        {TSHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+    </div>
+  )
+}
 
 function effectiveFee(category) {
   if (category.early_bird_fee !== null && category.early_bird_fee !== undefined && category.early_bird_deadline) {
@@ -11,10 +70,14 @@ function effectiveFee(category) {
 }
 
 export default function TournamentRegisterForm({ category, onDone, onCancel }) {
-  const [form, setForm] = useState({ teamName: '', player1Name: '', player1Phone: '', player1DuprId: '', player2Name: '', player2Phone: '', player2DuprId: '', email: '' })
+  const [form, setForm] = useState({
+    teamName: '', player1Name: '', player1Phone: '', player1DuprId: '', player1TshirtSize: '',
+    player2Name: '', player2Phone: '', player2DuprId: '', player2TshirtSize: '', email: ''
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [showSizeChart, setShowSizeChart] = useState(false)
 
   const fee = effectiveFee(category)
   const isEarlyBird = fee !== Number(category.entry_fee)
@@ -32,11 +95,14 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
     if (!form.player1DuprId.trim() || form.player1DuprId.trim().length < 3) {
       setError('Enter a valid DUPR ID'); return
     }
+    if (!form.player1TshirtSize) { setError('Select a T-shirt size'); return }
     if (category.team_size === 2) {
       if (!form.player2Name.trim()) { setError("Enter your partner's name"); return }
+      if (!/^[0-9]{10}$/.test(form.player2Phone.trim())) { setError("Enter your partner's 10-digit phone number"); return }
       if (!form.player2DuprId.trim() || form.player2DuprId.trim().length < 3) {
         setError("Enter your partner's DUPR ID"); return
       }
+      if (!form.player2TshirtSize) { setError("Select your partner's T-shirt size"); return }
     }
     setSubmitting(true)
     const team = {
@@ -44,9 +110,11 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
       player1Name: form.player1Name.trim(),
       player1Phone: form.player1Phone.trim(),
       player1DuprId: form.player1DuprId.trim(),
+      player1TshirtSize: form.player1TshirtSize,
       player2Name: category.team_size === 2 ? form.player2Name.trim() : undefined,
-      player2Phone: category.team_size === 2 ? form.player2Phone.trim() || undefined : undefined,
+      player2Phone: category.team_size === 2 ? form.player2Phone.trim() : undefined,
       player2DuprId: category.team_size === 2 ? form.player2DuprId.trim() : undefined,
+      player2TshirtSize: category.team_size === 2 ? form.player2TshirtSize : undefined,
       email: form.email.trim() || undefined
     }
 
@@ -105,16 +173,29 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
   }
 
   if (result) {
+    const pendingPayment = result.paymentStatus === 'pending'
     return (
       <div className="card text-center space-y-2">
-        <p className="text-2xl">🎉</p>
-        <p className="text-primary font-bold">{result.status === 'waitlisted' ? "You're on the waitlist" : 'Registered!'}</p>
+        <p className="text-2xl">{pendingPayment ? '💳' : '🎉'}</p>
+        <p className="text-primary font-bold">
+          {result.status === 'waitlisted' ? "You're on the waitlist" : pendingPayment ? 'Registration received' : 'Registered!'}
+        </p>
         {result.status === 'waitlisted' && <p className="text-secondary text-sm">This category is full — we'll confirm you if a spot opens up.</p>}
-        {result.paymentStatus === 'pending' && result.upiAccounts?.length > 0 && (
+        {pendingPayment && (
           <div className="text-left text-sm text-secondary mt-2 space-y-1">
-            <p className="font-semibold text-primary">Pay ₹{result.amount} via UPI to confirm:</p>
-            {result.upiAccounts.map(u => <p key={u.id}>{u.label}: {u.upi_id}</p>)}
+            <p className="font-semibold text-primary">Pay ₹{result.amount} to confirm your spot.</p>
+            {result.upiAccounts?.length > 0 ? (
+              <>
+                <p>Pay via UPI to:</p>
+                {result.upiAccounts.map(u => <p key={u.id}>{u.label}: {u.upi_id}</p>)}
+              </>
+            ) : (
+              <p>{SUPPORT_PHONE ? `We'll reach out to confirm payment — or call/WhatsApp ${SUPPORT_PHONE}.` : "We'll reach out shortly to confirm payment."}</p>
+            )}
           </div>
+        )}
+        {SUPPORT_PHONE && (
+          <p className="text-2xs text-muted mt-2">Questions? Call or WhatsApp <a href={`tel:${SUPPORT_PHONE}`} className="text-interactive font-medium">{SUPPORT_PHONE}</a>.</p>
         )}
         <button onClick={onCancel} className="btn-ghost mt-3">Done</button>
       </div>
@@ -137,15 +218,23 @@ export default function TournamentRegisterForm({ category, onDone, onCancel }) {
       <input className="input" placeholder={category.team_size === 2 ? 'Your name' : 'Name'} value={form.player1Name} onChange={e => set('player1Name', e.target.value)} required />
       <input className="input" placeholder="Phone (10 digits)" inputMode="numeric" value={form.player1Phone} onChange={e => set('player1Phone', e.target.value)} required />
       <input className="input" placeholder="Your DUPR ID" value={form.player1DuprId} onChange={e => set('player1DuprId', e.target.value)} required />
+      <TshirtSizeSelect label={category.team_size === 2 ? 'Your T-shirt size' : 'T-shirt size'} value={form.player1TshirtSize} onChange={v => set('player1TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
       {category.team_size === 2 && (
         <>
           <input className="input" placeholder="Partner's name" value={form.player2Name} onChange={e => set('player2Name', e.target.value)} required />
-          <input className="input" placeholder="Partner's phone (optional)" inputMode="numeric" value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} />
+          <input className="input" placeholder="Partner's phone (10 digits)" inputMode="numeric" value={form.player2Phone} onChange={e => set('player2Phone', e.target.value)} required />
           <input className="input" placeholder="Partner's DUPR ID" value={form.player2DuprId} onChange={e => set('player2DuprId', e.target.value)} required />
+          <TshirtSizeSelect label="Partner's T-shirt size" value={form.player2TshirtSize} onChange={v => set('player2TshirtSize', v)} onShowChart={() => setShowSizeChart(true)} />
         </>
       )}
       <input className="input" type="email" placeholder="Email (optional)" value={form.email} onChange={e => set('email', e.target.value)} />
       {error && <p className="text-error text-sm">{error}</p>}
+      {SUPPORT_PHONE && (
+        <p className="text-2xs text-muted">
+          Facing issues registering? Call or WhatsApp <a href={`tel:${SUPPORT_PHONE}`} className="text-interactive font-medium">{SUPPORT_PHONE}</a>.
+        </p>
+      )}
+      {showSizeChart && <TshirtSizeChart onClose={() => setShowSizeChart(false)} />}
       <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? 'Processing…' : (PAYMENTS_ENABLED && fee > 0) ? `Pay ₹${fee} & register` : 'Register'}
       </button>
