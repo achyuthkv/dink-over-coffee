@@ -61,15 +61,11 @@ function CategorySection({ category, onRegister }) {
   const totalRounds = bracketMatches.reduce((max, m) => Math.max(max, m.round), 0)
   const finalMatch = bracketMatches.find(m => m.round === totalRounds)
   const champion = finalMatch?.winner_team_id ? teamsById.get(finalMatch.winner_team_id) : null
-  const confirmedCount = teams.filter(t => t.status === 'confirmed').length
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <p className="text-2xs font-semibold text-muted uppercase tracking-wide">{FORMAT_LABEL[category.format]}</p>
-          <p className="text-2xs text-secondary mt-0.5">{confirmedCount} team{confirmedCount === 1 ? '' : 's'} registered{category.max_teams ? ` / ${category.max_teams}` : ''}</p>
-        </div>
+        <p className="text-2xs font-semibold text-muted uppercase tracking-wide">{FORMAT_LABEL[category.format]}</p>
         {category.status === 'registration_open' && (
           <button onClick={() => onRegister(category)} className="text-xs font-semibold text-inverse bg-interactive px-4 py-2 rounded-full active:scale-[.98] transition ease-spring">
             Register
@@ -90,7 +86,11 @@ function CategorySection({ category, onRegister }) {
         const standings = computeStandings(gTeams, gMatches)
         return (
           <div key={g.id} className="space-y-2">
-            {standings.length > 0 && (
+            {/* The team list (as a standings table) only shows once fixtures
+                are live for this group -- not the moment teams register,
+                since computeStandings returns a zeroed row for every team
+                regardless of whether any match has been played yet. */}
+            {gMatches.length > 0 && (
               <section className="card">
                 <h3 className="text-primary font-bold text-sm mb-2">{g.name} Standings</h3>
                 <StandingsTable standings={standings} />
@@ -108,7 +108,7 @@ function CategorySection({ category, onRegister }) {
         </section>
       )}
 
-      {groups.length === 0 && bracketMatches.length === 0 && (
+      {groupMatches.length === 0 && bracketMatches.length === 0 && (
         <p className="text-secondary text-sm text-center py-6">Fixtures haven't been published for this category yet.</p>
       )}
     </div>
