@@ -9,6 +9,7 @@ import NotFound from './components/NotFound.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import Logo from './components/Logo.jsx'
 import NavTabs from './components/NavTabs.jsx'
+import TournamentPromoPopup from './components/TournamentPromoPopup.jsx'
 
 function PageLayout({ children }) {
   return (
@@ -55,14 +56,17 @@ function PageLayout({ children }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/events" element={<PageLayout><RegisterTab /></PageLayout>} />
-      <Route path="/shop" element={<PageLayout><ShopTab /></PageLayout>} />
-      <Route path="/tournament" element={<PageLayout><TournamentTab /></PageLayout>} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <TournamentPromoPopup />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/events" element={<PageLayout><RegisterTab /></PageLayout>} />
+        <Route path="/shop" element={<PageLayout><ShopTab /></PageLayout>} />
+        <Route path="/tournament" element={<PageLayout><TournamentTab /></PageLayout>} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   )
 }
