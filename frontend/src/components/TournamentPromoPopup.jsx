@@ -19,29 +19,12 @@ const SPONSORS = [
   { name: 'Press & Dress', role: 'Refreshment Partner' }
 ]
 
-// A one-time promo for an externally-hosted tournament (registration runs on
-// Hudle, not through this site's own tournament module) -- shown once per
-// browser session so it doesn't nag a visitor browsing multiple pages.
-export default function TournamentPromoPopup() {
-  const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    try {
-      if (!sessionStorage.getItem(DISMISS_KEY)) setOpen(true)
-    } catch {
-      setOpen(true)
-    }
-  }, [])
-
-  function dismiss() {
-    try { sessionStorage.setItem(DISMISS_KEY, '1') } catch { /* ignore */ }
-    setOpen(false)
-  }
-
-  if (!open) return null
-
+// The actual promo content -- shared by the auto-popup and the persistent
+// banner's "View Details" trigger, so there's one place to update if the
+// prize/category details change.
+export function TournamentPromoModal({ onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={dismiss}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="card w-full max-w-sm max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
@@ -49,7 +32,7 @@ export default function TournamentPromoPopup() {
             <h3 className="text-primary font-extrabold text-xl mt-2 leading-tight">The DoC Open 2.0</h3>
             <p className="text-secondary text-sm mt-0.5">A pickleball tournament for all</p>
           </div>
-          <button onClick={dismiss} className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition" aria-label="Close">
+          <button onClick={onClose} className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition" aria-label="Close">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -81,7 +64,7 @@ export default function TournamentPromoPopup() {
           href={REGISTRATION_URL}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={dismiss}
+          onClick={onClose}
           className="btn-primary w-full"
         >
           Register Now
@@ -97,5 +80,53 @@ export default function TournamentPromoPopup() {
         </div>
       </div>
     </div>
+  )
+}
+
+// A one-time promo for an externally-hosted tournament (registration runs on
+// Hudle, not through this site's own tournament module) -- shown once per
+// browser session so it doesn't nag a visitor browsing multiple pages.
+export default function TournamentPromoPopup() {
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem(DISMISS_KEY)) setOpen(true)
+    } catch {
+      setOpen(true)
+    }
+  }, [])
+
+  function dismiss() {
+    try { sessionStorage.setItem(DISMISS_KEY, '1') } catch { /* ignore */ }
+    setOpen(false)
+  }
+
+  if (!open) return null
+  return <TournamentPromoModal onClose={dismiss} />
+}
+
+// A persistent, always-visible entry point back into the same promo --
+// dropped into pages so a visitor who dismissed the one-time popup (by
+// accident or on purpose) can still find tournament details. Styled as a
+// solid announcement strip rather than another card, so it reads as "live
+// news" at a glance instead of blending into surrounding content.
+export function TournamentPromoBanner({ className = '' }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className={`glow-interactive w-full flex items-center gap-3 rounded-2xl bg-interactive px-4 py-3 text-left active:scale-[.99] transition ease-spring ${className}`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-inverse shrink-0 animate-pulse" />
+        <span className="flex-1 min-w-0">
+          <span className="block text-inverse text-sm font-bold truncate">🏓 The DoC Open 2.0</span>
+          <span className="block text-inverse/80 text-2xs font-medium truncate">Cash prizes up to ₹50,000 — tap for details</span>
+        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="text-inverse shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      {open && <TournamentPromoModal onClose={() => setOpen(false)} />}
+    </>
   )
 }
