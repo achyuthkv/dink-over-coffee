@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 const REGISTRATION_URL = 'https://hudle.in/events/doc-open-20/545225'
 const DISMISS_KEY = 'docOpen2Promo_dismissed'
@@ -23,7 +24,7 @@ const SPONSORS = [
 // banner's "View Details" trigger, so there's one place to update if the
 // prize/category details change.
 export function TournamentPromoModal({ onClose }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="card w-full max-w-sm max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -79,7 +80,8 @@ export function TournamentPromoModal({ onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
