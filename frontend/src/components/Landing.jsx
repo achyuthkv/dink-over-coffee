@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle.jsx'
 import Logo from './Logo.jsx'
 import ActivityHeatmap from './ActivityHeatmap.jsx'
 import NavTabs from './NavTabs.jsx'
+import { TournamentPromoBanner } from './TournamentPromoPopup.jsx'
 
 function fmtDate(d) {
   if (!d) return ''
@@ -49,6 +50,10 @@ export default function Landing() {
             <NavTabs />
           </div>
         </nav>
+
+        <div className="relative z-10 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-6">
+          <TournamentPromoBanner />
+        </div>
 
         {/* Hero content */}
         <section className="relative z-10 px-6 md:px-12 lg:px-20 max-w-7xl mx-auto w-full pt-20 pb-20 md:pt-28 md:pb-24 lg:pt-32 lg:pb-28 flex flex-col lg:flex-row lg:items-center lg:gap-20">

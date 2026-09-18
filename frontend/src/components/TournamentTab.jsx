@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js'
 import { computeStandings } from '../lib/tournament.js'
 import { StandingsTable, MatchRow, BracketView } from './tournament/shared.jsx'
 import TournamentRegisterForm from './TournamentRegisterForm.jsx'
+import { TournamentPromoBanner } from './TournamentPromoPopup.jsx'
 
 const FORMAT_LABEL = { round_robin: 'Round Robin', single_elim: 'Single Elimination', group_knockout: 'Group Stage + Knockout' }
 
@@ -278,13 +279,28 @@ export default function TournamentTab() {
     return () => { supabase.removeChannel(channel) }
   }, [tournament?.id])
 
-  if (loading) return <div className="card text-center text-secondary text-sm">Loading tournament…</div>
-  if (notFound) return <div className="card text-center text-secondary text-sm">No tournament right now. Check back soon.</div>
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <TournamentPromoBanner />
+        <div className="card text-center text-secondary text-sm">Loading tournament…</div>
+      </div>
+    )
+  }
+  if (notFound) {
+    return (
+      <div className="space-y-5">
+        <TournamentPromoBanner />
+        <div className="card text-center text-secondary text-sm">No tournament right now. Check back soon.</div>
+      </div>
+    )
+  }
 
   const viewingCategory = categories.find(c => c.id === viewingCategoryId)
 
   return (
     <div className="space-y-5">
+      <TournamentPromoBanner />
       <section>
         <div className="flex items-center gap-2">
           <h2 className="text-primary font-bold md:text-lg">{tournament.name}</h2>
