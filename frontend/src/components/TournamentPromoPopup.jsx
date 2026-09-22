@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 
 const REGISTRATION_URL = 'https://hudle.in/events/doc-open-20/545225'
 const DISMISS_KEY = 'docOpen2Promo_dismissed'
+const TOURNAMENT_DATE_LONG = 'Sunday, 25 October'
+const TOURNAMENT_DATE_SHORT = 'Sun, 25 Oct'
 
 const CATEGORIES = [
   { label: 'Singles < 3.6', first: 5000, second: 2500 },
@@ -32,6 +34,7 @@ export function TournamentPromoModal({ onClose }) {
             <span className="badge-success">🏓 New Tournament</span>
             <h3 className="text-primary font-extrabold text-xl mt-2 leading-tight">The DoC Open 2.0</h3>
             <p className="text-secondary text-sm mt-0.5">A pickleball tournament for all</p>
+            <p className="text-interactive text-2xs font-bold mt-1">📅 {TOURNAMENT_DATE_LONG}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full border border-border text-muted active:bg-bg transition" aria-label="Close">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -124,7 +127,7 @@ export function TournamentPromoBanner({ className = '' }) {
         <span className="w-1.5 h-1.5 rounded-full bg-inverse shrink-0 animate-pulse" />
         <span className="flex-1 min-w-0">
           <span className="block text-inverse text-sm font-bold truncate">🏓 The DoC Open 2.0</span>
-          <span className="block text-inverse/80 text-2xs font-medium truncate">Cash prizes up to ₹50,000 — tap for details</span>
+          <span className="block text-inverse/80 text-2xs font-medium truncate">{TOURNAMENT_DATE_SHORT} · Cash prizes up to ₹50,000</span>
         </span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="text-inverse shrink-0"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
