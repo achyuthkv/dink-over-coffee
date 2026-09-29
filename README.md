@@ -5,7 +5,7 @@ Mobile-first session registration for the Dink Over Coffee pickleball community.
 - **Frontend:** Vite + React + Tailwind, deployed on Vercel as a static SPA (with an `/admin` area for organizers).
 - **Backend:** Vercel serverless functions (`api/*.js`) backed by a Supabase (Postgres) database.
 - **Auth:** Supabase Auth — organizers sign in to reach `/admin`; admin-only API routes check the bearer token.
-- **Payments:** Razorpay — server-side orders, signature verified before a slot is confirmed. Optional per-deployment: if `VITE_RAZORPAY_KEY_ID` isn't set, the frontend falls back to free registration (`register`/`waitlist`) instead of the paid checkout flow.
+- **Payments:** Cashfree Payments — server-side orders, order status re-fetched from Cashfree (never trusted from the client) before a slot is confirmed. Optional per-deployment: if `VITE_CASHFREE_MODE` isn't set, the frontend falls back to free registration (`register`/`waitlist`) instead of the paid checkout flow.
 - **Email:** Resend, for booking confirmations (with an .ics calendar attachment) and organizer broadcast emails.
 - **Concurrency:** Hold-then-confirm for paid sessions. A slot is held for `HOLD_TTL_MINUTES` (default 5) when checkout starts; expired holds free up automatically. Free registrations use an insert-then-verify pattern (`atomicRegister`) to avoid overbooking under concurrent requests.
 
@@ -26,7 +26,7 @@ frontend/          Vite + React + Tailwind app (public booking flow + /admin + /
     api.js          Thin fetch wrapper around the /api/* endpoints
     supabase.js     Browser Supabase client (anon key)
 api/                Vercel serverless functions — one file per route (Vercel's Hobby plan caps the function count, so routes are consolidated with an `action` field where it makes sense, e.g. `waiver.js`, `shop.js`, `tournament.js`)
-  _lib/             Shared server helpers (supabase client, slot counting, atomic register, Razorpay, rate limiting, email, tournament capacity/validation) — underscore prefix excludes these from Vercel's function count
+  _lib/             Shared server helpers (supabase client, slot counting, atomic register, Cashfree, rate limiting, email, tournament capacity/validation) — underscore prefix excludes these from Vercel's function count
   _dev-server.js    Minimal local HTTP server that mounts api/*.js for `npm run dev:api` — underscore-prefixed so it isn't deployed as its own function
 supabase/migrations/  SQL schema/RLS for tables not fully expressible as "run this once by hand" — the tournament module and the organizer/referee role split (see Tournaments and Roles below)
 apps-script/        Legacy/unused Apps Script prototype — not part of the current stack
@@ -43,24 +43,24 @@ Create a Supabase project and set up (at minimum) these tables — inferred from
 - **sessions** — `id, date, time, venue, price, max_slots, waitlist_max, beginner_slots, beginner_waitlist_max, active, title, description, event_type, venue_id`
   - `event_type` is one of `regular`, `dupr`, `dupr_doubles`, `dupr_teams` — controls whether DUPR IDs / partner fields are required.
   - `beginner_slots` / `beginner_waitlist_max` are nullable — leave null for sessions that don't split capacity by skill.
-- **players** — `id, session_id, name, phone, email, skill, dupr_id, partner_name, partner_phone, partner_dupr_id, needs_partner, amount, razorpay_payment_id, razorpay_order_id, status (confirmed|waitlisted), created_at`
-- **holds** — `id, session_id, razorpay_order_id, expires_at, status (active|consumed), slots`
+- **players** — `id, session_id, name, phone, email, skill, dupr_id, partner_name, partner_phone, partner_dupr_id, needs_partner, amount, razorpay_payment_id, razorpay_order_id, status (confirmed|waitlisted), created_at`. `razorpay_payment_id`/`razorpay_order_id` are legacy column names kept as-is post-Cashfree-migration (to avoid a schema change against live data) — both now hold the Cashfree `order_id`.
+- **holds** — `id, session_id, razorpay_order_id, player (jsonb snapshot of the registration form, read back on payment confirmation), expires_at, status (active|consumed), slots`. `razorpay_order_id` holds the Cashfree `order_id` (see note above).
 - **venues** — `id, name, address, google_maps_url`
 - **upi_accounts** — `id, label, upi_id, qr_image_url`. RLS-locked to `authenticated` only (organizer, via `/admin` → Manage → Payment Methods) — no anon policy at all, since public pages never query it directly; they get UPI details through server-side API routes using the service role key instead.
 - **session_upis** — `session_id, upi_account_id, sort_order` (join table for per-session UPI display). Same RLS lockdown as `upi_accounts`, for the same reason.
 - **waivers** — `id, phone, name, signature, signed_at`
 - **products** — `id, name, description, price, mrp (numeric, nullable), images (text[], nullable), sizes (text[], nullable), stock (integer, nullable — null means unlimited), category, active, created_at`. Managed directly in Supabase for now; there's no admin UI for it yet. `mrp` is optional — when set above `price`, the shop shows it struck through next to the discounted price with a computed `% off` badge; leave it null (or equal to `price`) for no discount. `images` holds one or more URLs (e.g. `{https://.../front.jpg,https://.../back.jpg}`); with more than one, the shop shows a swipeable carousel with dot indicators — with zero or one, it's a plain image (or the placeholder icon).
-- **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Razorpay payment is in flight.
+- **shop_holds** — `id, razorpay_order_id, items (jsonb snapshot of the cart), customer (jsonb), amount, expires_at, status (active|consumed)`. Mirrors `holds` for the shop checkout — reserves stock while a Cashfree payment is in flight. `razorpay_order_id` holds the Cashfree `order_id` (legacy column name, see `players` note above).
 - **shop_orders** — `id, customer_name, phone, email, address, city, pincode, amount, currency, razorpay_order_id, razorpay_payment_id, items (jsonb), created_at`, plus two independent state machines:
-  - `payment_status` (`pending|paid|refunded`) — `pending` means the buyer chose to pay manually via UPI (no Razorpay key configured) or hasn't paid yet; `paid` means Razorpay verified the payment, or an organizer marked a manual order as paid in `/admin`.
+  - `payment_status` (`pending|paid|refunded`) — `pending` means the buyer chose to pay manually via UPI (no Cashfree key configured) or hasn't paid yet; `paid` means the API re-fetched the order from Cashfree and confirmed `order_status: PAID`, or an organizer marked a manual order as paid in `/admin`.
   - `order_status` (`placed|confirmed|packed|shipped|delivered|cancelled`) — the fulfillment pipeline, advanced by an organizer in `/admin`, with a timestamp column per stage (`confirmed_at`, `packed_at`, `shipped_at`, `delivered_at`, `cancelled_at`) plus `cancellation_reason`, `shipping_carrier`, `tracking_number`, `tracking_url`.
 - **tournaments** — `id, name, description, sport, venue, start_date, end_date, contact_phone (nullable), status (setup|active|completed), created_at`. Just the event shell — everything format/registration/fixture-related lives one level down, on its categories. `setup` is hidden from the public `/tournament` page (organizers can stage categories before anything's visible); `active` and `completed` are public. `/tournament` shows whichever `active` tournament is newest, falling back to the newest `completed` one so results linger after an event ends. `contact_phone` is a per-tournament "call/WhatsApp us" number for registration issues, editable from `/admin`'s tournament Details panel — falls back to the site-wide `VITE_SUPPORT_PHONE` when unset.
 - **tournament_categories** — `id, tournament_id, name, format (round_robin|single_elim|group_knockout), team_size (1|2), max_teams (nullable), entry_fee, early_bird_fee (nullable), early_bird_deadline (nullable date), advance_per_group, status (setup|registration_open|registration_closed|active|completed), sort_order, created_at`. A tournament runs one or more of these in parallel (Men's Doubles, Mixed, a skill bracket, …), each with its own bracket type, entry fee and roster. Registration is entirely category-based — there's no link to a `sessions` row; see **Tournaments** below for the registration flow.
 - **tournament_groups** — `id, category_id, name, sort_order, created_at`. A round-robin pool within a category — for `round_robin` these are the whole story; for `group_knockout` they're the group stage that feeds a bracket.
 - **tournament_courts** — `id, tournament_id, name, sort_order, created_at`. Tournament-level scheduling metadata only (which physical courts exist) — matches aren't auto-assigned to one; distinct from a `tournament_groups` pool.
 - **tournament_teams** — `id, category_id, group_id (nullable), name, player1_name, player2_name, seed (nullable), status (confirmed|waitlisted|withdrawn), created_at`. Public-readable columns only, by design — see `tournament_registrations` for why contact details live in a separate table.
-- **tournament_registrations** — `id, team_id (unique, references tournament_teams), phone, player2_phone (nullable), dupr_id, partner_dupr_id (nullable), tshirt_size, partner_tshirt_size (nullable), email (nullable), amount, payment_status (free|pending|paid|refunded), razorpay_order_id, razorpay_payment_id, created_at`. Contact + payment details for a registration, split out of `tournament_teams` and RLS-locked to `authenticated` only (no anon policy at all, same reasoning as `upi_accounts`) — the public live-bracket/standings page selects every column of `tournament_teams` freely, so nothing sensitive can live there.
-- **tournament_holds** — `id, category_id, razorpay_order_id, team (jsonb snapshot of the registration form), amount, expires_at, status (active|consumed), created_at`. Hold-then-confirm for a paid category entry, mirroring `holds`/`shop_holds`.
+- **tournament_registrations** — `id, team_id (unique, references tournament_teams), phone, player2_phone (nullable), dupr_id, partner_dupr_id (nullable), tshirt_size, partner_tshirt_size (nullable), email (nullable), amount, payment_status (free|pending|paid|refunded), razorpay_order_id, razorpay_payment_id, created_at`. Contact + payment details for a registration, split out of `tournament_teams` and RLS-locked to `authenticated` only (no anon policy at all, same reasoning as `upi_accounts`) — the public live-bracket/standings page selects every column of `tournament_teams` freely, so nothing sensitive can live there. `razorpay_order_id`/`razorpay_payment_id` hold the Cashfree `order_id` (legacy column names, see `players` note above).
+- **tournament_holds** — `id, category_id, razorpay_order_id, team (jsonb snapshot of the registration form), amount, expires_at, status (active|consumed), created_at`. Hold-then-confirm for a paid category entry, mirroring `holds`/`shop_holds`. `razorpay_order_id` holds the Cashfree `order_id`.
 - **tournament_matches** — `id, category_id, group_id (nullable — null for a knockout match), court_id (nullable), stage (group|round_of_32|round_of_16|quarterfinal|semifinal|final), round, bracket_slot, match_number, team_a_id, team_b_id, team_a_score, team_b_score, winner_team_id, status (scheduled|completed|walkover), scheduled_time, created_at`. `round`/`bracket_slot` encode a knockout bracket's tree (round *r* slot *s*'s winner feeds round *r+1* slot ⌊s/2⌋) so advancement is a pure computation (`computeAdvancement` in `frontend/src/lib/tournament.js`) rather than a stored next-match pointer; group-stage matches leave both at 0.
 
 The full schema (tables, indexes, and RLS policies) is spread across `supabase/migrations/000{1,2,3,4}_*.sql` — run them in order against a Supabase project's SQL editor. `0001` is a breaking change to the old flat tournament schema (drops and recreates `tournament_courts`/`tournament_teams`/`tournament_matches`, adds the new tables above) — export anything worth keeping from an existing tournament first.
@@ -69,11 +69,12 @@ Optional: a Postgres function `atomic_register(p_session_id, p_name, p_phone, p_
 
 Enable Supabase Auth (email/password) and create organizer accounts — `/admin` and admin-only endpoints (e.g. `api/tournament.js`) require a valid Supabase session token.
 
-### 2. Razorpay (optional — omit to run free-registration only)
+### 2. Cashfree Payments (optional — omit to run free-registration only)
 
-- In the Razorpay dashboard, generate API keys (Settings → API Keys). Use **test mode** until ready.
-- The frontend only sees `VITE_RAZORPAY_KEY_ID`; the secret stays server-side.
-- `api/confirm-payment.js` verifies the `razorpay_signature` HMAC-SHA256 of `order_id|payment_id` before booking the slot.
+- Create a [Cashfree](https://merchant.cashfree.com) account and grab the **App ID** and **Secret Key** from Developers → API Keys. Use the **sandbox** keys/environment until ready to go live.
+- The frontend only sees `VITE_CASHFREE_MODE` (`sandbox` or `production`) — no key ever reaches the client. The App ID/Secret Key stay server-side and are used to create orders and to re-fetch order status from Cashfree.
+- `api/confirm-payment.js` (and the `shop`/`tournament` equivalents) never trust the client's callback — they call `GET /pg/orders/{order_id}` and only confirm the slot/order once Cashfree reports `order_status: PAID`.
+- Before going live: whitelist your production domain in the Cashfree dashboard (Developers → Webhooks/Domains) — this requires the site to have Contact Us, Terms & Conditions, and Refunds/Cancellations pages published, and can take up to 24 hours to review.
 
 ### 3. Resend (optional — omit to skip confirmation/broadcast emails)
 
@@ -88,8 +89,9 @@ Create two files (both gitignored) and fill in real values — set the same keys
 ```
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
+CASHFREE_APP_ID=
+CASHFREE_SECRET_KEY=
+CASHFREE_ENV=SANDBOX
 RESEND_API_KEY=
 HOLD_TTL_MINUTES=5
 ```
@@ -99,7 +101,7 @@ HOLD_TTL_MINUTES=5
 ```
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_RAZORPAY_KEY_ID=
+VITE_CASHFREE_MODE=sandbox
 VITE_SUPPORT_PHONE=
 ```
 
@@ -135,13 +137,13 @@ Tests live in `tests/` and cover the `api/` handlers (`register`, `waitlist`, `s
 
 ## Booking flow
 
-**Paid sessions** (Razorpay configured):
+**Paid sessions** (Cashfree configured):
 1. Player picks a session, fills name/phone/skill (+ DUPR ID / partner info for `dupr*` event types), taps **Pay**.
-2. Frontend calls `create-order` — the API re-checks slot availability, creates a Razorpay order server-side, and writes a row to **holds** with `expiresAt = now + HOLD_TTL_MINUTES`.
-3. Razorpay checkout opens with the `order_id`.
-4. On success, frontend calls `confirm-payment` with `(holdId, sessionId, razorpay_order_id, razorpay_payment_id, razorpay_signature)`. The API verifies the signature, marks the hold consumed, inserts a **players** row, and sends a confirmation email if Resend is configured.
+2. Frontend calls `create-order` — the API re-checks slot availability, creates a Cashfree order server-side (amount in rupees), and writes a row to **holds** with the player's form data snapshotted into `player` and `expiresAt = now + HOLD_TTL_MINUTES`.
+3. Cashfree's Web SDK (`cashfree.checkout({ paymentSessionId, redirectTarget: '_modal' })`) opens using the `payment_session_id` returned by `create-order` — no API key ever reaches the browser.
+4. On the checkout promise resolving, frontend calls `confirm-payment` with `(holdId, sessionId, orderId)`. The API re-fetches the order from Cashfree, and only if `order_status === 'PAID'` does it mark the hold consumed, read back the `player` snapshot, insert a **players** row, and send a confirmation email if Resend is configured — the client-side result is never trusted on its own.
 
-**Free sessions / no Razorpay key**:
+**Free sessions / no Cashfree key**:
 1. Frontend calls `register` (or `waitlist` once slots are full) directly — no hold/payment step. Availability and duplicate-registration checks happen server-side, and `atomicRegister` guards against races before the row is committed.
 
 Both paths re-verify capacity after insert and roll back on over-subscription, so concurrent submissions can't oversell a session.
@@ -150,12 +152,12 @@ Both paths re-verify capacity after insert and roll back on over-subscription, s
 
 A single screen for browsing merchandise and checking out — no login or persistent cart. Products are fetched fresh on load; picking a size and quantity per product adds it to an in-memory order list (cleared on refresh, nothing written to the DB until checkout). All shop routes live behind one Vercel function, `api/shop.js`, dispatched by an `action` field in the request body (`products` / `create-order` / `confirm-payment` / `order`) to stay within the Hobby plan's function-count limit.
 
-**Razorpay configured:**
+**Cashfree configured:**
 1. Buyer picks items, fills shipping details, taps **Pay & checkout**.
-2. Frontend calls `shop` with `action: 'create-order'` — the API re-prices every item server-side, checks stock (accounting for other in-flight holds), creates a Razorpay order, and writes a **shop_holds** row with a 5-minute TTL.
-3. On successful payment, frontend calls `shop` with `action: 'confirm-payment'`, which verifies the signature, inserts a **shop_orders** row (`payment_status: paid`, `order_status: confirmed`), decrements product stock, and emails a confirmation if Resend is configured.
+2. Frontend calls `shop` with `action: 'create-order'` — the API re-prices every item server-side, checks stock (accounting for other in-flight holds), creates a Cashfree order, and writes a **shop_holds** row with a 5-minute TTL (`HOLD_TTL_MINUTES`).
+3. On the Cashfree checkout promise resolving, frontend calls `shop` with `action: 'confirm-payment'`, which re-fetches the order from Cashfree and only proceeds if `order_status === 'PAID'` — then inserts a **shop_orders** row (`payment_status: paid`, `order_status: confirmed`), decrements product stock, and emails a confirmation if Resend is configured.
 
-**No Razorpay key:**
+**No Cashfree key:**
 1. Frontend calls `shop` with `action: 'order'` directly — the order is inserted as `payment_status: pending`, `order_status: placed`, stock is decremented, and the response includes UPI accounts so the buyer can pay manually. The organizer reconciles payment and ships once received.
 
 ## Tournaments (`/tournament`)
@@ -175,7 +177,7 @@ A category-based tournament engine: one tournament (name, sport, venue, dates) r
 3. **+ New Category** — name, format, singles/doubles, optional max teams, entry fee (+ optional early-bird fee and deadline), and — for Group Stage + Knockout — how many advance per group. Tap into a category to manage everything below. All of these fields stay editable afterward via **Edit** at the top of the category screen — format and singles/doubles lock once any team has registered (changing either after rosters/brackets exist would invalidate them), everything else (name, max teams, fees, advance-per-group) can be changed anytime.
 
 **Registration** (each category tab): a category's status controls what's visible/open — `setup` (organizer staging it, invisible on `/tournament`), `registration_open` (players can sign up), `registration_closed`, `active`, `completed`. Registration is entirely category-based — there's no session to link, so a category's roster only ever comes from two places, freely mixed:
-- **Public self-registration** on `/tournament` (once a category is `registration_open`): a compact team form (player 1 + partner if doubles, phone, DUPR ID, and T-shirt size for every player — all required, each field with a persistent label rather than a placeholder that disappears on typing — plus optional email; a "Size chart" link opens the T-shirt size chart). Picking a category from the grid jumps straight into this form when it's still open for registration and no fixtures have been generated yet — nothing else to see, so no reason to make the player tap through a detail screen first; once fixtures exist, picking the category shows the normal detail view (standings/bracket) with a Register button instead. Free categories register immediately; paid ones go through the same Razorpay hold-then-confirm flow as session/shop registration (`create-order` → checkout → `confirm-payment`), or fall back to "pay by UPI, organizer marks it paid" if no Razorpay key is configured — the confirmation screen always spells out what's owed and how to pay, even if no UPI account is configured yet. A category with `max_teams` set waitlists new entries once full (confirmed teams only count against the cap; the organizer promotes off the waitlist from the Registrations tab). The form and confirmation screen show a "having trouble? call/WhatsApp" line using the tournament's `contact_phone` (set from `/admin`), falling back to the site-wide `VITE_SUPPORT_PHONE` if unset. A paid category's form also shows a "Cancellation & Refund Policy" link (entry fees are non-refundable except on organizer cancellation, which is a full refund).
+- **Public self-registration** on `/tournament` (once a category is `registration_open`): a compact team form (player 1 + partner if doubles, phone, DUPR ID, and T-shirt size for every player — all required, each field with a persistent label rather than a placeholder that disappears on typing — plus optional email; a "Size chart" link opens the T-shirt size chart). Picking a category from the grid jumps straight into this form when it's still open for registration and no fixtures have been generated yet — nothing else to see, so no reason to make the player tap through a detail screen first; once fixtures exist, picking the category shows the normal detail view (standings/bracket) with a Register button instead. Free categories register immediately; paid ones go through the same Cashfree hold-then-confirm flow as session/shop registration (`create-order` → checkout → `confirm-payment`, verified by re-fetching order status from Cashfree), or fall back to "pay by UPI, organizer marks it paid" if no Cashfree key is configured — the confirmation screen always spells out what's owed and how to pay, even if no UPI account is configured yet. A category with `max_teams` set waitlists new entries once full (confirmed teams only count against the cap; the organizer promotes off the waitlist from the Registrations tab). The form and confirmation screen show a "having trouble? call/WhatsApp" line using the tournament's `contact_phone` (set from `/admin`), falling back to the site-wide `VITE_SUPPORT_PHONE` if unset. A paid category's form also shows a "Cancellation & Refund Policy" link (entry fees are non-refundable except on organizer cancellation, which is a full refund).
 - **Bulk CSV import** in the Registrations tab (admin-only) — upload a spreadsheet (`teamName, player1Name, player1Phone, player2Name, player2Phone, email` columns) and every valid row is inserted as a free, non-payment entry (confirmed or waitlisted against the same capacity rule); invalid rows are reported back per-row without failing the whole import.
 
 An organizer can also add a team by hand (walk-in entries, no self-registration needed) from the Registrations tab.

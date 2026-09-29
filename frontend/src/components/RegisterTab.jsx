@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
-import { loadRazorpay } from '../lib/loadRazorpay.js'
+import { api, CASHFREE_MODE, PAYMENTS_ENABLED } from '../api.js'
+import { getCashfree } from '../lib/loadCashfree.js'
 import SessionCard from './SessionCard.jsx'
 import WaiverConsent from './WaiverConsent.jsx'
+import HoldTimer from './HoldTimer.jsx'
 
 const ALL_SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -29,6 +30,7 @@ export default function RegisterTab() {
   })
   const [hasPartner, setHasPartner] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [holdExpiresAt, setHoldExpiresAt] = useState(null)
   const [success, setSuccess] = useState(null)
   const [waitlistSuccess, setWaitlistSuccess] = useState(null)
   const [players, setPlayers] = useState([])
@@ -67,7 +69,7 @@ export default function RegisterTab() {
   }
 
   useEffect(() => { load() }, [])
-  useEffect(() => { if (PAYMENTS_ENABLED && selected) loadRazorpay() }, [selected])
+  useEffect(() => { if (PAYMENTS_ENABLED && selected) getCashfree(CASHFREE_MODE) }, [selected])
 
   useEffect(() => {
     if (selected) loadPlayers(selected.id)
@@ -243,6 +245,7 @@ export default function RegisterTab() {
       }
 
       const order = await api.createOrder(selected.id, player)
+      setHoldExpiresAt(order.expiresAt)
       await openCheckout(order, player)
     } catch (e) {
       setError(e.message || 'Could not start payment')
@@ -251,53 +254,58 @@ export default function RegisterTab() {
   }
 
   async function openCheckout(order, player) {
-    try { await loadRazorpay() } catch {
-      setError('Razorpay failed to load. Check your network.')
+    let cashfree
+    try { cashfree = await getCashfree(CASHFREE_MODE) } catch {
+      setError('Payment gateway failed to load. Check your network.')
       setSubmitting(false)
+      setHoldExpiresAt(null)
       return
     }
-    return new Promise((resolve) => {
-      const rzp = new window.Razorpay({
-        key: RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        order_id: order.orderId,
-        name: 'Dink Over Coffee',
-        description: `${selected.venue} · ${selected.time}`,
-        prefill: { name: player.name, contact: player.phone },
-        theme: { color: '#05AD86' },
-        modal: {
-          ondismiss: () => { setSubmitting(false); resolve() }
-        },
-        handler: async (resp) => {
-          try {
-            await api.confirmPayment({
-              holdId: order.holdId,
-              sessionId: order.sessionId,
-              razorpay_order_id: resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature: resp.razorpay_signature
-            })
-            setSuccess({ session: selected, player, isTeam: player.isTeam })
-            localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
-            setForm({ name: '', phone: '', email: '', skill: '', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
-            setSelected(null)
-            await load()
-          } catch (e) {
-            setError(e.message || 'Payment confirmation failed')
-          } finally {
-            setSubmitting(false)
-            resolve()
-          }
-        }
-      })
-      rzp.on('payment.failed', () => {
-        setError('Payment failed. Your slot was released.')
-        setSubmitting(false)
-        resolve()
-      })
-      rzp.open()
+
+    const result = await cashfree.checkout({
+      paymentSessionId: order.paymentSessionId,
+      redirectTarget: '_modal'
     })
+
+    // Cashfree's checkout() Promise has three terminal states -- handling
+    // only `error` would misreport "closed the modal without paying" as a
+    // failure, so all three get a distinct outcome.
+    if (result.error) {
+      // SDK/network error OR the customer just dismissed the modal --
+      // neither means the payment failed, so no "Payment failed" toast here.
+      setError('Payment was not completed.')
+      setSubmitting(false)
+      setHoldExpiresAt(null)
+      return
+    }
+
+    if (result.redirect) {
+      // Only fires for non-modal redirect targets; kept as a defensive
+      // no-op since this flow always uses "_modal".
+      return
+    }
+
+    if (result.paymentDetails) {
+      // An attempt was submitted -- it may have succeeded or failed at the
+      // bank. Never trust this alone; the backend re-fetches order status.
+      try {
+        await api.confirmPayment({ holdId: order.holdId, sessionId: order.sessionId, orderId: order.orderId })
+        setSuccess({ session: selected, player, isTeam: player.isTeam })
+        localStorage.setItem('doc_player', JSON.stringify({ name: player.name, phone: player.phone, email: player.email || '', skill: player.skill, duprId: player.duprId || '', partnerName: player.partnerName || '', partnerPhone: player.partnerPhone || '', partnerDuprId: player.partnerDuprId || '' }))
+        setForm({ name: '', phone: '', email: '', skill: '', duprId: '', partnerName: '', partnerPhone: '', partnerDuprId: '' })
+        setSelected(null)
+        await load()
+      } catch (e) {
+        setError(e.message || 'Payment confirmation failed')
+      } finally {
+        setSubmitting(false)
+        setHoldExpiresAt(null)
+      }
+      return
+    }
+
+    setSubmitting(false)
+    setHoldExpiresAt(null)
   }
 
   if (waitlistSuccess) {
@@ -640,7 +648,11 @@ export default function RegisterTab() {
           </button>
           {waitlistAvailable && <p className="text-2xs text-warning-muted mt-2 text-center">{isBeginner ? 'Beginner' : 'Non-beginner'} slots full. Join the waitlist — we'll add you if a spot opens.</p>}
           {slotsFull && !waitlistAvailable && <p className="text-2xs text-error mt-2 text-center">No slots or waitlist available for your skill level.</p>}
-          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && Number(selected.price) > 0 && <p className="text-2xs text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>}
+          {!slotsFull && !waitlistAvailable && PAYMENTS_ENABLED && Number(selected.price) > 0 && (
+            holdExpiresAt
+              ? <HoldTimer expiresAt={holdExpiresAt} />
+              : <p className="text-2xs text-secondary mt-2 text-center">Slot held for 5 min while you pay.</p>
+          )}
         </section>
       )}
 

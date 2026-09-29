@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED, SUPPORT_PHONE } from '../api.js'
-import { loadRazorpay } from '../lib/loadRazorpay.js'
+import { api, CASHFREE_MODE, PAYMENTS_ENABLED, SUPPORT_PHONE } from '../api.js'
+import { getCashfree } from '../lib/loadCashfree.js'
+import HoldTimer from './HoldTimer.jsx'
 
 const TSHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 const TSHIRT_CHART = [
@@ -102,6 +103,7 @@ export default function TournamentRegisterForm({ category, contactPhone, onDone,
     player2Name: '', player2Phone: '', player2DuprId: '', player2TshirtSize: '', email: ''
   })
   const [submitting, setSubmitting] = useState(false)
+  const [holdExpiresAt, setHoldExpiresAt] = useState(null)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const [showSizeChart, setShowSizeChart] = useState(false)
@@ -110,7 +112,7 @@ export default function TournamentRegisterForm({ category, contactPhone, onDone,
   const fee = effectiveFee(category)
   const isEarlyBird = fee !== Number(category.entry_fee)
 
-  useEffect(() => { if (PAYMENTS_ENABLED && fee > 0) loadRazorpay() }, [fee])
+  useEffect(() => { if (PAYMENTS_ENABLED && fee > 0) getCashfree(CASHFREE_MODE) }, [fee])
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
@@ -154,6 +156,7 @@ export default function TournamentRegisterForm({ category, contactPhone, onDone,
       }
       const order = await api.tournamentCreateOrder(category.id, team)
       if (order.alreadyRegistered) { setError('This phone number is already registered for this category.'); setSubmitting(false); return }
+      setHoldExpiresAt(order.expiresAt)
       await openCheckout(order, team)
     } catch (e) {
       setError(e.message || 'Registration failed')
@@ -162,39 +165,43 @@ export default function TournamentRegisterForm({ category, contactPhone, onDone,
   }
 
   async function openCheckout(order, team) {
-    try { await loadRazorpay() } catch {
-      setError('Razorpay failed to load. Check your network.')
+    let cashfree
+    try { cashfree = await getCashfree(CASHFREE_MODE) } catch {
+      setError('Payment gateway failed to load. Check your network.')
       setSubmitting(false)
+      setHoldExpiresAt(null)
       return
     }
-    const rzp = new window.Razorpay({
-      key: RAZORPAY_KEY_ID,
-      amount: order.amount,
-      currency: order.currency || 'INR',
-      order_id: order.orderId,
-      name: 'Dink Over Coffee',
-      description: `${category.name} entry`,
-      prefill: { name: team.player1Name, contact: team.player1Phone },
-      theme: { color: '#05AD86' },
-      modal: { ondismiss: () => setSubmitting(false) },
-      handler: async (resp) => {
-        try {
-          await api.tournamentConfirmPayment({
-            holdId: order.holdId,
-            razorpay_order_id: resp.razorpay_order_id,
-            razorpay_payment_id: resp.razorpay_payment_id,
-            razorpay_signature: resp.razorpay_signature
-          })
-          setResult({ status: 'confirmed', paymentStatus: 'paid' })
-        } catch (e) {
-          setError(e.message || 'Payment confirmation failed')
-        } finally {
-          setSubmitting(false)
-        }
-      }
+
+    const result = await cashfree.checkout({
+      paymentSessionId: order.paymentSessionId,
+      redirectTarget: '_modal'
     })
-    rzp.on('payment.failed', () => { setError('Payment failed — please try again.'); setSubmitting(false) })
-    rzp.open()
+
+    if (result.error) {
+      setError('Payment was not completed.')
+      setSubmitting(false)
+      setHoldExpiresAt(null)
+      return
+    }
+
+    if (result.redirect) return
+
+    if (result.paymentDetails) {
+      try {
+        await api.tournamentConfirmPayment({ holdId: order.holdId, orderId: order.orderId })
+        setResult({ status: 'confirmed', paymentStatus: 'paid' })
+      } catch (e) {
+        setError(e.message || 'Payment confirmation failed')
+      } finally {
+        setSubmitting(false)
+        setHoldExpiresAt(null)
+      }
+      return
+    }
+
+    setSubmitting(false)
+    setHoldExpiresAt(null)
   }
 
   if (result) {
@@ -263,6 +270,7 @@ export default function TournamentRegisterForm({ category, contactPhone, onDone,
       <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? 'Processing…' : (PAYMENTS_ENABLED && fee > 0) ? `Pay ₹${fee} & register` : 'Register'}
       </button>
+      {PAYMENTS_ENABLED && holdExpiresAt && <HoldTimer expiresAt={holdExpiresAt} />}
       {fee > 0 && (
         <button type="button" onClick={() => setShowPolicy(true)} className="w-full text-center text-2xs font-medium text-muted underline">
           Cancellation & Refund Policy

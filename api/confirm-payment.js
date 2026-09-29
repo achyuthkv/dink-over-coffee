@@ -1,19 +1,15 @@
 import supabase from './_lib/supabase.js';
-import { verifySignature, fetchOrder } from './_lib/razorpay.js';
+import { fetchCashfreeOrder } from './_lib/cashfree.js';
 import { sendConfirmationEmail } from './_lib/sendConfirmationEmail.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
   try {
-    const { holdId, sessionId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { holdId, sessionId, orderId } = req.body;
 
-    if (!holdId || !sessionId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!holdId || !sessionId || !orderId) {
       return res.status(400).json({ ok: false, error: 'Missing required fields' });
-    }
-
-    if (!verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
-      return res.status(400).json({ ok: false, error: 'Invalid payment signature' });
     }
 
     const { data: hold, error: holdErr } = await supabase
@@ -21,7 +17,7 @@ export default async function handler(req, res) {
       .select('*')
       .eq('id', holdId)
       .eq('session_id', sessionId)
-      .eq('razorpay_order_id', razorpay_order_id)
+      .eq('razorpay_order_id', orderId)
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
       .single();
@@ -30,26 +26,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Hold not found, expired, or already consumed' });
     }
 
-    const order = await fetchOrder(razorpay_order_id);
-    const notes = order.notes || {};
+    // Cashfree does not send a signed success payload to the client the way
+    // Razorpay did -- the only trustworthy signal is re-fetching the order
+    // from our own backend and checking its status directly.
+    const order = await fetchCashfreeOrder(orderId);
+    if (order.order_status !== 'PAID') {
+      return res.status(400).json({ ok: false, error: `Payment not completed (status: ${order.order_status})` });
+    }
+
+    const player = hold.player || {};
 
     const { error: insertErr } = await supabase
       .from('players')
       .insert({
         session_id: sessionId,
-        name: (notes.name || '').trim(),
-        phone: (notes.phone || '').trim(),
-        email: (notes.email || '').trim() || null,
-        skill: notes.skill || 'N/A',
-        amount: Number(order.amount) / 100,
-        razorpay_payment_id,
-        razorpay_order_id,
+        name: (player.name || '').trim(),
+        phone: (player.phone || '').trim(),
+        email: (player.email || '').trim() || null,
+        skill: player.skill || 'N/A',
+        amount: Number(order.order_amount),
+        razorpay_payment_id: orderId,
+        razorpay_order_id: orderId,
         status: 'confirmed',
-        ...(notes.duprId && { dupr_id: notes.duprId }),
-        ...(notes.partnerName && { partner_name: notes.partnerName.trim() }),
-        ...(notes.partnerPhone && { partner_phone: notes.partnerPhone.trim() }),
-        ...(notes.partnerDuprId && { partner_dupr_id: notes.partnerDuprId.trim() }),
-        ...(notes.needsPartner === 'true' && { needs_partner: true })
+        ...(player.duprId && { dupr_id: player.duprId }),
+        ...(player.partnerName && { partner_name: player.partnerName }),
+        ...(player.partnerPhone && { partner_phone: player.partnerPhone }),
+        ...(player.partnerDuprId && { partner_dupr_id: player.partnerDuprId }),
+        ...(player.needsPartner && { needs_partner: true })
       });
 
     if (insertErr && insertErr.code !== '23505') {
@@ -69,8 +72,8 @@ export default async function handler(req, res) {
 
     if (session) {
       sendConfirmationEmail(session, {
-        name: (notes.name || '').trim(),
-        email: (notes.email || '').trim() || null
+        name: (player.name || '').trim(),
+        email: (player.email || '').trim() || null
       });
     }
 

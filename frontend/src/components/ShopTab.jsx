@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, RAZORPAY_KEY_ID, PAYMENTS_ENABLED } from '../api.js'
-import { loadRazorpay } from '../lib/loadRazorpay.js'
+import { api, CASHFREE_MODE, PAYMENTS_ENABLED } from '../api.js'
+import { getCashfree } from '../lib/loadCashfree.js'
+import HoldTimer from './HoldTimer.jsx'
 
 function ProductImageCarousel({ images, name }) {
   const [index, setIndex] = useState(0)
@@ -62,6 +63,7 @@ export default function ShopTab() {
   })
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [holdExpiresAt, setHoldExpiresAt] = useState(null)
   const [success, setSuccess] = useState(null)
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function ShopTab() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => { if (PAYMENTS_ENABLED) loadRazorpay() }, [])
+  useEffect(() => { if (PAYMENTS_ENABLED) getCashfree(CASHFREE_MODE) }, [])
 
   function selectionFor(product) {
     return selections[product.id] || { size: product.sizes?.[0] || null, quantity: 1 }
@@ -148,6 +150,7 @@ export default function ShopTab() {
       }
 
       const order = await api.shopCreateOrder(items, trimmedCustomer)
+      setHoldExpiresAt(order.expiresAt)
       await openCheckout(order, trimmedCustomer)
     } catch (e) {
       setError(e.message || 'Could not start checkout')
@@ -156,50 +159,45 @@ export default function ShopTab() {
   }
 
   async function openCheckout(order, trimmedCustomer) {
-    try { await loadRazorpay() } catch {
-      setError('Razorpay failed to load. Check your network.')
+    let cashfree
+    try { cashfree = await getCashfree(CASHFREE_MODE) } catch {
+      setError('Payment gateway failed to load. Check your network.')
       setSubmitting(false)
+      setHoldExpiresAt(null)
       return
     }
-    return new Promise((resolve) => {
-      const rzp = new window.Razorpay({
-        key: RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        order_id: order.orderId,
-        name: 'Dink Over Coffee Shop',
-        description: 'Merchandise order',
-        prefill: { name: trimmedCustomer.name, contact: trimmedCustomer.phone, email: trimmedCustomer.email },
-        theme: { color: '#05AD86' },
-        modal: {
-          ondismiss: () => { setSubmitting(false); resolve() }
-        },
-        handler: async (resp) => {
-          try {
-            const res = await api.shopConfirmPayment({
-              holdId: order.holdId,
-              razorpay_order_id: resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature: resp.razorpay_signature
-            })
-            persistCustomer(trimmedCustomer)
-            setSuccess({ orderId: res.orderId, amount: order.amount / 100, items: orderItems, customer: trimmedCustomer, pending: false })
-            setOrderItems([])
-          } catch (e) {
-            setError(e.message || 'Payment confirmation failed')
-          } finally {
-            setSubmitting(false)
-            resolve()
-          }
-        }
-      })
-      rzp.on('payment.failed', () => {
-        setError('Payment failed. Please try again.')
-        setSubmitting(false)
-        resolve()
-      })
-      rzp.open()
+
+    const result = await cashfree.checkout({
+      paymentSessionId: order.paymentSessionId,
+      redirectTarget: '_modal'
     })
+
+    if (result.error) {
+      setError('Payment was not completed.')
+      setSubmitting(false)
+      setHoldExpiresAt(null)
+      return
+    }
+
+    if (result.redirect) return
+
+    if (result.paymentDetails) {
+      try {
+        const res = await api.shopConfirmPayment({ holdId: order.holdId, orderId: order.orderId })
+        persistCustomer(trimmedCustomer)
+        setSuccess({ orderId: res.orderId, amount: order.amount, items: orderItems, customer: trimmedCustomer, pending: false })
+        setOrderItems([])
+      } catch (e) {
+        setError(e.message || 'Payment confirmation failed')
+      } finally {
+        setSubmitting(false)
+        setHoldExpiresAt(null)
+      }
+      return
+    }
+
+    setSubmitting(false)
+    setHoldExpiresAt(null)
   }
 
   if (success) {
@@ -369,6 +367,7 @@ export default function ShopTab() {
             {submitting ? 'Processing…' : (PAYMENTS_ENABLED ? `Pay ₹${total} & checkout` : `Place order · ₹${total}`)}
           </button>
           {!PAYMENTS_ENABLED && <p className="text-2xs text-secondary mt-2 text-center">We'll share UPI payment details after you place the order.</p>}
+          {PAYMENTS_ENABLED && holdExpiresAt && <HoldTimer expiresAt={holdExpiresAt} />}
         </section>
       )}
 

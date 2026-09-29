@@ -1,6 +1,6 @@
 import supabase from './_lib/supabase.js';
 import { computeEntryFee, getTeamCounts, resolveEntryStatus, validateTeamPayload } from './_lib/tournamentCapacity.js';
-import { createRazorpayOrder, verifySignature, fetchOrder } from './_lib/razorpay.js';
+import { createCashfreeOrder, fetchCashfreeOrder } from './_lib/cashfree.js';
 import { rateLimit } from './_lib/rateLimit.js';
 
 const HOLD_TTL_MINUTES = Number(process.env.HOLD_TTL_MINUTES) || 5;
@@ -238,7 +238,7 @@ async function registerTeam(req, res) {
   return res.status(200).json({ ok: true, status, amount, paymentStatus });
 }
 
-// Paid entry via Razorpay -- a hold reserves the slot while checkout is in
+// Paid entry via Cashfree -- a hold reserves the slot while checkout is in
 // flight, same TTL/consume pattern as `holds`/`shop_holds`.
 async function createOrder(req, res) {
   if (!rateLimit(req).ok) return res.status(429).json({ ok: false, error: 'Too many requests. Please try again shortly.' });
@@ -259,14 +259,16 @@ async function createOrder(req, res) {
     return res.status(409).json({ ok: false, error: 'This category is full' });
   }
 
-  const amountPaise = Math.round(amount * 100);
-  const receipt = `trn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const orderId = `trn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
-  const order = await createRazorpayOrder({
-    amount: amountPaise,
-    currency: 'INR',
-    receipt,
-    notes: { categoryId: category.id, name: team.name, phone: team.phone }
+  const order = await createCashfreeOrder({
+    orderId,
+    amount, // rupees, decimal -- Cashfree, unlike Razorpay, does not take paise
+    customerId: team.phone,
+    customerPhone: team.phone,
+    customerEmail: team.email,
+    customerName: team.name,
+    returnUrl: `https://${req.headers.host}/tournament?cf_return=1`
   });
 
   const now = new Date();
@@ -274,34 +276,36 @@ async function createOrder(req, res) {
 
   const { data: hold, error: holdErr } = await supabase
     .from('tournament_holds')
-    .insert({ category_id: category.id, razorpay_order_id: order.id, team, amount, expires_at: expiresAt.toISOString(), status: 'active' })
+    .insert({ category_id: category.id, razorpay_order_id: orderId, team, amount, expires_at: expiresAt.toISOString(), status: 'active' })
     .select('id')
     .single();
   if (holdErr) return res.status(500).json({ ok: false, error: 'Failed to create hold' });
 
-  return res.status(200).json({ ok: true, holdId: hold.id, orderId: order.id, amount: amountPaise, currency: 'INR', expiresAt: expiresAt.toISOString() });
+  return res.status(200).json({ ok: true, holdId: hold.id, orderId, paymentSessionId: order.payment_session_id, amount, currency: 'INR', expiresAt: expiresAt.toISOString() });
 }
 
 async function confirmPayment(req, res) {
-  const { holdId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
-  if (!holdId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+  const { holdId, orderId } = req.body || {};
+  if (!holdId || !orderId) {
     return res.status(400).json({ ok: false, error: 'Missing required fields' });
-  }
-  if (!verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
-    return res.status(400).json({ ok: false, error: 'Invalid payment signature' });
   }
 
   const { data: hold, error: holdErr } = await supabase
     .from('tournament_holds')
     .select('*')
     .eq('id', holdId)
-    .eq('razorpay_order_id', razorpay_order_id)
+    .eq('razorpay_order_id', orderId)
     .eq('status', 'active')
     .gt('expires_at', new Date().toISOString())
     .single();
   if (holdErr || !hold) return res.status(400).json({ ok: false, error: 'Hold not found, expired, or already consumed' });
 
-  const order = await fetchOrder(razorpay_order_id);
+  // Cashfree doesn't send a signed success payload to the client -- re-fetch
+  // the order from our own backend and only fulfill on order_status "PAID".
+  const order = await fetchCashfreeOrder(orderId);
+  if (order.order_status !== 'PAID') {
+    return res.status(400).json({ ok: false, error: `Payment not completed (status: ${order.order_status})` });
+  }
   const team = hold.team;
 
   const { data: insertedTeam, error: teamErr } = await supabase
@@ -315,7 +319,7 @@ async function confirmPayment(req, res) {
     team_id: insertedTeam.id, phone: team.phone, player2_phone: team.player2_phone,
     dupr_id: team.dupr_id, partner_dupr_id: team.partner_dupr_id,
     tshirt_size: team.tshirt_size, partner_tshirt_size: team.partner_tshirt_size,
-    email: team.email, amount: Number(order.amount) / 100, payment_status: 'paid', razorpay_order_id, razorpay_payment_id
+    email: team.email, amount: Number(order.order_amount), payment_status: 'paid', razorpay_order_id: orderId, razorpay_payment_id: orderId
   });
 
   await supabase.from('tournament_holds').update({ status: 'consumed' }).eq('id', holdId);
