@@ -9,3 +9,4 @@ npm-debug.log*
 .vercel
 yarn.lock
 package-lock.json
+.claude/skills/

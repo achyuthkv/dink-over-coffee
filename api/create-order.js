@@ -1,5 +1,5 @@
 import supabase from './_lib/supabase.js';
-import { createRazorpayOrder } from './_lib/razorpay.js';
+import { createCashfreeOrder } from './_lib/cashfree.js';
 import { getSlotCounts, checkAvailability } from './_lib/slots.js';
 import { rateLimit } from './_lib/rateLimit.js';
 
@@ -78,14 +78,30 @@ export default async function handler(req, res) {
     const isTeam = isDoublesEvent && !!player.partnerName;
     const perTeamPricing = isTeamsOnly;
     const priceMultiplier = perTeamPricing ? 1 : (isTeam ? 2 : 1);
-    const amountPaise = Math.round(Number(session.price) * priceMultiplier * 100);
-    const receipt = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    // Cashfree order_amount is rupees (decimal) -- not paise like Razorpay.
+    const amount = Math.round(Number(session.price) * priceMultiplier * 100) / 100;
+    const orderId = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
-    const order = await createRazorpayOrder({
-      amount: amountPaise,
-      currency: 'INR',
-      receipt,
-      notes: { sessionId, name: player.name.trim(), phone: player.phone.trim(), email: player.email ? player.email.trim() : '', ...(player.skill && { skill: player.skill }), ...(isDuprEvent && player.duprId && { duprId: player.duprId }), ...(isDoublesEvent && player.partnerName && { partnerName: player.partnerName.trim() }), ...(isDoublesEvent && player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }), ...(isDoublesEvent && player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }), ...(isDoublesEvent && player.needsPartner && { needsPartner: 'true' }) }
+    const playerSnapshot = {
+      name: player.name.trim(),
+      phone: player.phone.trim(),
+      email: player.email ? player.email.trim() : '',
+      ...(player.skill && { skill: player.skill }),
+      ...(isDuprEvent && player.duprId && { duprId: player.duprId }),
+      ...(isDoublesEvent && player.partnerName && { partnerName: player.partnerName.trim() }),
+      ...(isDoublesEvent && player.partnerPhone && { partnerPhone: player.partnerPhone.trim() }),
+      ...(isDoublesEvent && player.partnerDuprId && { partnerDuprId: player.partnerDuprId.trim() }),
+      ...(isDoublesEvent && player.needsPartner && { needsPartner: true })
+    };
+
+    const order = await createCashfreeOrder({
+      orderId,
+      amount,
+      customerId: player.phone.trim(),
+      customerPhone: player.phone.trim(),
+      customerEmail: player.email ? player.email.trim() : undefined,
+      customerName: player.name.trim(),
+      returnUrl: `https://${req.headers.host}/events?cf_return=1`
     });
 
     const now = new Date();
@@ -95,10 +111,11 @@ export default async function handler(req, res) {
       .from('holds')
       .insert({
         session_id: sessionId,
-        razorpay_order_id: order.id,
+        razorpay_order_id: orderId,
         expires_at: expiresAt.toISOString(),
         status: 'active',
-        slots: isTeamsOnly ? 1 : (isTeam ? 2 : 1)
+        slots: isTeamsOnly ? 1 : (isTeam ? 2 : 1),
+        player: playerSnapshot
       })
       .select('id')
       .single();
@@ -109,8 +126,9 @@ export default async function handler(req, res) {
       ok: true,
       holdId: hold.id,
       sessionId,
-      orderId: order.id,
-      amount: amountPaise,
+      orderId,
+      paymentSessionId: order.payment_session_id,
+      amount,
       currency: 'INR',
       expiresAt: expiresAt.toISOString()
     });

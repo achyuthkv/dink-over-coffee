@@ -36,6 +36,11 @@ export const api = {
   deleteReferee: (refereeId, token) => call('tournament', { action: 'delete-referee', refereeId }, token)
 }
 
-export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID
-export const PAYMENTS_ENABLED = !!RAZORPAY_KEY_ID
+// Cashfree's web SDK needs no public key client-side (unlike Razorpay's
+// key_id) -- payment_session_id is the only client-safe token, and it's
+// short-lived and order-scoped. VITE_CASHFREE_MODE ("sandbox"|"production")
+// doubles as both the SDK's required `mode` value and the "is a payment
+// gateway configured" signal for the free-registration fallback.
+export const CASHFREE_MODE = import.meta.env.VITE_CASHFREE_MODE || ''
+export const PAYMENTS_ENABLED = !!CASHFREE_MODE
 export const SUPPORT_PHONE = import.meta.env.VITE_SUPPORT_PHONE || ''

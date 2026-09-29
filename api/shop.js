@@ -1,5 +1,5 @@
 import supabase from './_lib/supabase.js';
-import { createRazorpayOrder, verifySignature } from './_lib/razorpay.js';
+import { createCashfreeOrder, fetchCashfreeOrder } from './_lib/cashfree.js';
 import { getReservedQuantities } from './_lib/shopStock.js';
 import { validateCustomer, buildOrderItems, checkStock } from './_lib/shopOrder.js';
 import { sendShopConfirmationEmail } from './_lib/sendShopConfirmationEmail.js';
@@ -111,14 +111,16 @@ async function createOrder(req, res) {
   const { error: stockErr } = checkStock(qtyByProduct, productMap, reserved);
   if (stockErr) return res.status(409).json({ ok: false, error: stockErr });
 
-  const amountPaise = Math.round(amount * 100);
-  const receipt = `shop_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const orderId = `shop_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
-  const order = await createRazorpayOrder({
-    amount: amountPaise,
-    currency: 'INR',
-    receipt,
-    notes: { name: customer.name.trim(), phone: customer.phone.trim() }
+  const order = await createCashfreeOrder({
+    orderId,
+    amount, // rupees, decimal -- Cashfree, unlike Razorpay, does not take paise
+    customerId: customer.phone.trim(),
+    customerPhone: customer.phone.trim(),
+    customerEmail: customer.email.trim(),
+    customerName: customer.name.trim(),
+    returnUrl: `https://${req.headers.host}/shop?cf_return=1`
   });
 
   const now = new Date();
@@ -127,7 +129,7 @@ async function createOrder(req, res) {
   const { data: hold, error: holdErr } = await supabase
     .from('shop_holds')
     .insert({
-      razorpay_order_id: order.id,
+      razorpay_order_id: orderId,
       items: orderItems,
       customer: {
         name: customer.name.trim(),
@@ -149,35 +151,39 @@ async function createOrder(req, res) {
   return res.status(200).json({
     ok: true,
     holdId: hold.id,
-    orderId: order.id,
-    amount: amountPaise,
+    orderId,
+    paymentSessionId: order.payment_session_id,
+    amount,
     currency: 'INR',
     expiresAt: expiresAt.toISOString()
   });
 }
 
 async function confirmPayment(req, res) {
-  const { holdId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { holdId, orderId } = req.body;
 
-  if (!holdId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+  if (!holdId || !orderId) {
     return res.status(400).json({ ok: false, error: 'Missing required fields' });
-  }
-
-  if (!verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
-    return res.status(400).json({ ok: false, error: 'Invalid payment signature' });
   }
 
   const { data: hold, error: holdErr } = await supabase
     .from('shop_holds')
     .select('*')
     .eq('id', holdId)
-    .eq('razorpay_order_id', razorpay_order_id)
+    .eq('razorpay_order_id', orderId)
     .eq('status', 'active')
     .gt('expires_at', new Date().toISOString())
     .single();
 
   if (holdErr || !hold) {
     return res.status(400).json({ ok: false, error: 'Hold not found, expired, or already consumed' });
+  }
+
+  // Cashfree doesn't send a signed success payload to the client -- re-fetch
+  // the order from our own backend and only fulfill on order_status "PAID".
+  const order = await fetchCashfreeOrder(orderId);
+  if (order.order_status !== 'PAID') {
+    return res.status(400).json({ ok: false, error: `Payment not completed (status: ${order.order_status})` });
   }
 
   const { data: insertedOrder, error: insertErr } = await supabase
@@ -191,8 +197,8 @@ async function confirmPayment(req, res) {
       pincode: hold.customer.pincode,
       amount: hold.amount,
       currency: 'INR',
-      razorpay_order_id,
-      razorpay_payment_id,
+      razorpay_order_id: orderId,
+      razorpay_payment_id: orderId,
       payment_status: 'paid',
       order_status: 'confirmed',
       confirmed_at: new Date().toISOString(),

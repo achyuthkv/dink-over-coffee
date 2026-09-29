@@ -43,7 +43,7 @@ export default function Privacy() {
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" />Your DUPR ID (only for DUPR-rated sessions)</li>
             </ul>
             <p className="text-muted text-sm leading-relaxed mt-3">
-              When you make a payment, payment processing is handled entirely by Razorpay. We do not store your card details, UPI PIN, or bank account information. Razorpay's privacy policy applies to payment data.
+              When you make a payment, payment processing is handled entirely by Cashfree Payments. We do not store your card details, UPI PIN, or bank account information. Cashfree's privacy policy applies to payment data.
             </p>
             <p className="text-muted text-sm leading-relaxed mt-3">
               We also automatically collect basic analytics data (pages visited, device type, approximate location) via Google Analytics to understand site usage.
@@ -76,7 +76,7 @@ export default function Privacy() {
             <h2 className="text-primary text-lg font-bold mb-3">5. Third-Party Services</h2>
             <p className="text-muted text-sm leading-relaxed mb-3">We use the following third-party services:</p>
             <ul className="space-y-1.5 text-muted text-sm leading-relaxed pl-4">
-              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" /><strong>Razorpay</strong> — payment processing (PCI DSS compliant)</li>
+              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" /><strong>Cashfree Payments</strong> — payment processing (PCI DSS compliant)</li>
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" /><strong>Supabase</strong> — database and authentication</li>
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" /><strong>Google Analytics</strong> — website usage analytics</li>
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-interactive shrink-0 mt-1.5" /><strong>Vercel</strong> — website hosting</li>
