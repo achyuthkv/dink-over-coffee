@@ -6,13 +6,7 @@ const DISMISS_KEY = 'docOpen2Promo_dismissed'
 const TOURNAMENT_DATE_LONG = 'Sunday, 25 October'
 const TOURNAMENT_DATE_SHORT = 'Sun, 25 Oct'
 
-const CATEGORIES = [
-  { label: 'Singles < 3.6', first: 5000, second: 2500 },
-  { label: 'Doubles < 3.6', first: 6000, second: 3000 },
-  { label: 'Open Doubles', first: 6000, second: 3000 },
-  { label: 'Open Mixed Doubles', first: 5000, second: 2500 },
-  { label: 'Open Women Doubles', first: 5000, second: 2500 }
-]
+const CATEGORIES = ['Singles < 3.6', 'Doubles < 3.6', 'Open Doubles', 'Open Mixed Doubles', 'Open Women Doubles']
 
 const SPONSORS = [
   { name: 'FerroHub Sports', role: 'Venue Partner' },
@@ -47,21 +41,13 @@ export function TournamentPromoModal({ onClose }) {
 
         <div className="grid grid-cols-2 gap-2 mb-3">
           {CATEGORIES.map(c => (
-            <div key={c.label} className="card-compact px-3 py-2.5">
-              <p className="text-2xs font-bold text-primary leading-tight">{c.label}</p>
-              <div className="flex items-center justify-between mt-1.5 text-2xs">
-                <span className="text-muted">1st</span>
-                <span className="font-semibold text-primary">₹{c.first.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex items-center justify-between text-2xs">
-                <span className="text-muted">2nd</span>
-                <span className="font-semibold text-secondary">₹{c.second.toLocaleString('en-IN')}</span>
-              </div>
+            <div key={c} className="card-compact px-3 py-2.5">
+              <p className="text-2xs font-bold text-primary leading-tight">{c}</p>
             </div>
           ))}
         </div>
 
-        <p className="text-3xs text-muted mb-4">*Cash prizes applicable with a minimum of 12 team registrations in the respective category.</p>
+        <p className="text-3xs text-muted mb-4">Category-wise prize splits to be announced. *Cash prizes applicable with a minimum of 12 team registrations in the respective category.</p>
 
         <a
           href={REGISTRATION_URL}
