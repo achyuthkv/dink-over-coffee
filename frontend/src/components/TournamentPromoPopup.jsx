@@ -8,11 +8,10 @@ const TOURNAMENT_DATE_SHORT = 'Sun, 25 Oct'
 
 const CATEGORIES = [
   { label: 'Singles < 3.6', first: 5000, second: 2500 },
-  { label: 'Singles 3.6 – 4.2', first: 5000, second: 2500 },
   { label: 'Doubles < 3.6', first: 6000, second: 3000 },
-  { label: 'Doubles 3.6 – 4.2', first: 6000, second: 3000 },
+  { label: 'Open Doubles', first: 6000, second: 3000 },
   { label: 'Open Mixed Doubles', first: 5000, second: 2500 },
-  { label: 'Open Doubles', first: 6000, second: 3000 }
+  { label: 'Open Women Doubles', first: 5000, second: 2500 }
 ]
 
 const SPONSORS = [
